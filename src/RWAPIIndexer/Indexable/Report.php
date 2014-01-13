@@ -48,7 +48,7 @@ class Report extends AbstractIndexable {
         'primary' => array('type' => 'boolean', 'index' => 'no'),
       )),
       'source' => $this->getMultiFieldMapping('source', array('name', 'shortname', 'longname'), array(
-        'homepage' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+        'homepage' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
         'type' => $this->getMultiFieldMapping('source.type'),
       )),
       'format' => $this->getMultiFieldMapping('format'),

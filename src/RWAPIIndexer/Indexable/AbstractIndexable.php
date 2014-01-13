@@ -108,6 +108,11 @@ abstract class AbstractIndexable {
               $query->addExpression($expression, $alias);
               break;
 
+            case 'multi_value':
+              $expression = "GROUP_CONCAT(DISTINCT {$field_table}.{$field_name}_value SEPARATOR '%%%')";
+              $query->addExpression($expression, $alias);
+              break;
+
             case 'image_reference':
               $file_managed_table = 'file_managed_' . $field_name;
               $condition = "{$file_managed_table}.fid = {$field_table}.{$field_name}_fid";
@@ -184,6 +189,15 @@ abstract class AbstractIndexable {
                 $item[$key . '-html'] = Markdown($item[$key]);
               }
               break;
+
+            case 'multi_int':
+              $values = array();
+              foreach (explode('%%%', $item[$key]) as $data) {
+                $values[] = (int) $data;
+              }
+              $item[$key] = $values;
+              break;
+
           }
         }
         // Get reference taxonomy terms.
@@ -244,6 +258,12 @@ abstract class AbstractIndexable {
 
   public function loadTaxonomies() {
     $taxnomies = array(
+      'city' => array(),
+      'job_type' => array(),
+      'job_experience' => array(),
+      'career_categories' => array(),
+      'training_type' => array(),
+      'training_format' => array(),
       'organization_type' => array(),
       'language' => array(),
       'feature' => array(),
@@ -312,9 +332,9 @@ abstract class AbstractIndexable {
             'field_featured' => array(
               'featured' => 'value',
             ),
-            'field_published' => array(
+            /*'field_published' => array(
               'published' => 'value',
-            ),
+            ),*/
             'field_primary_country' => array(
               'primary_country' => 'tid',
             ),
@@ -341,7 +361,7 @@ abstract class AbstractIndexable {
           ),
           'reference' => array(
             'primary_country' => array(
-              'country' => array('id', 'name', 'shortname', 'iso3', 'latitude', 'longitude'),
+              'country' => array('id', 'name', 'shortname', 'iso3'),//, 'latitude', 'longitude'),
             ),
             'primary_disaster_type' => array(
               'disaster_type' => array('id', 'name'),
@@ -357,6 +377,9 @@ abstract class AbstractIndexable {
       ),
       'source' => array(
         'query' => array(
+          'fields' => array(
+            'description' => 'description',
+          ),
           'field_joins' => array(
             'field_shortname' => array(
               'shortname' => 'value',
@@ -370,12 +393,25 @@ abstract class AbstractIndexable {
             'field_homepage' => array(
               'homepage' => 'url',
             ),
+            'field_country' => array(
+              'country' => 'taxonomy_reference',
+            ),
+            'field_allowed_content_types' => array(
+              'content_type' => 'multi_value',
+            ),
           ),
         ),
         'process' => array(
+          'conversion' => array(
+            'description' => 'html',
+            'content_type' => 'multi_int',
+          ),
           'reference' => array(
             'type' => array(
               'organization_type' => array('id', 'name'),
+            ),
+            'country' => array(
+              'country' => array('id', 'name', 'shortname', 'iso3'),
             ),
           ),
         ),
@@ -522,7 +558,8 @@ abstract class AbstractIndexable {
       }
       else {
         $taxonomy = &$this->taxonomies[$this->entity_bundle];
-        $offset = end($taxonomy);
+        end($taxonomy);
+        $offset = key($taxonomy);
         reset($taxonomy);
       }
     }

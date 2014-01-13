@@ -72,11 +72,11 @@ function get_bundles() {
   // TODO: handle other taxonomies.
   return array(
     'report' => '\RWAPIIndexer\Indexable\Report',
-    'job' => '\RWAPIIndexer\Indexable\IndexableJob',
-    'training' => '\RWAPIIndexer\Indexable\IndexableTraining',
-    'country' => '\RWAPIIndexer\Indexable\IndexableCountry',
-    'disaster' => '\RWAPIIndexer\Indexable\IndexableDisaster',
-    'source' => '\RWAPIIndexer\Indexable\IndexableSource',
+    'job' => '\RWAPIIndexer\Indexable\Job',
+    'training' => '\RWAPIIndexer\Indexable\Training',
+    'country' => '\RWAPIIndexer\Indexable\Country',
+    'disaster' => '\RWAPIIndexer\Indexable\Disaster',
+    'source' => '\RWAPIIndexer\Indexable\Source',
   );
 }
 

@@ -114,7 +114,7 @@ function index($options) {
  * Display the available parameters.
  */
 function display_usage () {
-  echo "Usage: script.php <entity-bundle> [options]\n";
+  echo "Usage: php PATH/TO/Indexer.php <entity-bundle> [options]\n";
   echo "     -e, --elasticsearch <arg> Elasticsearch URL, defaults to http://127.0.0.1:9200 \n";
   echo "     -h, --mysql-host <arg> Mysql host, defaults to localhost \n";
   echo "     -P, --mysql-port <arg> Mysql port, defaults to 3306 \n";
@@ -216,9 +216,15 @@ if (empty($argv)) {
   display_usage();
 }
 
+// Display usage if first argument is help.
+$first_arg = array_shift($argv);
+if ($first_arg === '-h' || $first_arg === '--help') {
+  display_usage();
+}
+
 // Default options.
 $options = array(
-  'bundle' => array_shift($argv),
+  'bundle' => $first_arg,
   'elasticsearch' => 'http://127.0.0.1:9200',
   'mysql-host' => 'localhost',
   'mysql-port' => 3306,

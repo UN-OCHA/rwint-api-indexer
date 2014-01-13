@@ -1,14 +1,77 @@
 <?php
 
+namespace RWAPIIndexer\Indexable;
 
-class IndexableReport extends Indexable {
-  protected $index_name = 'node';
-  protected $index_type = 'report';
+class Report extends AbstractIndexable {
+  protected $entity_type = 'node';
+  protected $entity_bundle = 'report';
+
+  public function getMapping() {
+    return array(
+      '_all' => array('enabled' => FALSE),
+      'id' => array('type' => 'integer'),
+      'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
+      'status' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+      'title' => array(
+        'type' => 'multi_field',
+        'fields' => array(
+          'title' => array('type' => 'string', 'omit_norms' => TRUE),
+          'exact' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+        ),
+      ),
+      'body' => array('type' => 'string', 'omit_norms' => TRUE),
+      'body-html' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
+      'origin' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+      'date' => array(
+        'properties' => array(
+          'created' => array('type' => 'date'),
+          'changed' => array('type' => 'date'),
+          'original' => array('type' => 'date'),
+        ),
+      ),
+      'headline' => array(
+        'properties' => array(
+          'title' => array(
+            'type' => 'multi_field',
+            'fields' => array(
+              'title' => array('type' => 'string', 'omit_norms' => TRUE),
+              'exact' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+            ),
+          ),
+          'summary' => array('type' => 'string', 'omit_norms' => TRUE),
+          'image' => $this->getImageFieldMapping(),
+        ),
+      ),
+      'language' => $this->getMultiFieldMapping('language', array('name', 'code')),
+      'primary_country' => $this->getMultiFieldMapping('primary_country', array('name', 'shortname', 'iso3')),
+      'country' => $this->getMultiFieldMapping('country', array('name', 'shortname', 'iso3'), array(
+        'primary' => array('type' => 'boolean', 'index' => 'no'),
+      )),
+      'source' => $this->getMultiFieldMapping('source', array('name', 'shortname', 'longname'), array(
+        'homepage' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+        'type' => $this->getMultiFieldMapping('source.type'),
+      )),
+      'format' => $this->getMultiFieldMapping('format'),
+      'theme' => $this->getMultiFieldMapping('theme'),
+      'disaster' => $this->getMultiFieldMapping('disaster', array('name'), array(
+        'glide' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+        'type' => $this->getMultiFieldMapping('disaster.type', array('name'), array(
+          'primary' => array('type' => 'boolean', 'index' => 'no'),
+        )),
+      )),
+      'disaster_type' => $this->getMultiFieldMapping('disaster_type'),
+      'vulnerable_groups' => $this->getMultiFieldMapping('vulnerable_groups'),
+      'ocha_product' => $this->getMultiFieldMapping('ocha_product'),
+      'image' => $this->getImageFieldMapping(),
+      'file' => $this->getFileFieldMapping(),
+    );
+  }
 
   public function getItems($limit, $offset) {
-    global $base_insecure_url;
+    $base_url = $this->options['website'];
 
-    $entity_type = 'node';
+    $entity_type = $this->entity_type;
+    $entity_bundle = $this->entity_bundle;
     $base_table = 'node';
     $base_field = 'nid';
 
@@ -16,6 +79,7 @@ class IndexableReport extends Indexable {
     $query = db_select($base_table, $base_table);
     $query->addField($base_table, $base_field, 'id');
     $query->condition($base_table . '.' . $base_field, $offset, '<=');
+    $query->condition($base_table . '.type', $entity_bundle);
     $query->groupBy($base_table . '.' . $base_field);
     $query->orderBy($base_table . '.' . $base_field, 'DESC');
     $query->range(0, $limit);
@@ -100,7 +164,7 @@ class IndexableReport extends Indexable {
         ),
         'reference' => array(
           'primary_country' => array(
-            'country' => array('id', 'name', 'shortname', 'iso3', 'latitude', 'longitude'),
+            'country' => array('id', 'name', 'shortname', 'iso3'), //, 'latitude', 'longitude'
           ),
           'country' => array(
             'country' => array('id', 'name', 'shortname', 'iso3'),
@@ -140,10 +204,7 @@ class IndexableReport extends Indexable {
 
     foreach ($items as $id => &$item) {
       // URL.
-      $item['url'] = $base_insecure_url . '/node/' . $item['id'];
-
-      // URL alias.
-      $item['url_alias'] = $base_insecure_url . '/' . drupal_get_path_alias('node/' . $item['id']);
+      $item['url'] = $base_url . '/node/' . $item['id'];
 
       // Handle dates.
       $item['date'] = array(
@@ -200,8 +261,6 @@ class IndexableReport extends Indexable {
         unset($item['file']);
       }
     }
-
-    print_r($items);
 
     return $items;
   }

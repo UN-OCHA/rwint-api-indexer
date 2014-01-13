@@ -10,49 +10,164 @@ ini_set('memory_limit','256M');
 // Load the libraries.
 require "vendor/autoload.php";
 
-// Convert a text in markdown format to HTML.
-function convertMarkdown($text) {
+/**
+ * Convert a text in markdown format to HTML.
+ * Compatible with with Drupal markdown module.
+ */
+function Markdown($text) {
   return \Michelf\Markdown::defaultTransform($text);
 }
 
-// Display the available parameters.
-function displayUsage () {
+function get_database_connection() {
+  global $options;
+  static $pdo;
+
+  if (!isset($pdo)) {
+    $dbname = $options['database'];
+    $host = $options['mysql-host'];
+    $port = $options['mysql-port'];
+    $dsn = "mysql:dbname={$dbname};host={$host};port={$port}";
+    $user = $options['mysql-user'];
+    $password = $options['mysql-pass'];
+
+    try {
+        $pdo = new PDO($dsn, $user, $password);
+        $pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, array('\RWAPIIndexer\Database\Statement', array($pdo)));
+    }
+    catch (PDOException $e) {
+      echo "Failed to connect to the mysql server.\n";
+      exit();
+    }
+  }
+  return $pdo;
+}
+
+/**
+ * Mimic Drupal db_select function (simplified).
+ */
+function db_select($table, $alias) {
+  return new \RWAPIIndexer\Database\Query($table, $alias);
+}
+
+/**
+ * Mimic Drupal db_query function (simplified).
+ */
+function db_query($query) {
+  $pdo = get_database_connection();
+  return $pdo->query($query);
+}
+
+/**
+ * Quote a value to be inserted in a query.
+ */
+function db_quote($value) {
+  $pdo = get_database_connection();
+  return $pdo->quote($value);
+}
+
+/**
+ * Get the list of available bundles.
+ */
+function get_bundles() {
+  // TODO: handle other taxonomies.
+  return array(
+    'report' => '\RWAPIIndexer\Indexable\Report',
+    'job' => '\RWAPIIndexer\Indexable\IndexableJob',
+    'training' => '\RWAPIIndexer\Indexable\IndexableTraining',
+    'country' => '\RWAPIIndexer\Indexable\IndexableCountry',
+    'disaster' => '\RWAPIIndexer\Indexable\IndexableDisaster',
+    'source' => '\RWAPIIndexer\Indexable\IndexableSource',
+  );
+}
+
+/**
+ * Get the indexable object for the given entity bundle.
+ */
+function index($options) {
+  $bundles = get_bundles();
+  $bundle = $options['bundle'];
+  if (isset($bundles[$bundle])){// && class_exists($bundles[$bundle])) {
+    $indexable = new $bundles[$bundle]($options);
+
+    try {
+      // Remove the index.
+      if (!empty($options['remove'])) {
+        $indexable->remove();
+      }
+      // Or index the data.
+      else {
+        $indexable->index();
+      }
+    }
+    catch (\Exception $exception) {
+      echo "[ERROR] " . $exception->getMessage() . "\n";
+      exit(-1);
+    }
+  }
+  else {
+    echo "Indexable not found.\n";
+    exit(-1);
+  }
+}
+
+/**
+ * Display the available parameters.
+ */
+function display_usage () {
   echo "Usage: script.php <entity-bundle> [options]\n";
   echo "     -e, --elasticsearch <arg> Elasticsearch URL, defaults to http://127.0.0.1:9200 \n";
-  echo "     -h, --mysql-host <arg> Mysql host IP, defaults to 127.0.0.1 \n";
+  echo "     -h, --mysql-host <arg> Mysql host, defaults to localhost \n";
   echo "     -P, --mysql-port <arg> Mysql port, defaults to 3306 \n";
   echo "     -u, --mysql-user <arg> Mysql user, defaults to root \n";
   echo "     -p, --mysql-pass <arg> Mysql pass, defaults to none \n";
   echo "     -d, --database <arg> Database name, deaults to reliefwebint_0 \n";
   echo "     -w, --website <arg> Website URL, deaults to http://reliefweb.int \n";
-  echo "     -l, --limit <arg> Maximum number of entities to index, defaults to 1000 \n";
+  echo "     -l, --limit <arg> Maximum number of entities to index, defaults to 0 (all) \n";
   echo "     -o, --offset <arg> ID of the entity from which to start the indexing, defaults to the most recent one \n";
+  echo "     -c, --chunk-size <arg> Number of entities to index at one time, defaults to 1000 \n";
+  echo "     -r, --remove Indicates that the entity-bundle index should be removed \n";
   echo "\n";
   exit();
 }
 
-// Get passed entity bundle parameter and check its validity.
-function validateBundle($bundle) {
-  // TODO: handle other taxonomies.
-  $bundles = array('report', 'job', 'training', 'country', 'disaster', 'source');
-  if (in_array($bundle, $bundles)) {
+/**
+ * Get passed entity bundle parameter and check its validity.
+ */
+function validate_bundle($bundle) {
+  $bundles = get_bundles();
+  if (in_array($bundle, array_keys($bundles))) {
     return $bundle;
   }
   else {
     echo 'Invalid entity bundle. It must be one of ' . implode(', ', $bundles) . ".\n";
-    exit();
+    exit(-1);
   }
 }
 
-// Validate the options passed to the script.
-function validateOptions($options) {
+/**
+ * Validate Mysql host.
+ */
+function validate_mysql_host($host) {
+  if (filter_var($host, FILTER_VALIDATE_IP) || preg_match('/^\S+$/', $host) === 1) {
+    return $host;
+  }
+  return FALSE;
+}
+
+/**
+ * Validate the options passed to the script.
+ */
+function validate_options($options) {
   $results = filter_var_array($options, array(
     'bundle' => array(
       'filter' => FILTER_CALLBACK,
-      'options' => 'validateBundle',
+      'options' => 'validate_bundle',
     ),
     'elasticsearch' => FILTER_VALIDATE_URL,
-    'mysql-host' => FILTER_VALIDATE_IP,
+    'mysql-host' => array(
+      'filter' => FILTER_CALLBACK,
+      'options' => 'validate_mysql_host',
+    ),
     'mysql-port' => array(
       'filter'    => FILTER_VALIDATE_INT,
       'options'   => array('min_range' => 1, 'max_range' => 65535),
@@ -70,17 +185,19 @@ function validateOptions($options) {
       'options' => array('regexp' => '/^\S*$/'),
     ),
     'website' => FILTER_VALIDATE_URL,
-    'limit' => array(
+    'limit' => FILTER_VALIDATE_INT,
+    'offset' => FILTER_VALIDATE_INT,
+    'chunk-size' => array(
       'filter'    => FILTER_VALIDATE_INT,
       'options'   => array('min_range' => 1, 'max_range' => 1000),
     ),
-    'offset' => FILTER_VALIDATE_INT,
+    'remove' => FILTER_VALIDATE_BOOLEAN,
   ));
 
   foreach ($results as $key => $value) {
     if ($value === FALSE) {
       echo "Invalid '{$key}' argument value.\n";
-      exit();
+      exit(-1);
     }
   }
 }
@@ -96,21 +213,22 @@ array_shift($argv);
 
 // No parameters, we display the usage.
 if (empty($argv)) {
-  displayUsage();
+  display_usage();
 }
 
 // Default options.
 $options = array(
   'bundle' => array_shift($argv),
   'elasticsearch' => 'http://127.0.0.1:9200',
-  'mysql-host' => '127.0.0.1',
+  'mysql-host' => 'localhost',
   'mysql-port' => 3306,
   'mysql-user' => 'root',
   'mysql-pass' => '',
   'database' => 'reliefwebint_0',
   'website' => 'http://reliefweb.int',
-  'limit' => 1000,
+  'limit' => 0,
   'offset' => 0,
+  'chunk-size' => 1000,
 );
 
 // Parse the arguments.
@@ -161,16 +279,47 @@ while (($arg = array_shift($argv)) !== NULL) {
       $options['offset'] = (int) array_shift($argv);
       break;
 
+    case '--chunk-size':
+    case '-c':
+      $options['chunk-size'] = (int) array_shift($argv);
+      break;
+
+    case '--remove':
+    case '-r':
+      $options['remove'] = TRUE;
+      break;
+
+    case '--help':
+    case '-h':
     default:
-      displayUsage();
+      display_usage();
       break;
   }
 }
 
 // Check the validity of the passed options.
-validateOptions($options);
+validate_options($options);
 
-echo convertMarkdown("**test**\n");
+function format_memory($size) {
+  $base = log($size) / log(1024);
+  $suffixes = array("", "k", "M", "G", "T");
+  return pow(1024, $base - floor($base)) . $suffixes[floor($base)];
+}
 
+function format_time($time) {
+  $sec = intval($time);
+  $micro = $time - $sec;
+  return strftime('%T', mktime(0, 0, $sec)) . str_replace('0.', '.', sprintf('%.3f', $micro));
+}
 
+$time = microtime(TRUE);
+$memory = memory_get_usage(TRUE);
 
+// Launch the indexing.
+index($options);
+
+$time = format_time(microtime(TRUE) - $time);
+$memory = format_memory(memory_get_peak_usage(TRUE));//memory_get_usage(TRUE) - $memory_usage);
+
+echo "Indexing time: {$time}\n";
+echo "Memory usage: {$memory}.\n";

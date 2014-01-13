@@ -3,23 +3,9 @@
   "description": "Standalone application to index the RW database into the API elasticsearch indexes.",
   "keywords": ["reliefweb","api", "elasticsearch"],
   "type": "application",
-  "repositories": [
-    {
-      "type": "package",
-      "package": {
-        "name": "clipclop",
-        "version": "dev-master",
-        "source": {
-          "url": "https://github.com/pete-otaqui/ClipClop.git",
-          "type": "git",
-          "reference": "origin/master"
-        }
-      }
-    }
-  ],
   "require": {
     "php": ">=5.3.3",
-    "clipclop": "dev-master",
+    "lichtner/fluentpdo": "dev-master"
     "michelf/php-markdown": "1.4.0"
   },
   "autoload": {

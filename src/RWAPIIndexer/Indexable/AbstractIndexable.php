@@ -7,8 +7,11 @@ namespace RWAPIIndexer\Indexable;
  */
 abstract class AbstractIndexable {
   // Elasticsearch index type and name.
-  protected $index_type = '';
-  protected $index_name = '';
+  protected $entity_type = '';
+  protected $entity_bundle = '';
+
+  // Global options.
+  protected $options = NULL;
 
   // Default mimetypes.
   protected $mimeTypes = array(
@@ -66,18 +69,16 @@ abstract class AbstractIndexable {
   // Base public scheme for URLs.
   private $public_scheme_url = '';
 
+  // Whether or not Markdown is available.
+  private $markdown = FALSE;
+
   /**
    * Construct the indexable based on the given website.
    */
-  public function __construct($website) {
-    $this->public_scheme_url = $website . 'sites/reliefweb.int/files/'
-  }
-
-  /**
-   * Set the mapping of the index type if it doesn't already exist.
-   */
-  public function setMapping() {
-    return array();
+  public function __construct($options) {
+    $this->options = $options;
+    $this->public_scheme_url = $options['website'] . '/sites/reliefweb.int/files/';
+    $this->markdown = function_exists('Markdown');
   }
 
   /**
@@ -147,23 +148,8 @@ abstract class AbstractIndexable {
       }
     }
 
-    // DEBUG
-    if ($entity_type === 'node') {
-      if (method_exists($query, 'preExecute')) {
-        $query->preExecute();
-      }
-      $sql = (string) $query;
-      $quoted = array();
-      $connection = Database::getConnection();
-      foreach ((array) $query->arguments() as $key => $val) {
-        $quoted[$key] = $connection->quote($val);
-      }
-      $sql = strtr($sql, $quoted);
-      watchdog('query', $sql);
-    }
-
     // Get the items.
-    $items = $query->execute()->fetchAllAssoc('id', PDO::FETCH_ASSOC);
+    $items = $query->execute()->fetchAllAssoc('id', \PDO::FETCH_ASSOC);
 
     // Process the returned items;
     foreach ($items as $id => &$item) {
@@ -464,9 +450,9 @@ abstract class AbstractIndexable {
         if ($array['filemime'] === 'application/pdf' && preg_match('/\|(\d+)\|(0|90|-90)$/', $parts[1]) === 1) {
           $directory = dirname($parts[2]) . '-pdf-previews';
           $filename = basename(urldecode($parts[3]), '.pdf');
-          if (module_exists('transliteration')) {
+          /*if (module_exists('transliteration')) {
             $filename = transliteration_clean_filename($filename);
-          }
+          }*/
           $filename = $directory . '/' . $parts[0] . '-' . $filename . '.png';
           $array['preview'] = array(
             'url' =>  str_replace('public://', $this->public_scheme_url, $filename),
@@ -503,11 +489,369 @@ abstract class AbstractIndexable {
     return isset($this->mimeTypes[$extension]) ? $this->mimeTypes[$extension] : 'application/octet-stream';
   }
 
-  public function indexItems($items) {
-
+  /**
+   * Get the maximum number of items to index.
+   */
+  public function getLimit() {
+    if ($this->entity_type === 'node') {
+      $query = db_select('node', 'node');
+      $query->condition('node.type', $this->entity_bundle);
+      $query->count();
+      $count = (int) $query->execute()->fetchField();
+    }
+    else {
+      $count = count($this->taxonomies[$this->entity_bundle]);
+    }
+    $limit = $this->options['limit'];
+    return $limit <= 0 ? $count : min($limit, $count);
   }
 
+  /**
+   * Get the offset from which to start the indexing.
+   */
+  public function getOffset() {
+    $offset = $this->options['offset'];
+    if ($offset <= 0) {
+      if ($this->entity_type === 'node') {
+        $query = db_select('node', 'node');
+        $query->addField('node', 'nid', 'id');
+        $query->condition('node.type', $this->entity_bundle);
+        $query->orderBy('node.nid', 'DESC');
+        $query->range(0, 1);
+        $offset = (int) $query->execute()->fetchField();
+      }
+      else {
+        $taxonomy = &$this->taxonomies[$this->entity_bundle];
+        $offset = end($taxonomy);
+        reset($taxonomy);
+      }
+    }
+    return $offset;
+  }
+
+  /**
+   * Get entities to index.
+   */
   public function getItems($limit, $offset) {
     return array();
+  }
+
+  /**
+   * Bulk index the given items.
+   */
+  public function indexItems(&$items) {
+    $data = '';
+
+    $index = $this->options['database'] . '_' . $this->entity_type;
+    $type = $this->entity_bundle;
+    $path = "{$index}/{$type}/_bulk";
+
+    // Get last id.
+    end($items);
+    $offset = key($items) - 1;
+    reset($items);
+
+    // Prepare bulk indexing.
+    foreach ($items as &$item) {
+      // Add the document to the bulk indexing data.
+      $action = array('index' => array(
+        '_index' => $index,
+        '_type' => $type,
+        '_id' => $item['id'],
+      ));
+
+      $data .= json_encode($action, JSON_FORCE_OBJECT) . "\n";
+      $data .= json_encode($item) . "\n";
+    }
+
+    // Bulk index the documents.
+    $this->request('POST', $path, $data);
+
+    return $offset;
+  }
+
+  /**
+   * Index entities.
+   */
+  public function index() {
+    // Create the index and set up the mapping for the entity bundle.
+    $this->createIndex();
+
+    // Make sure we can return all the concatenated data.
+    db_query('SET SESSION group_concat_max_len = 100000');
+
+    // Prepare the indexing by loading all the taxonomies.
+    echo "Loading taxonomies...\n";
+    $this->loadTaxonomies();
+
+    $offset = $this->getOffset();
+    $limit = $this->getLimit();
+    $chunk_size = $this->options['chunk-size'];
+    $total_count = 0;
+
+    if ($offset === 0) {
+      throw new Exception("No entity to index.");
+    }
+
+    // Main indexing loop.
+    echo "Indexing entities...\n";
+    while ($offset > 0 && $total_count < $limit) {
+      // Get $chunk_size items starting from the last indexed item.
+      $items = $this->getItems($chunk_size, $offset);
+
+      $count = count($items);
+      $total_count += $count;
+
+      if ($count > 0) {
+        $offset = $this->indexItems($items);
+      }
+      else {
+        break;
+      }
+
+      // Clear the memory.
+      unset($items);
+
+      echo "Indexed {$total_count}/{$limit} entities.                 \r";
+    }
+
+    // Last indexed item.
+    $offset += 1;
+
+    echo "\nSuccessfully indexed {$total_count}/{$limit} entities.\n";
+    echo "Last indexed entity is {$offset}.\n";
+  }
+
+  /**
+   * Remove the elasticsearch type of this entity bundle.
+   */
+  public function remove() {
+    $index = $this->options['database'] . '_' . $this->entity_type;
+    $type = $this->entity_bundle;
+
+    // Try to create the elasticsearch index.
+    try {
+      $this->request('DELETE', "{$index}/{$type}");
+    }
+    catch (\Exception $exception) {
+      $message = $exception->getMessage();
+      // Exception other than type missing, rethrow.
+      if (strpos($message, 'TypeMissingException') !== 0) {
+        throw $exception;
+      }
+    }
+
+    echo "Index successfully removed.\n";
+  }
+
+  /**
+   * Send a request to elasticsearch (type can be one of POST, PUT, DELETE).
+   */
+  public function request($type, $path, &$data = NULL) {
+    $curl = curl_init();
+    curl_setopt($curl, CURLOPT_URL, $this->options['elasticsearch'] . '/' . $path);
+    curl_setopt($curl, CURLOPT_TIMEOUT, 200);
+    curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 2);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $type);
+
+    // Send data if defined.
+    if (isset($data)) {
+      if (!is_string($data)) {
+        $data = json_encode($data, JSON_FORCE_OBJECT) . "\n";
+      }
+      curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+    }
+
+    $response = curl_exec($curl);
+    $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+
+    // Elasticsearch error.
+    if ($status != 200) {
+      $response = json_decode($response);
+      if (isset($response->error)) {
+        throw new \Exception($response->error);
+      }
+    }
+  }
+
+  /**
+   * Set the mapping of the index type if it doesn't already exist.
+   */
+  public function createIndex() {
+    $settings = array(
+      'settings' => array(
+        'number_of_shards' => 1,
+        'number_of_replicas' => 1,
+        'analysis' => array(
+          'analyzer' => array(
+            'default_index' => array(
+              'type' => 'custom',
+              'tokenizer' => 'standard',
+              'filter' => array('standard', 'lowercase', 'asciifolding', 'elision', 'filter_stop', 'filter_word_delimiter', 'kstem', 'filter_edge_ngram'),
+              'char_filter' => array('html_strip'),
+            ),
+            'default_search' => array(
+              'type' => 'custom',
+              'tokenizer' => 'standard',
+              'filter' => array('standard', 'lowercase', 'asciifolding', 'elision', 'filter_stop', 'filter_word_delimiter', 'kstem'),
+            ),
+          ),
+          'filter' => array(
+            'filter_edge_ngram' => array(
+              'type' => 'edgeNGram',
+              'min_gram' => 1,
+              'max_gram' => 20,
+            ),
+            'filter_word_delimiter' => array(
+              'type' => 'word_delimiter',
+              'preserve_original' => TRUE,
+            ),
+            'filter_stop' => array(
+              'type' => 'stop',
+              'stopwords' => array("_english_", "_french_", "_spanish_"),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    $index = $this->options['database'] . '_' . $this->entity_type;
+    $type = $this->entity_bundle;
+
+    // Try to create the elasticsearch index.
+    try {
+      $this->request('POST', $index, $settings);
+    }
+    catch (\Exception $exception) {
+      $message = $exception->getMessage();
+      // Exception not because index already exists, rethrow.
+      if (strpos($message, 'IndexAlreadyExistsException') !== 0) {
+        throw $exception;
+      }
+    }
+
+    // Try to set up the mapping of the type.
+    try {
+      $mapping = array(
+        $type => array(
+          'properties' => $this->getMapping()
+        ),
+      );
+      $this->request('PUT', "{$index}/{$type}/_mapping", $mapping);
+    }
+    catch (\Exception $exception) {
+      $message = $exception->getMessage();
+      // Exception not because mapping already set, rethrow.
+      if (strpos($message, 'IndexAlreadyExistsException') !== 0) {
+        throw $exception;
+      }
+    }
+  }
+
+  /**
+   * Get the mapping of the index type if it doesn't already exist.
+   */
+  public function getMapping() {
+    return array();
+  }
+
+  /**
+   * Get the mapping for a 'multi_field'.
+   */
+  public function getMultiFieldMapping($field, $properties = array('name'), $extra_properties = array(), $disabled = FALSE) {
+    $mapping = array(
+      'properties' => array(
+        'id' => array('type' => 'integer', 'index_name' => $field . '.id'),
+      ),
+    );
+    foreach ($properties as $property) {
+      $mapping['properties'][$property] = array(
+        'type' => 'multi_field',
+        'path' => 'just_name',
+        'fields' => array(
+          $property => array(
+            'type' => 'string',
+            'omit_norms' => TRUE,
+            'index_name' => $field . '.' . $property,
+          ),
+          'exact' => array(
+            'type' => 'string',
+            'index' => 'not_analyzed',
+            'omit_norms' => TRUE,
+            'index_name' => $field . '.' . $property . '.exact',
+          ),
+          'common' => array(
+            'type' => 'string',
+            'omit_norms' => TRUE,
+            'index_name' => $field . '.common',
+          ),
+          'common_exact' => array(
+            'type' => 'string',
+            'index' => 'not_analyzed',
+            'omit_norms' => TRUE,
+            'index_name' => $field . '.common.exact',
+          ),
+        ),
+      );
+    }
+    foreach ($extra_properties as $property => $data) {
+      $mapping['properties'][$property] = $data;
+    }
+    if ($disabled === TRUE) {
+      $mapping['enabled'] = FALSE;
+    }
+    return $mapping;
+  }
+
+  /**
+   * Get the mapping for an image field.
+   */
+  public function getImageFieldMapping($disabled =  FALSE) {
+    $mapping = array(
+      'properties' => array(
+        'id' => array('type' => 'integer'),
+        'mimetype' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+        'filename' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+        'caption' => array('type' => 'string', 'omit_norms' => TRUE),
+        'copyright' => array('type' => 'string', 'omit_norms' => TRUE),
+        'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+        'url-large' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
+        'url-small' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
+        'url-thumb' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
+      ),
+    );
+    if ($disabled === TRUE) {
+      $mapping['enabled'] = FALSE;
+    }
+    return $mapping;
+  }
+
+  /**
+   * Get the mapping for a field field.
+   */
+  public function getFileFieldMapping($disabled = FALSE) {
+    $mapping = array(
+      'properties' => array(
+        'id' => array('type' => 'integer'),
+        'mimetype' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+        'filename' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+        'description' => array('type' => 'string', 'omit_norms' => TRUE),
+        'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+        'preview' => array(
+          'properties' => array(
+            'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
+            'url-large' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
+            'url-small' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
+            'url-thumb' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
+          ),
+        ),
+      ),
+    );
+    if ($disabled === TRUE) {
+      $mapping['enabled'] = FALSE;
+    }
+    return $mapping;
   }
 }

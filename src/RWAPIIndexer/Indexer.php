@@ -124,7 +124,7 @@ function display_usage () {
   echo "     -w, --website <arg> Website URL, deaults to http://reliefweb.int \n";
   echo "     -l, --limit <arg> Maximum number of entities to index, defaults to 0 (all) \n";
   echo "     -o, --offset <arg> ID of the entity from which to start the indexing, defaults to the most recent one \n";
-  echo "     -c, --chunk-size <arg> Number of entities to index at one time, defaults to 1000 \n";
+  echo "     -c, --chunk-size <arg> Number of entities to index at one time, defaults to 500 \n";
   echo "     -r, --remove Indicates that the entity-bundle index should be removed \n";
   echo "\n";
   exit();
@@ -234,7 +234,7 @@ $options = array(
   'website' => 'http://reliefweb.int',
   'limit' => 0,
   'offset' => 0,
-  'chunk-size' => 1000,
+  'chunk-size' => 500,
 );
 
 // Parse the arguments.

@@ -88,11 +88,13 @@ class Report extends AbstractIndexable {
       'query' => array(
         'fields' => array(
           'title' => 'title',
-          'status' => 'status',
           'date_created' => 'created',
           'date_changed' => 'changed',
         ),
         'field_joins' => array(
+          'field_status' => array(
+            'status' => 'value',
+          ),
           'field_report_date' => array(
             'date_original' => 'value',
           ),
@@ -159,7 +161,6 @@ class Report extends AbstractIndexable {
           'date_created' => 'time',
           'date_changed' => 'time',
           'date_original' => 'time',
-          'status' => 'bool',
           'headline' => 'bool',
         ),
         'reference' => array(

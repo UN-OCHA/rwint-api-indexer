@@ -181,10 +181,13 @@ abstract class AbstractIndexable {
               break;
 
             case 'time':
-              $item[$key] = $item[$key] * 1000;
+              // Convert time to ISO 8601 format.
+              $item[$key] = date('c', (int) $item[$key]);
               break;
 
             case 'html':
+              // Absolute links.
+              $item[$key] = preg_replace('/(\]\(\/?)(?!http:\/\/)/', '](http://reliefweb.int/', $item[$key]);
               if ($this->markdown) {
                 $item[$key . '-html'] = Markdown($item[$key]);
               }
@@ -286,6 +289,9 @@ abstract class AbstractIndexable {
             'description' => 'description',
           ),
           'field_joins' => array(
+            'field_status' => array(
+              'status' => 'value',
+            ),
             'field_shortname' => array(
               'shortname' => 'value',
             ),
@@ -320,6 +326,9 @@ abstract class AbstractIndexable {
             'description' => 'description',
           ),
           'field_joins' => array(
+            'field_status' => array(
+              'status' => 'value',
+            ),
             'field_disaster_date' => array(
               'date' => 'value',
             ),
@@ -381,6 +390,9 @@ abstract class AbstractIndexable {
             'description' => 'description',
           ),
           'field_joins' => array(
+            'field_status' => array(
+              'status' => 'value',
+            ),
             'field_shortname' => array(
               'shortname' => 'value',
             ),

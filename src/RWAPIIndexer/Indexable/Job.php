@@ -66,11 +66,13 @@ class Job extends AbstractIndexable {
       'query' => array(
         'fields' => array(
           'title' => 'title',
-          'status' => 'status',
           'date_created' => 'created',
           'date_changed' => 'changed',
         ),
         'field_joins' => array(
+          'field_status' => array(
+            'status' => 'value',
+          ),
           'field_job_closing_date' => array(
             'date_closing' => 'value',
           ),
@@ -116,7 +118,6 @@ class Job extends AbstractIndexable {
           'date_created' => 'time',
           'date_changed' => 'time',
           'date_closing' => 'time',
-          'status' => 'bool',
         ),
         'reference' => array(
           'country' => array(

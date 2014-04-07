@@ -181,8 +181,9 @@ abstract class AbstractIndexable {
               break;
 
             case 'time':
+              $item[$key] = $item[$key] * 1000;
               // Convert time to ISO 8601 format.
-              $item[$key] = date('c', (int) $item[$key]);
+              //$item[$key] = date('c', (int) $item[$key]);
               break;
 
             case 'html':

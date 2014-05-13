@@ -786,7 +786,9 @@ abstract class AbstractIndexable {
     try {
       $mapping = array(
         $type => array(
-          'properties' => $this->getMapping()
+          '_all' => array('enabled' => FALSE),
+          '_timestamp' => array('enabled' => TRUE, 'store' => TRUE, 'index' => 'no'),
+          'properties' => $this->getMapping(),
         ),
       );
       $this->request('PUT', "{$index}/{$type}/_mapping", $mapping);

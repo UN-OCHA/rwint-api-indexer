@@ -34,7 +34,7 @@ class Training extends AbstractIndexable {
       'country' => $this->getMultiFieldMapping('country', array('name', 'shortname', 'iso3')),
       'city' => $this->getMultiFieldMapping('city'),
       'source' => $this->getMultiFieldMapping('source', array('name', 'shortname', 'longname'), array(
-        'homepage' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
+        'homepage' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
         'type' => $this->getMultiFieldMapping('source.type'),
       )),
       'theme' => $this->getMultiFieldMapping('theme'),

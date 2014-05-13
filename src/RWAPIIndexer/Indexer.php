@@ -77,6 +77,24 @@ function get_bundles() {
     'country' => '\RWAPIIndexer\Indexable\Country',
     'disaster' => '\RWAPIIndexer\Indexable\Disaster',
     'source' => '\RWAPIIndexer\Indexable\Source',
+
+    // References.
+    'career_categories' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    //'city' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'content_format' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'disaster_type' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'feature' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'job_type' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'language' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'ocha_product' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'organization_type' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    //'region' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    //'tags' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'theme' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'training_format' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'training_type' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'vulnerable_groups' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
+    'job_experience' => '\RWAPIIndexer\Indexable\TaxonomyDefault',
   );
 }
 

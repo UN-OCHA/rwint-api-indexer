@@ -46,7 +46,7 @@ class Query {
         foreach ($value as $data) {
           $values[] = db_quote($data);
         }
-        $this->parts['where'][] = "{$field} IN ('" . implode(",", $values) . "')";
+        $this->parts['where'][] = "{$field} IN (" . implode(",", $values) . ")";
         break;
 
       default:

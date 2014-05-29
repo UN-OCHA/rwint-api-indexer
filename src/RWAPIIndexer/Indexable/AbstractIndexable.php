@@ -592,8 +592,8 @@ abstract class AbstractIndexable {
   public function indexItems(&$items) {
     $data = '';
 
-    $index = $this->options['database'] . '_' . $this->entity_type;
-    $type = $this->entity_bundle;
+    $index = $this->getIndexName();
+    $type = $this->getIndexType();
     $path = "{$index}/{$type}/_bulk";
 
     // Get last id.
@@ -676,8 +676,8 @@ abstract class AbstractIndexable {
    * Remove the elasticsearch type of this entity bundle.
    */
   public function remove() {
-    $index = $this->options['database'] . '_' . $this->entity_type;
-    $type = $this->entity_bundle;
+    $index = $this->getIndexName();
+    $type = $this->getIndexType();
 
     // Try to create the elasticsearch index.
     try {
@@ -767,8 +767,8 @@ abstract class AbstractIndexable {
       ),
     );
 
-    $index = $this->options['database'] . '_' . $this->entity_type;
-    $type = $this->entity_bundle;
+    $index = $this->getIndexName();
+    $type = $this->getIndexType();
 
     // Try to create the elasticsearch index.
     try {
@@ -800,6 +800,20 @@ abstract class AbstractIndexable {
         throw $exception;
       }
     }
+  }
+
+  /**
+   * Get Elasticsearch index name.
+   */
+  public function getIndexName() {
+    return $this->options['base-index-name'] . '_' . $this->entity_type;
+  }
+
+  /**
+   * Get Elasticsearch index type.
+   */
+  public function getIndexType() {
+    return $this->entity_bundle;
   }
 
   /**

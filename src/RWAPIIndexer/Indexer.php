@@ -15,7 +15,13 @@ require "vendor/autoload.php";
  * Compatible with with Drupal markdown module.
  */
 function Markdown($text) {
-  return \Michelf\Markdown::defaultTransform($text);
+  if (class_exists('Sundown')) {
+    $sundown = new Sundown($text);
+    return $sundown->toHTML();
+  }
+  else {
+    return \Michelf\Markdown::defaultTransform($text);
+  }
 }
 
 function get_database_connection() {
@@ -104,7 +110,7 @@ function get_bundles() {
 function index($options) {
   $bundles = get_bundles();
   $bundle = $options['bundle'];
-  if (isset($bundles[$bundle])){// && class_exists($bundles[$bundle])) {
+  if (isset($bundles[$bundle])){
     $indexable = new $bundles[$bundle]($options);
 
     try {
@@ -139,6 +145,7 @@ function display_usage () {
   echo "     -u, --mysql-user <arg> Mysql user, defaults to root \n";
   echo "     -p, --mysql-pass <arg> Mysql pass, defaults to none \n";
   echo "     -d, --database <arg> Database name, deaults to reliefwebint_0 \n";
+  echo "     -b, --base-index-name <arg> Base index name, deaults to reliefwebint_0 \n";
   echo "     -w, --website <arg> Website URL, deaults to http://reliefweb.int \n";
   echo "     -l, --limit <arg> Maximum number of entities to index, defaults to 0 (all) \n";
   echo "     -o, --offset <arg> ID of the entity from which to start the indexing, defaults to the most recent one \n";
@@ -202,6 +209,10 @@ function validate_options($options) {
       'filter' => FILTER_VALIDATE_REGEXP,
       'options' => array('regexp' => '/^\S*$/'),
     ),
+    'base-index-name' => array(
+      'filter' => FILTER_VALIDATE_REGEXP,
+      'options' => array('regexp' => '/^\S*$/'),
+    ),
     'website' => FILTER_VALIDATE_URL,
     'limit' => FILTER_VALIDATE_INT,
     'offset' => FILTER_VALIDATE_INT,
@@ -249,6 +260,7 @@ $options = array(
   'mysql-user' => 'root',
   'mysql-pass' => '',
   'database' => 'reliefwebint_0',
+  'base-index-name' => 'reliefwebint_0',
   'website' => 'http://reliefweb.int',
   'limit' => 0,
   'offset' => 0,
@@ -286,6 +298,11 @@ while (($arg = array_shift($argv)) !== NULL) {
     case '--database':
     case '-d':
       $options['database'] = array_shift($argv);
+      break;
+
+    case '--base-index-name':
+    case '-b':
+      $options['base-index-name'] = array_shift($argv);
       break;
 
     case '--website':

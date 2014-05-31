@@ -6,42 +6,34 @@ class Source extends AbstractIndexable {
   protected $entity_type = 'taxonomy_term';
   protected $entity_bundle = 'source';
 
+  /**
+   * Return the mapping for the current indexable.
+   *
+   * @return array
+   *   Mapping.
+   */
   public function getMapping() {
-    return array(
-      '_all' => array('enabled' => FALSE),
-      'id' => array('type' => 'integer'),
-      'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      'status' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-      'name' => array(
-        'type' => 'multi_field',
-        'fields' => array(
-          'name' => array('type' => 'string', 'omit_norms' => TRUE),
-          'exact' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        ),
-      ),
-      'shortname' => array(
-        'type' => 'multi_field',
-        'fields' => array(
-          'shortname' => array('type' => 'string', 'omit_norms' => TRUE),
-          'exact' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        ),
-      ),
-      'longname' => array(
-        'type' => 'multi_field',
-        'fields' => array(
-          'shortname' => array('type' => 'string', 'omit_norms' => TRUE),
-          'exact' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        ),
-      ),
-      'type' => $this->getMultiFieldMapping('organization_type'),
-      'country' => $this->getMultiFieldMapping('country', array('name', 'shortname', 'iso3'), array(
-        'primary' => array('type' => 'boolean', 'index' => 'no'),
-      )),
-      'description' => array('type' => 'string', 'omit_norms' => TRUE),
-      'description-html' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      'homepage' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      'content_type' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-    );
+    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping->addInteger('id')
+            ->addString('url', FALSE)
+            ->addString('status', FALSE)
+            ->addString('homepage', NULL)
+            ->addString('content_type', FALSE)
+            // Names.
+            ->addString('name', TRUE, TRUE)
+            ->addString('shortname', TRUE, TRUE)
+            ->addString('longname', TRUE, TRUE)
+            // Description.
+            ->addString('description')
+            ->addString('description-html', NULL)
+            // Country.
+            ->addTaxonomy('country', array('shortname', 'iso3'))
+            ->addFloat('country.latitude')
+            ->addFloat('country.longitude')
+            // Organization type.
+            ->addTaxonomy('type');
+
+    return $mapping->export();
   }
 
   public function getItems($limit, $offset) {

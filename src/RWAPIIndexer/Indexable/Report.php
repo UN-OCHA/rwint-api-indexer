@@ -6,65 +6,59 @@ class Report extends AbstractIndexable {
   protected $entity_type = 'node';
   protected $entity_bundle = 'report';
 
+  /**
+   * Return the mapping for the current indexable.
+   *
+   * @return array
+   *   Mapping.
+   */
   public function getMapping() {
-    return array(
-      '_all' => array('enabled' => FALSE),
-      'id' => array('type' => 'integer'),
-      'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      'status' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-      'title' => array(
-        'type' => 'multi_field',
-        'fields' => array(
-          'title' => array('type' => 'string', 'omit_norms' => TRUE),
-          'exact' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        ),
-      ),
-      'body' => array('type' => 'string', 'omit_norms' => TRUE),
-      'body-html' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      'origin' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-      'date' => array(
-        'properties' => array(
-          'created' => array('type' => 'date'),
-          'changed' => array('type' => 'date'),
-          'original' => array('type' => 'date'),
-        ),
-      ),
-      'headline' => array(
-        'properties' => array(
-          'title' => array(
-            'type' => 'multi_field',
-            'fields' => array(
-              'title' => array('type' => 'string', 'omit_norms' => TRUE),
-              'exact' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-            ),
-          ),
-          'summary' => array('type' => 'string', 'omit_norms' => TRUE),
-          'image' => $this->getImageFieldMapping(),
-        ),
-      ),
-      'language' => $this->getMultiFieldMapping('language', array('name', 'code')),
-      'primary_country' => $this->getMultiFieldMapping('primary_country', array('name', 'shortname', 'iso3')),
-      'country' => $this->getMultiFieldMapping('country', array('name', 'shortname', 'iso3'), array(
-        'primary' => array('type' => 'boolean', 'index' => 'no'),
-      )),
-      'source' => $this->getMultiFieldMapping('source', array('name', 'shortname', 'longname'), array(
-        'homepage' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        'type' => $this->getMultiFieldMapping('source.type'),
-      )),
-      'format' => $this->getMultiFieldMapping('format'),
-      'theme' => $this->getMultiFieldMapping('theme'),
-      'disaster' => $this->getMultiFieldMapping('disaster', array('name'), array(
-        'glide' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        'type' => $this->getMultiFieldMapping('disaster.type', array('name'), array(
-          'primary' => array('type' => 'boolean', 'index' => 'no'),
-        )),
-      )),
-      'disaster_type' => $this->getMultiFieldMapping('disaster_type'),
-      'vulnerable_groups' => $this->getMultiFieldMapping('vulnerable_groups'),
-      'ocha_product' => $this->getMultiFieldMapping('ocha_product'),
-      'image' => $this->getImageFieldMapping(),
-      'file' => $this->getFileFieldMapping(),
-    );
+    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping->addInteger('id')
+            ->addString('url', FALSE)
+            ->addString('status', FALSE)
+            ->addString('title', TRUE, TRUE)
+            ->addString('origin', FALSE)
+            // Body.
+            ->addString('body')
+            ->addString('body-html', NULL)
+            // Dates.
+            ->addDates('date', array('created', 'changed', 'original'))
+            // Headline.
+            ->addString('headline.title', TRUE, TRUE)
+            ->addString('headline.summary')
+            ->addImage('headline.image')
+            // Language.
+            ->addTaxonomy('language')
+            ->addString('language.code', FALSE)
+            // Primary country.
+            ->addTaxonomy('primary_country', array('shortname', 'iso3'))
+            ->addFloat('primary_country.latitude')
+            ->addFloat('primary_country.longitude')
+            // Country.
+            ->addTaxonomy('country', array('shortname', 'iso3'))
+            ->addFloat('country.latitude')
+            ->addFloat('country.longitude')
+            ->addBoolean('country.primary')
+            // Source.
+            ->addTaxonomy('source', array('shortname', 'longname'))
+            ->addString('source.homeage', NULL)
+            ->addTaxonomy('source.type')
+            // Disaster.
+            ->addTaxonomy('disaster', array('glide'))
+            ->addTaxonomy('disaster.type')
+            ->addBoolean('disaster.type.primary')
+            // Other taxonomies.
+            ->addTaxonomy('format')
+            ->addTaxonomy('theme')
+            ->addTaxonomy('disaster_type')
+            ->addTaxonomy('vulnerable_groups')
+            ->addTaxonomy('ocha_product')
+            // File and image.
+            ->addImage('image')
+            ->addFile('file');
+
+    return $mapping->export();
   }
 
   public function getItems($limit, $offset) {
@@ -203,6 +197,7 @@ class Report extends AbstractIndexable {
 
     $items = $this->processQuery($query, $entity_type, $base_table, $base_field, $options);
 
+    // TODO: index primary information for disaster type and country.
     foreach ($items as $id => &$item) {
       // URL.
       $item['url'] = $base_url . '/node/' . $item['id'];

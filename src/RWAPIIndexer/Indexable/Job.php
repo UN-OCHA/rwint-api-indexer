@@ -6,43 +6,47 @@ class Job extends AbstractIndexable {
   protected $entity_type = 'node';
   protected $entity_bundle = 'job';
 
+  /**
+   * Return the mapping for the current indexable.
+   *
+   * @return array
+   *   Mapping.
+   */
   public function getMapping() {
-    return array(
-      '_all' => array('enabled' => FALSE),
-      'id' => array('type' => 'integer'),
-      'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      'status' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-      'title' => array(
-        'type' => 'multi_field',
-        'fields' => array(
-          'title' => array('type' => 'string', 'omit_norms' => TRUE),
-          'exact' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        ),
-      ),
-      'body' => array('type' => 'string', 'omit_norms' => TRUE),
-      'body-html' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      'how_to_apply' => array('type' => 'string', 'omit_norms' => TRUE),
-      'how_to_apply-html' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      'date' => array(
-        'properties' => array(
-          'created' => array('type' => 'date'),
-          'changed' => array('type' => 'date'),
-          'closing' => array('type' => 'date'),
-        ),
-      ),
-      'language' => $this->getMultiFieldMapping('language', array('name', 'code')),
-      'country' => $this->getMultiFieldMapping('country', array('name', 'shortname', 'iso3')),
-      'city' => $this->getMultiFieldMapping('city'),
-      'source' => $this->getMultiFieldMapping('source', array('name', 'shortname', 'longname'), array(
-        'homepage' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        'type' => $this->getMultiFieldMapping('source.type'),
-      )),
-      'theme' => $this->getMultiFieldMapping('theme'),
-      'type' => $this->getMultiFieldMapping('type'),
-      'experience' => $this->getMultiFieldMapping('experience'),
-      'career_categories' => $this->getMultiFieldMapping('career_categories'),
-      'file' => $this->getFileFieldMapping(),
-    );
+    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping->addInteger('id')
+            ->addString('url', FALSE)
+            ->addString('status', FALSE)
+            ->addString('title', TRUE, TRUE)
+            // Body.
+            ->addString('body')
+            ->addString('body-html', NULL)
+            // How to apply.
+            ->addString('how_to_apply')
+            ->addString('how_to_apply-html', NULL)
+            // Dates.
+            ->addDates('date', array('created', 'changed', 'closing'))
+            // Language.
+            ->addTaxonomy('language')
+            ->addString('language.code', FALSE)
+            // Country.
+            ->addTaxonomy('country', array('shortname', 'iso3'))
+            ->addFloat('country.latitude')
+            ->addFloat('country.longitude')
+            // Source.
+            ->addTaxonomy('source', array('shortname', 'longname'))
+            ->addString('source.homeage', NULL)
+            ->addTaxonomy('source.type')
+            // Other taxonomies
+            ->addTaxonomy('city')
+            ->addTaxonomy('type')
+            ->addTaxonomy('theme')
+            ->addTaxonomy('career_categories')
+            ->addTaxonomy('experience')
+            // File.
+            ->addFile('file');
+
+    return $mapping->export();
   }
 
   public function getItems($limit, $offset) {

@@ -6,44 +6,42 @@ class Disaster extends AbstractIndexable {
   protected $entity_type = 'taxonomy_term';
   protected $entity_bundle = 'disaster';
 
+  /**
+   * Return the mapping for the current indexable.
+   *
+   * @return array
+   *   Mapping.
+   */
   public function getMapping() {
-    return array(
-      '_all' => array('enabled' => FALSE),
-      'id' => array('type' => 'integer'),
-      'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      'status' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-      'current' => array('type' => 'boolean'),
-      'featured' => array('type' => 'boolean'),
-      'date' => array(
-        'properties' => array(
-          'created' => array('type' => 'date'),
-        ),
-      ),
-      'name' => array(
-        'type' => 'multi_field',
-        'fields' => array(
-          'name' => array('type' => 'string', 'omit_norms' => TRUE),
-          'exact' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        ),
-      ),
-      'glide' => array(
-        'type' => 'multi_field',
-        'fields' => array(
-          'glide' => array('type' => 'string', 'omit_norms' => TRUE),
-          'exact' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        ),
-      ),
-      'description' => array('type' => 'string', 'omit_norms' => TRUE),
-      'description-html' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      'primary_country' => $this->getMultiFieldMapping('primary_country', array('name', 'shortname', 'iso3')),
-      'country' => $this->getMultiFieldMapping('country', array('name', 'shortname', 'iso3'), array(
-        'primary' => array('type' => 'boolean', 'index' => 'no'),
-      )),
-      'primary_type' => $this->getMultiFieldMapping('primary_type'),
-      'type' => $this->getMultiFieldMapping('type', array('name'), array(
-        'primary' => array('type' => 'boolean', 'index' => 'no'),
-      )),
-    );
+    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping->addInteger('id')
+            ->addString('url', FALSE)
+            ->addString('status', FALSE)
+            ->addDates('date', array('created'))
+            ->addBoolean('featured')
+            // Names.
+            ->addString('name', TRUE, TRUE)
+            ->addString('glide', TRUE, TRUE)
+            // Description.
+            ->addString('description')
+            ->addString('description-html', NULL)
+            // Primary country.
+            ->addTaxonomy('primary_country', array('shortname', 'iso3'))
+            ->addFloat('primary_country.latitude')
+            ->addFloat('primary_country.longitude')
+            // Country.
+            ->addTaxonomy('country', array('shortname', 'iso3'))
+            ->addFloat('country.latitude')
+            ->addFloat('country.longitude')
+            ->addBoolean('country.primary')
+            // Primary disaster type.
+            ->addTaxonomy('primary_type')
+            // Disaster types.
+            ->addTaxonomy('type')
+            ->addBoolean('type.primary')
+            ;
+
+    return $mapping->export();
   }
 
   public function getItems($limit, $offset) {

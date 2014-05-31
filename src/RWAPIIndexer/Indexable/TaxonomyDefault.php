@@ -13,22 +13,24 @@ class TaxonomyDefault extends AbstractIndexable {
     parent::__construct($options);
   }
 
+  /**
+   * Return the mapping for the current indexable.
+   *
+   * @return array
+   *   Mapping.
+   */
   public function getMapping() {
-    return array(
-      '_all' => array('enabled' => FALSE),
-      'id' => array('type' => 'integer'),
-      'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      'status' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-      'name' => array(
-        'type' => 'multi_field',
-        'fields' => array(
-          'name' => array('type' => 'string', 'omit_norms' => TRUE),
-          'exact' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        ),
-      ),
-      'description' => array('type' => 'string', 'omit_norms' => TRUE),
-      'description-html' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-    );
+    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping->addInteger('id')
+            ->addString('url', FALSE)
+            ->addString('status', FALSE)
+            // Names.
+            ->addString('name', TRUE, TRUE)
+            // Description.
+            ->addString('description')
+            ->addString('description-html', NULL);
+
+    return $mapping->export();
   }
 
   public function getItems($limit, $offset) {

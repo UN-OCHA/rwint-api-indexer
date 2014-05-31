@@ -11,6 +11,7 @@ Usage: php PATH/TO/Indexer.php <entity-bundle> [options]
      -u, --mysql-user <arg> Mysql user, defaults to root
      -p, --mysql-pass <arg> Mysql pass, defaults to none
      -d, --database <arg> Database name, deaults to reliefwebint_0
+     -b, --base-index-name <arg> Base index name, deaults to reliefwebint_0
      -w, --website <arg> Website URL, deaults to http://reliefweb.int
      -l, --limit <arg> Maximum number of entities to index, defaults to 0 (all)
      -o, --offset <arg> ID of the entity from which to start the indexing, defaults to the most recent one

@@ -5,7 +5,7 @@ namespace RWAPIIndexer\Indexable;
 /**
  * Base indexable class.
  */
-abstract class AbstractIndexable {
+abstract class AbstractIndexable extends \RWAPIIndexer\Taxonomies {
   // Elasticsearch index type and name.
   protected $entity_type = '';
   protected $entity_bundle = '';
@@ -63,14 +63,8 @@ abstract class AbstractIndexable {
     'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
   );
 
-  // Loaded taxonomy terms.
-  public $taxonomies = array();
-
   // Base public scheme for URLs.
   private $public_scheme_url = '';
-
-  // Whether or not Markdown is available.
-  private $markdown = FALSE;
 
   /**
    * Construct the indexable based on the given website.
@@ -78,362 +72,7 @@ abstract class AbstractIndexable {
   public function __construct($options) {
     $this->options = $options;
     $this->public_scheme_url = $options['website'] . '/sites/reliefweb.int/files/';
-    $this->markdown = function_exists('Markdown');
-  }
-
-  /**
-   * Run a query.
-   */
-  public function processQuery($query, $entity_type, $base_table, $base_field, array $options = array()) {
-    // Add the extra fields.
-    if (isset($options['query']['fields'])) {
-      foreach ($options['query']['fields'] as $alias => $field) {
-        $query->addField($base_table, $field, $alias);
-      }
-    }
-
-    // Add the joined fields.
-    if (isset($options['query']['field_joins'])) {
-      foreach ($options['query']['field_joins'] as $field_name => $values) {
-        $field_table = 'field_data_' . $field_name;
-
-        $condition = "{$field_table}.entity_id = {$base_table}.{$base_field} AND {$field_table}.entity_type = '{$entity_type}'";
-        $query->leftJoin($field_table, $field_table, $condition);
-
-        // Add the expressions.
-        foreach ($values as $alias => $value) {
-          switch ($value) {
-            case 'taxonomy_reference':
-              $expression = "GROUP_CONCAT(DISTINCT {$field_table}.{$field_name}_tid SEPARATOR '%%%')";
-              $query->addExpression($expression, $alias);
-              break;
-
-            case 'multi_value':
-              $expression = "GROUP_CONCAT(DISTINCT {$field_table}.{$field_name}_value SEPARATOR '%%%')";
-              $query->addExpression($expression, $alias);
-              break;
-
-            case 'image_reference':
-              $file_managed_table = 'file_managed_' . $field_name;
-              $condition = "{$file_managed_table}.fid = {$field_table}.{$field_name}_fid";
-              $query->leftJoin('file_managed', $file_managed_table, $condition);
-
-              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_fid, CONCAT_WS('###',
-                  {$field_table}.{$field_name}_fid,
-                  IFNULL({$field_table}.{$field_name}_alt, ''),
-                  IFNULL({$field_table}.{$field_name}_title, ''),
-                  IFNULL({$field_table}.{$field_name}_width, ''),
-                  IFNULL({$field_table}.{$field_name}_height, ''),
-                  IFNULL({$file_managed_table}.uri, ''),
-                  IFNULL({$file_managed_table}.filename, ''),
-                  IFNULL({$file_managed_table}.filesize, '')
-                ), NULL) SEPARATOR '%%%')";
-              $query->addExpression($expression, $alias);
-              break;
-
-            case 'file_reference':
-              $file_managed_table = 'file_managed_' . $field_name;
-              $condition = "{$file_managed_table}.fid = {$field_table}.{$field_name}_fid";
-              $query->leftJoin('file_managed', $file_managed_table, $condition);
-
-              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_fid, CONCAT_WS('###',
-                  {$field_table}.{$field_name}_fid,
-                  IFNULL({$field_table}.{$field_name}_description, ''),
-                  IFNULL({$file_managed_table}.uri, ''),
-                  IFNULL({$file_managed_table}.filename, ''),
-                  IFNULL({$file_managed_table}.filesize, '')
-                ), NULL) SEPARATOR '%%%')";
-              $query->addExpression($expression, $alias);
-              break;
-
-            default:
-              $query->addField($field_table, $field_name . '_' . $value, $alias);
-          }
-        }
-      }
-    }
-
-    // Get the items.
-    $items = $query->execute()->fetchAllAssoc('id', \PDO::FETCH_ASSOC);
-
-    // Process the returned items;
-    foreach ($items as $id => &$item) {
-      $item['id'] = (int) $item['id'];
-
-      foreach ($item as $key => $value) {
-        // Remove NULL properties.
-        if (!isset($value) || $value === '') {
-          unset($item[$key]);
-        }
-        // Convert values.
-        elseif (isset($options['process']['conversion'][$key])) {
-          switch ($options['process']['conversion'][$key]) {
-            case 'bool':
-              $item[$key] = (bool) $item[$key];
-              break;
-
-            case 'int':
-              $item[$key] = (int) $item[$key];
-              break;
-
-            case 'float':
-              $item[$key] = (float) $item[$key];
-              break;
-
-            case 'time':
-              $item[$key] = $item[$key] * 1000;
-              // Convert time to ISO 8601 format.
-              //$item[$key] = date('c', (int) $item[$key]);
-              break;
-
-            case 'html':
-              // Absolute links.
-              $item[$key] = preg_replace('/(\]\(\/?)(?!http:\/\/)/', '](http://reliefweb.int/', $item[$key]);
-              if ($this->markdown) {
-                $item[$key . '-html'] = Markdown($item[$key]);
-              }
-              break;
-
-            case 'multi_int':
-              $values = array();
-              foreach (explode('%%%', $item[$key]) as $data) {
-                $values[] = (int) $data;
-              }
-              $item[$key] = $values;
-              break;
-
-          }
-        }
-        // Get reference taxonomy terms.
-        elseif (isset($options['process']['reference'][$key])) {
-          $vocabulary = key($options['process']['reference'][$key]);
-          if (isset($this->taxonomies[$vocabulary])) {
-            $fields = $options['process']['reference'][$key][$vocabulary];
-
-            $array = array();
-            foreach (explode('%%%', $value) as $id) {
-              $term = $this->getTaxonomyTerm($vocabulary, $id, $fields);
-              if (isset($term)) {
-                $array[] = $term;
-              }
-            }
-
-            $count = count($array);
-            if ($count > 0) {
-               $item[$key] = $count > 1 ? $array : $array[0];
-            }
-            else {
-              unset($item[$key]);
-            }
-          }
-        }
-      }
-    }
-
-    return $items;
-  }
-
-  public function getTaxonomyTerm($vocabulary, $id, $fields = array('id', 'name')) {
-    if (isset($this->taxonomies[$vocabulary][$id])) {
-      if (!empty($fields)) {
-        return array_intersect_key($this->taxonomies[$vocabulary][$id], array_flip($fields));
-      }
-      return $this->taxonomies[$vocabulary][$id];
-    }
-    return NULL;
-  }
-
-  public function loadTaxonomyTerms($vocabulary, array $options = array()) {
-    $entity_type = 'taxonomy_term';
-    $base_table = 'taxonomy_term_data';
-    $base_field = 'tid';
-
-    // Prepare the base query.
-    $query = db_select($base_table, $base_table);
-    $query->innerJoin('taxonomy_vocabulary', 'taxonomy_vocabulary', "taxonomy_vocabulary.vid = {$base_table}.vid");
-    $query->addField($base_table, $base_field, 'id');
-    $query->addField($base_table, 'name', 'name');
-    $query->condition('taxonomy_vocabulary.machine_name', $vocabulary, '=');
-    $query->groupBy($base_table . '.' . $base_field);
-    $query->orderBy($base_table . '.' . $base_field, 'ASC');
-
-    $this->taxonomies[$vocabulary] = $this->processQuery($query, $entity_type, $base_table, $base_field, $options);
-  }
-
-  public function loadTaxonomies() {
-    $taxnomies = array(
-      'city' => array(),
-      'job_type' => array(),
-      'job_experience' => array(),
-      'career_categories' => array(),
-      'training_type' => array(),
-      'training_format' => array(),
-      'organization_type' => array(),
-      'language' => array(),
-      'feature' => array(),
-      'theme' => array(),
-      'vulnerable_groups' => array(),
-      'content_format' => array(),
-      'ocha_product' => array(),
-      'disaster_type' => array(
-        'query' => array(
-          'field_joins' => array(
-            'field_abbreviation' => array(
-              'abbreviation' => 'value',
-            ),
-          ),
-        ),
-      ),
-      'country' => array(
-        'query' => array(
-          'fields' => array(
-            'description' => 'description',
-          ),
-          'field_joins' => array(
-            'field_status' => array(
-              'status' => 'value',
-            ),
-            'field_shortname' => array(
-              'shortname' => 'value',
-            ),
-            'field_iso3' => array(
-              'iso3' => 'value',
-            ),
-            'field_current_disaster' => array(
-              'current' => 'value',
-            ),
-            'field_featured' => array(
-              'featured' => 'value',
-            ),
-            'field_location' => array(
-              'latitude' => 'lat',
-              'longitude' => 'lon',
-            ),
-          ),
-        ),
-        'process' => array(
-          'conversion' => array(
-            'description' => 'html',
-            'current' => 'bool',
-            'featured' => 'bool',
-            'latitude' => 'float',
-            'longitude' => 'float',
-          ),
-        ),
-      ),
-      'disaster' => array(
-        'query' => array(
-          'fields' => array(
-            'description' => 'description',
-          ),
-          'field_joins' => array(
-            'field_status' => array(
-              'status' => 'value',
-            ),
-            'field_disaster_date' => array(
-              'date' => 'value',
-            ),
-            'field_glide' => array(
-              'glide' => 'value',
-            ),
-            'field_current_disaster' => array(
-              'current' => 'value',
-            ),
-            'field_featured' => array(
-              'featured' => 'value',
-            ),
-            /*'field_published' => array(
-              'published' => 'value',
-            ),*/
-            'field_primary_country' => array(
-              'primary_country' => 'tid',
-            ),
-            'field_primary_disaster_type' => array(
-              'primary_disaster_type' => 'tid',
-            ),
-            'field_country' => array(
-              'country' => 'taxonomy_reference',
-            ),
-            'field_disaster_type' => array(
-              'type' => 'taxonomy_reference',
-            ),
-          ),
-        ),
-        'process' => array(
-          'conversion' => array(
-            'description' => 'html',
-            'date' => 'time',
-            'current' => 'bool',
-            'featured' => 'bool',
-            'published' => 'bool',
-            'latitude' => 'float',
-            'longitude' => 'float',
-          ),
-          'reference' => array(
-            'primary_country' => array(
-              'country' => array('id', 'name', 'shortname', 'iso3'),//, 'latitude', 'longitude'),
-            ),
-            'primary_disaster_type' => array(
-              'disaster_type' => array('id', 'name'),
-            ),
-            'country' => array(
-              'country' => array('id', 'name', 'shortname', 'iso3'),
-            ),
-            'type' => array(
-              'disaster_type' => array('id', 'name'),
-            ),
-          ),
-        ),
-      ),
-      'source' => array(
-        'query' => array(
-          'fields' => array(
-            'description' => 'description',
-          ),
-          'field_joins' => array(
-            'field_status' => array(
-              'status' => 'value',
-            ),
-            'field_shortname' => array(
-              'shortname' => 'value',
-            ),
-            'field_longname' => array(
-              'longname' => 'value',
-            ),
-            'field_organization_type' => array(
-              'type' => 'tid',
-            ),
-            'field_homepage' => array(
-              'homepage' => 'url',
-            ),
-            'field_country' => array(
-              'country' => 'taxonomy_reference',
-            ),
-            'field_allowed_content_types' => array(
-              'content_type' => 'multi_value',
-            ),
-          ),
-        ),
-        'process' => array(
-          'conversion' => array(
-            'description' => 'html',
-            'content_type' => 'multi_int',
-          ),
-          'reference' => array(
-            'type' => array(
-              'organization_type' => array('id', 'name'),
-            ),
-            'country' => array(
-              'country' => array('id', 'name', 'shortname', 'iso3'),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    foreach ($taxnomies as $vocabulary => $options) {
-      $this->loadTaxonomyTerms($vocabulary, $options);
-    }
+    parent::__construct();
   }
 
   /**
@@ -581,6 +220,13 @@ abstract class AbstractIndexable {
 
   /**
    * Get entities to index.
+   *
+   * @param integer $limit
+   *   Maximum number of items.
+   * @param  integer $offset
+   *   ID of the index from which to start getting items to index.
+   * @return array
+   *   Items to index.
    */
   public function getItems($limit, $offset) {
     return array();
@@ -588,6 +234,11 @@ abstract class AbstractIndexable {
 
   /**
    * Bulk index the given items.
+   *
+   * @param array $items
+   *   Items to index.
+   * @return integer
+   *   ID of the last indexed item.
    */
   public function indexItems(&$items) {
     $data = '';
@@ -618,6 +269,16 @@ abstract class AbstractIndexable {
     $this->request('POST', $path, $data);
 
     return $offset;
+  }
+
+  /**
+   * Index an individual item.
+   *
+   * @param  array $item
+   *   Item to index.
+   */
+  public function indexItem($item) {
+
   }
 
   /**
@@ -760,7 +421,7 @@ abstract class AbstractIndexable {
             ),
             'filter_stop' => array(
               'type' => 'stop',
-              'stopwords' => array("_english_", "_french_", "_spanish_"),
+              'stopwords' => array('_english_', '_french_', '_spanish_'),
             ),
           ),
         ),
@@ -817,107 +478,12 @@ abstract class AbstractIndexable {
   }
 
   /**
-   * Get the mapping of the index type if it doesn't already exist.
+   * Return the mapping for the current indexable.
+   *
+   * @return array
+   *   Mapping.
    */
   public function getMapping() {
     return array();
-  }
-
-  /**
-   * Get the mapping for a 'multi_field'.
-   */
-  public function getMultiFieldMapping($field, $properties = array('name'), $extra_properties = array(), $disabled = FALSE) {
-    $mapping = array(
-      'properties' => array(
-        'id' => array('type' => 'integer', 'index_name' => $field . '.id'),
-      ),
-    );
-    foreach ($properties as $property) {
-      $mapping['properties'][$property] = array(
-        'type' => 'multi_field',
-        'path' => 'just_name',
-        'fields' => array(
-          $property => array(
-            'type' => 'string',
-            'omit_norms' => TRUE,
-            'index_name' => $field . '.' . $property,
-          ),
-          'exact' => array(
-            'type' => 'string',
-            'index' => 'not_analyzed',
-            'omit_norms' => TRUE,
-            'index_name' => $field . '.' . $property . '.exact',
-          ),
-          'common' => array(
-            'type' => 'string',
-            'omit_norms' => TRUE,
-            'index_name' => $field . '.common',
-          ),
-          'common_exact' => array(
-            'type' => 'string',
-            'index' => 'not_analyzed',
-            'omit_norms' => TRUE,
-            'index_name' => $field . '.common.exact',
-          ),
-        ),
-      );
-    }
-    foreach ($extra_properties as $property => $data) {
-      $mapping['properties'][$property] = $data;
-    }
-    if ($disabled === TRUE) {
-      $mapping['enabled'] = FALSE;
-    }
-    return $mapping;
-  }
-
-  /**
-   * Get the mapping for an image field.
-   */
-  public function getImageFieldMapping($disabled =  FALSE) {
-    $mapping = array(
-      'properties' => array(
-        'id' => array('type' => 'integer'),
-        'mimetype' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        'filename' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        'caption' => array('type' => 'string', 'omit_norms' => TRUE),
-        'copyright' => array('type' => 'string', 'omit_norms' => TRUE),
-        'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        'url-large' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-        'url-small' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-        'url-thumb' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-      ),
-    );
-    if ($disabled === TRUE) {
-      $mapping['enabled'] = FALSE;
-    }
-    return $mapping;
-  }
-
-  /**
-   * Get the mapping for a field field.
-   */
-  public function getFileFieldMapping($disabled = FALSE) {
-    $mapping = array(
-      'properties' => array(
-        'id' => array('type' => 'integer'),
-        'mimetype' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        'filename' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        'description' => array('type' => 'string', 'omit_norms' => TRUE),
-        'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-        'preview' => array(
-          'properties' => array(
-            'url' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'not_analyzed'),
-            'url-large' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-            'url-small' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-            'url-thumb' => array('type' => 'string', 'omit_norms' => TRUE, 'index' => 'no'),
-          ),
-        ),
-      ),
-    );
-    if ($disabled === TRUE) {
-      $mapping['enabled'] = FALSE;
-    }
-    return $mapping;
   }
 }

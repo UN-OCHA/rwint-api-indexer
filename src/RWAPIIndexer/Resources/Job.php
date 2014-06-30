@@ -33,30 +33,16 @@ class Job extends \RWAPIIndexer\Resource {
       'field_file' => array(
         'file' => 'file_reference',
       ),
-      'field_country' => array(
-        'country' => 'taxonomy_reference',
-      ),
-      'field_city' => array(
-        'city' => 'taxonomy_reference',
-      ),
-      'field_source' => array(
-        'source' => 'taxonomy_reference',
-      ),
-      'field_language' => array(
-        'language' => 'taxonomy_reference',
-      ),
-      'field_theme' => array(
-        'theme' => 'taxonomy_reference',
-      ),
-      'field_job_type' => array(
-        'type' => 'taxonomy_reference',
-      ),
-      'field_job_experience' => array(
-        'experience' => 'taxonomy_reference',
-      ),
-      'field_career_categories' => array(
-        'career_categories' => 'taxonomy_reference',
-      ),
+    ),
+    'references' => array(
+      'field_country' => 'country',
+      'field_city' => 'city',
+      'field_source' => 'source',
+      'field_language' => 'language',
+      'field_theme' => 'theme',
+      'field_job_type' => 'type',
+      'field_job_experience' => 'experience',
+      'field_career_categories' => 'career_categories',
     ),
   );
 

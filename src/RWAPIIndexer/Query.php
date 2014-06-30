@@ -222,11 +222,6 @@ class Query {
         // Add the expressions.
         foreach ($values as $alias => $value) {
           switch ($value) {
-            case 'taxonomy_reference':
-              $expression = "GROUP_CONCAT(DISTINCT {$field_table}.{$field_name}_tid SEPARATOR '%%%')";
-              $query->addExpression($expression, $alias);
-              break;
-
             case 'multi_value':
               $expression = "GROUP_CONCAT(DISTINCT {$field_table}.{$field_name}_value SEPARATOR '%%%')";
               $query->addExpression($expression, $alias);
@@ -272,14 +267,39 @@ class Query {
       }
     }
 
-    // Get the items.
-    try {
-      return $query->execute()->fetchAllAssoc('id', \PDO::FETCH_ASSOC);
-    }
-    catch (\Exception $exception) {
-      echo $exception->getMessage() . "\n";
-      echo $query->build() . "\n";
-      return array();
+    // Fetch the items.
+    $items = $query->execute()->fetchAllAssoc('id', \PDO::FETCH_ASSOC);
+    // Load the references and attach them to the items.
+    $this->loadReferences($items);
+
+    return $items;
+  }
+
+  /**
+   * Load the references for the given entity items.
+   *
+   * @param array $items
+   *   Items for which to load the references.
+   */
+  public function loadReferences(&$items) {
+    if (!empty($this->options['references'])) {
+      $ids = array_keys($items);
+      $queries = array();
+      foreach ($this->options['references'] AS $field_name => $alias) {
+        $field_table = 'field_data_' . $field_name;
+        $query = new \RWAPIIndexer\Database\Query($field_table, $field_table, $this->connection);
+        $query->addField($field_table, 'entity_id', 'id');
+        $query->addField($field_table, "{$field_name}_tid", 'value');
+        $query->addExpression($this->connection->quote($alias), 'alias');
+        $query->condition("{$field_table}.entity_type", $this->entity_type, '=');
+        $query->condition("{$field_table}.entity_id", $ids, 'IN');
+        $queries[] = $query->build();
+      }
+
+      $statement = $this->connection->query(implode(' UNION ', $queries));
+      while ($row = $statement->fetchObject()) {
+        $items[$row->id][$row->alias][] = $row->value;
+      }
     }
   }
 }

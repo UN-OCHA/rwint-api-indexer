@@ -28,18 +28,12 @@ class Disaster extends \RWAPIIndexer\Resource {
       'field_featured' => array(
         'featured' => 'value',
       ),
-      'field_primary_country' => array(
-        'primary_country' => 'tid',
-      ),
-      'field_primary_disaster_type' => array(
-        'primary_type' => 'tid',
-      ),
-      'field_country' => array(
-        'country' => 'taxonomy_reference',
-      ),
-      'field_disaster_type' => array(
-        'type' => 'taxonomy_reference',
-      ),
+    ),
+    'references' => array(
+      'field_primary_country' => 'primary_country',
+      'field_primary_disaster_type' => 'primary_type',
+      'field_country' => 'country',
+      'field_disaster_type' => 'type',
     ),
   );
 

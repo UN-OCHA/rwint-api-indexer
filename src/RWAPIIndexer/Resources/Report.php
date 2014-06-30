@@ -46,39 +46,19 @@ class Report extends \RWAPIIndexer\Resource {
       'field_origin_notes' => array(
         'origin' => 'value',
       ),
-      'field_primary_country' => array(
-        'primary_country' => 'tid',
-      ),
-      'field_country' => array(
-        'country' => 'taxonomy_reference',
-      ),
-      'field_source' => array(
-        'source' => 'taxonomy_reference',
-      ),
-      'field_language' => array(
-        'language' => 'taxonomy_reference',
-      ),
-      'field_theme' => array(
-        'theme' => 'taxonomy_reference',
-      ),
-      'field_content_format' => array(
-        'format' => 'taxonomy_reference',
-      ),
-      'field_ocha_product' => array(
-        'ocha_product' => 'taxonomy_reference',
-      ),
-      'field_disaster' => array(
-        'disaster' => 'taxonomy_reference',
-      ),
-      'field_disaster_type' => array(
-        'disaster_type' => 'taxonomy_reference',
-      ),
-      'field_vulnerable_groups' => array(
-        'vulnerable_groups' => 'taxonomy_reference',
-      ),
-      'field_feature' => array(
-        'feature' => 'taxonomy_reference',
-      ),
+    ),
+    'references' => array(
+      'field_primary_country' => 'primary_country',
+      'field_country' => 'country',
+      'field_source' => 'source',
+      'field_language' => 'language',
+      'field_theme' => 'theme',
+      'field_content_format' => 'format',
+      'field_ocha_product' => 'ocha_product',
+      'field_disaster' => 'disaster',
+      'field_disaster_type' => 'disaster_type',
+      'field_vulnerable_groups' => 'vulnerable_groups',
+      'field_feature' => 'feature',
     ),
   );
 

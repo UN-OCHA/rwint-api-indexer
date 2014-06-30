@@ -178,7 +178,7 @@ class Processor {
       $fields = $definition[$bundle];
 
       $array = array();
-      foreach (explode('%%%', $item[$key]) as $id) {
+      foreach ($item[$key] as $id) {
         $term = $this->references->getItem($bundle, $id, $fields);
         if (isset($term)) {
           $array[] = $term;

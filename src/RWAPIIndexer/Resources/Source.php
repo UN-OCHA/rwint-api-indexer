@@ -25,18 +25,16 @@ class Source extends \RWAPIIndexer\Resource {
       'field_longname' => array(
         'longname' => 'value',
       ),
-      'field_organization_type' => array(
-        'type' => 'tid',
-      ),
       'field_homepage' => array(
         'homepage' => 'url',
-      ),
-      'field_country' => array(
-        'country' => 'taxonomy_reference',
       ),
       'field_allowed_content_types' => array(
         'content_type' => 'multi_value',
       ),
+    ),
+    'references' => array(
+      'field_organization_type' => 'type',
+      'field_country' => 'country',
     ),
   );
 

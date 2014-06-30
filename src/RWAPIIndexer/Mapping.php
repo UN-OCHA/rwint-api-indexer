@@ -6,11 +6,8 @@ namespace RWAPIIndexer;
  * Mapping generation class.
  */
 class Mapping {
-  private $mapping;
-
-  public function __construct() {
-    $this->mapping = array();
-  }
+  // Mapping.
+  private $mapping = array();
 
   /**
    * Add an integer field definition to the mapping.
@@ -46,6 +43,19 @@ class Mapping {
    */
   public function addBoolean($field) {
     $this->addFieldMapping($field, array('type' => 'boolean'));
+    return $this;
+  }
+
+  /**
+   * Add a geo point field definition to the mapping.
+   *
+   * @param string $field
+   *   Field Name.
+   * @return RWAPIIndexer\Mapping
+   *   This Mapping instance.
+   */
+  public function addGeoPoint($field) {
+    $this->addFieldMapping($field, array('type' => 'geo_point'));
     return $this;
   }
 

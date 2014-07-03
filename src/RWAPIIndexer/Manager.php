@@ -6,34 +6,6 @@ namespace RWAPIIndexer;
  * Resource manager class.
  */
 class Manager {
-  // List of Resources entity bundles and their corresponding class.
-  protected $bundles = array(
-    'report' => '\RWAPIIndexer\Resources\Report',
-    'job' => '\RWAPIIndexer\Resources\Job',
-    'training' => '\RWAPIIndexer\Resources\Training',
-    'country' => '\RWAPIIndexer\Resources\Country',
-    'disaster' => '\RWAPIIndexer\Resources\Disaster',
-    'source' => '\RWAPIIndexer\Resources\Source',
-
-    // References.
-    'career_categories' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'city' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'content_format' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'disaster_type' => '\RWAPIIndexer\Resources\DisasterType',
-    'feature' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'job_type' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'language' => '\RWAPIIndexer\Resources\Language',
-    'ocha_product' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'organization_type' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    //'region' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    //'tags' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'theme' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'training_format' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'training_type' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'vulnerable_groups' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'job_experience' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-  );
-
   // Indexing options handler.
   protected $options = NULL;
 
@@ -57,7 +29,7 @@ class Manager {
    */
   public function __construct($options = NULL) {
     // Indexing options.
-    $this->options = new \RWAPIIndexer\Options($this->bundles, $options);
+    $this->options = new \RWAPIIndexer\Options($options);
 
     // Create a new database connection.
     $this->createDatabaseConnection();
@@ -90,11 +62,25 @@ class Manager {
    * Index items or remove index type.
    */
   public function execute() {
-    if (!empty($this->options->get('remove'))) {
-      $this->remove();
+    $bundle = $this->options->get('bundle');
+
+    // Remove or index a particular entity.
+    if (!empty($this->options->get('id'))) {
+      if (!empty($this->options->get('remove'))) {
+        $this->removeItem($bundle, $this->options->get('id'));
+      }
+      else {
+        $this->indexItem($bundle, $this->options->get('id'));
+      }
     }
+    // Or remove the index or index entities.
     else {
-      $this->index();
+      if (!empty($this->options->get('remove'))) {
+        $this->remove($bundle);
+      }
+      else {
+        $this->index($bundle);
+      }
     }
   }
 
@@ -104,14 +90,47 @@ class Manager {
    * @param string $bundle
    *   Bundle for the entities to index.
    */
-  public function index($bundle = '') {
+  public function index($bundle) {
+    // Get the resource handler for the bundle.
     $handler = $this->getResourceHandler($bundle);
 
-    // Load references for the given resource.
+    // Load all references for the given resource.
     $this->loadReferences($handler->getReferences());
 
     // Index the resource items.
     $handler->index();
+  }
+
+  /**
+   * Index a particular entity item og the given bundle.
+   *
+   * @param string $bundle
+   *   Bundle of the entity item.
+   * @param integer $id
+   *   Id of the entity item.
+   */
+  public function indexItem($bundle, $id) {
+    // Get the resource handler for the bundle.
+    $handler = $this->getResourceHandler($bundle);
+
+    // Index the item.
+    $handler->indexItem($id);
+  }
+
+  /**
+   * Index a particular entity item og the given bundle.
+   *
+   * @param string $bundle
+   *   Bundle of the entity item.
+   * @param integer $id
+   *   Id of the entity item.
+   */
+  public function removeItem($bundle, $id) {
+    // Get the resource handler for the bundle.
+    $handler = $this->getResourceHandler($bundle);
+
+    // Index the item.
+    $handler->removeItem($id);
   }
 
   /**
@@ -120,7 +139,8 @@ class Manager {
    * @param string $bundle
    *   Bundle of the resource to remove.
    */
-  public function remove($bundle = '') {
+  public function remove($bundle) {
+    // Get the resource handler for the bundle.
     $handler = $this->getResourceHandler($bundle);
 
     // Remove the elasticsearch index type for this resource.
@@ -156,16 +176,8 @@ class Manager {
    * @return \RWAPIIndexer\Resource
    *   Resource handler for the given bundle.
    */
-  public function getResourceHandler($bundle = '') {
-    $bundle = !empty($bundle) ? $bundle : $this->options->get('bundle');
-
-    if (isset($this->bundles[$bundle])) {
-      return new $this->bundles[$bundle]($bundle, $this->elasticsearch, $this->connection, $this->processor, $this->options);
-    }
-    else {
-      $bundles = implode(', ', array_keys($this->bundles));
-      throw new \Exception("No resource handler for the bundle '$bundle'. Valid ones are: " . $bundles . "\n");
-    }
+  public function getResourceHandler($bundle) {
+    return \RWAPIIndexer\Bundles::getResourceHandler($bundle, $this->elasticsearch, $this->connection, $this->processor, $this->references, $this->options);
   }
 
   /**

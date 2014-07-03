@@ -68,7 +68,7 @@ class Training extends \RWAPIIndexer\Resource {
         'source' => array('id', 'name', 'shortname', 'longname', 'type', 'homepage'),
       ),
       'language' => array(
-        'source' => array('id', 'name', 'code'),
+        'language' => array('id', 'name', 'code'),
       ),
       'theme' => array(
         'theme' => array('id', 'name'),

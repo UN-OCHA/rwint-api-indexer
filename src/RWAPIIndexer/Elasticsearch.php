@@ -206,13 +206,34 @@ class Elasticsearch {
   }
 
   /**
-   * Index an individual item.
+   * Index an item.
    *
-   * @param  array $item
+   * @param string $index
+   *   Index name.
+   * @param string $type
+   *   Index type.
+   * @param array $item
    *   Item to index.
    */
-  public function indexItem($item) {
+  public function indexItem($index, $type, &$item) {
+    $path = $this->base . $index . "/" . $type . "/" . $item['id'];
+    $data = json_encode($item);
+    $this->request('POST', $path, $data);
+  }
 
+  /**
+   * Remove an item.
+   *
+   * @param string $index
+   *   Index name.
+   * @param string $type
+   *   Index type.
+   * @param array $id
+   *   Id of the item to remove.
+   */
+  public function removeItem($index, $type, $id) {
+    $path = $this->base . $index . "/" . $type . "/" . $id;
+    $this->request('DELETE', $path);
   }
 
   /**

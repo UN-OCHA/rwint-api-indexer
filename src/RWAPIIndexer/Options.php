@@ -6,9 +6,6 @@ namespace RWAPIIndexer;
  * Indexing options handler class.
  */
 class Options {
-  // Valid bundles.
-  protected $bundles = array();
-
   // Indexing options.
   protected $options = array(
     'bundle' => '',
@@ -23,8 +20,9 @@ class Options {
     'limit' => 0,
     'offset' => 0,
     'chunk-size' => 500,
-    'console' => FALSE,
+    'id' => 0,
     'remove' => FALSE,
+    'console' => FALSE,
   );
 
   /**
@@ -35,9 +33,7 @@ class Options {
    * @param array $options
    *   Indexing options.
    */
-  public function __construct($bundles = array(), $options = NULL) {
-    $this->bundles = $bundles;
-
+  public function __construct($options = NULL) {
     // Set flag indicating the indexing is run from the command line.
     $this->options['console'] = php_sapi_name() == 'cli';
 
@@ -133,6 +129,11 @@ class Options {
           $this->options['chunk-size'] = (int) array_shift($argv);
           break;
 
+        case '--id':
+        case '-i':
+          $this->options['id'] = (int) array_shift($argv);
+          break;
+
         case '--remove':
         case '-r':
           $this->options['remove'] = TRUE;
@@ -174,7 +175,7 @@ class Options {
    *   Entity bundle to validate.
    */
   public function validateBundle($bundle) {
-    return isset($this->bundles[$bundle]) ? $bundle : FALSE;
+    return \RWAPIIndexer\Bundles::has($bundle) ? $bundle : FALSE;
   }
 
   /**
@@ -254,6 +255,11 @@ class Options {
         'options'   => array('min_range' => 1, 'max_range' => 1000),
         'flags' => FILTER_NULL_ON_FAILURE,
       ),
+      'id' => array(
+        'filter'    => FILTER_VALIDATE_INT,
+        'options'   => array('min_range' => 0),
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ),
       'remove' => array(
         'filter' => FILTER_VALIDATE_BOOLEAN,
         'flags' => FILTER_NULL_ON_FAILURE,
@@ -286,7 +292,8 @@ class Options {
           "     -l, --limit <arg> Maximum number of entities to index, defaults to 0 (all) \n" .
           "     -o, --offset <arg> ID of the entity from which to start the indexing, defaults to the most recent one \n" .
           "     -c, --chunk-size <arg> Number of entities to index at one time, defaults to 500 \n" .
-          "     -r, --remove Indicates that the entity-bundle index should be removed \n" .
+          "     -i, --id Id of an entity item to index, defaults to 0 (none) \n" .
+          "     -r, --remove Removes an entity if 'id' is provided or the index for the given entity bundle \n" .
           "\n";
     exit();
   }

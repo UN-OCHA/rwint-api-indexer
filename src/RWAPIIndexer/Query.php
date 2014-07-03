@@ -143,6 +143,18 @@ class Query {
   }
 
   /**
+   * Filter the query with the given ids.
+   *
+   * @param array $ids
+   *   Entity Ids used to filter the query.
+   */
+  public function setIds($query, $ids) {
+    if (!empty($ids)) {
+      $query->condition($this->base_table . '.' . $this->base_field, $ids, 'IN');
+    }
+  }
+
+  /**
    * Get the maximum number of items to index.
    *
    * @return integer
@@ -150,7 +162,6 @@ class Query {
    */
   public function getLimit($limit = 0) {
     $query = $this->newQuery();
-
     $this->setBundle($query);
     $this->setCount($query);
 
@@ -188,7 +199,7 @@ class Query {
    * @return  array
    *   Items returned by the query.
    */
-  public function getItems($limit, $offset) {
+  public function getItems($limit = NULL, $offset = NULL, $ids = NULL) {
     $entity_type = $this->entity_type;
     $bundle = $this->bundle;
     $base_table = $this->base_table;
@@ -199,6 +210,7 @@ class Query {
 
     $this->addIdField($query);
     $this->setBundle($query);
+    $this->setIds($query, $ids);
     $this->setOffset($query, $offset);
     $this->setGroupBy($query);
     $this->setOrderBy($query);

@@ -66,4 +66,37 @@ class References {
     }
     return NULL;
   }
+
+  /**
+   * Add the given reference items to the corresponding bundle.
+   *
+   * @param string $bundle
+   *   Bundle of the reference items.
+   * @param array $items
+   *   Reference items to add.
+   */
+  public function setItems($bundle, $items) {
+    foreach ($items as $id => $item) {
+      if (!isset($this->references[$bundle][$id])) {
+        $this->references[$bundle][$id] = $item;
+      }
+    }
+  }
+
+  /**
+   * Get the Ids from the given list that haven't been loaded yet.
+   *
+   * @param string $bundle
+   *   Bundle to which belong the references.
+   * @param array $ids
+   *   List of reference ids to check.
+   * @return array
+   *   Reference Ids to load.
+   */
+  public function getNotLoaded($bundle, $ids) {
+    if (!empty($this->references[$bundle])) {
+      return array_diff($ids, array_keys($this->references[$bundle]));
+    }
+    return $ids;
+  }
 }

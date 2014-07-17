@@ -13,11 +13,13 @@ class Mapping {
    * Add an integer field definition to the mapping.
    * @param string $field
    *   Field Name.
+   * @param string $alias
+   *   Field index alias.
    * @return RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addInteger($field) {
-    $this->addFieldMapping($field, array('type' => 'integer'));
+  public function addInteger($field, $alias = '') {
+    $this->addFieldMapping($field, array('type' => 'integer'), $alias);
     return $this;
   }
 
@@ -25,11 +27,13 @@ class Mapping {
    * Add a float field definition to the mapping.
    * @param string $field
    *   Field Name.
+   * @param string $alias
+   *   Field index alias.
    * @return RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addFloat($field) {
-    $this->addFieldMapping($field, array('type' => 'float'));
+  public function addFloat($field, $alias = '') {
+    $this->addFieldMapping($field, array('type' => 'float'), $alias);
     return $this;
   }
 
@@ -38,11 +42,13 @@ class Mapping {
    *
    * @param string $field
    *   Field Name.
+   * @param string $alias
+   *   Field index alias.
    * @return RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addBoolean($field) {
-    $this->addFieldMapping($field, array('type' => 'boolean'));
+  public function addBoolean($field, $alias = '') {
+    $this->addFieldMapping($field, array('type' => 'boolean'), $alias);
     return $this;
   }
 
@@ -51,11 +57,13 @@ class Mapping {
    *
    * @param string $field
    *   Field Name.
+   * @param string $alias
+   *   Field index alias.
    * @return RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addGeoPoint($field) {
-    $this->addFieldMapping($field, array('type' => 'geo_point'));
+  public function addGeoPoint($field, $alias = '') {
+    $this->addFieldMapping($field, array('type' => 'geo_point'), $alias);
     return $this;
   }
 
@@ -68,10 +76,12 @@ class Mapping {
    *   Indicates whether indexing or not and if analyzed.
    * @param boolean $exact
    *   Indicates if the string should have an exact not analyzed sufield.
+   * @param string $alias
+   *   Field index alias.
    * @return RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addString($field, $index = TRUE, $exact = FALSE) {
+  public function addString($field, $index = TRUE, $exact = FALSE, $alias = '') {
     $mapping = array(
       'type' => 'string',
     );
@@ -92,7 +102,7 @@ class Mapping {
         ),
       );
     }
-    $this->addFieldMapping($field, $mapping);
+    $this->addFieldMapping($field, $mapping, $alias);
     return $this;
   }
 
@@ -103,10 +113,12 @@ class Mapping {
    *   Field Name.
    * @param array $subfields
    *   Date subfields.
+   * @param string $alias
+   *   Field index alias.
    * @return RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addDates($field, $subfields = array()) {
+  public function addDates($field, $subfields = array(), $alias = '') {
     $properties = array();
     // Add subfields.
     foreach ($subfields as $key => $subfield) {
@@ -115,7 +127,7 @@ class Mapping {
     // Default when using base field.
     $properties[$subfields[0]]['copy_to'] = $this->getCommonField($field, 'date');
 
-    $this->addFieldMapping($field, array('properties' => $properties));
+    $this->addFieldMapping($field, array('properties' => $properties), $alias);
     return $this;
   }
 
@@ -126,10 +138,12 @@ class Mapping {
    *   Field Name.
    * @param array $subfields
    *   Taxonomy name subfields.
+   * @param string $alias
+   *   Field index alias.
    * @return RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addTaxonomy($field, $subfields = array()) {
+  public function addTaxonomy($field, $subfields = array(), $alias = '') {
     $properties = array(
       'id' => array('type' => 'integer'),
     );
@@ -140,7 +154,7 @@ class Mapping {
       // Copy the field to the common field (default of the base field).
       $properties[$subfield]['copy_to'] = $this->getCommonField($field);
     }
-    $this->addFieldMapping($field, array('properties' => $properties));
+    $this->addFieldMapping($field, array('properties' => $properties), $alias);
     return $this;
   }
 
@@ -149,10 +163,12 @@ class Mapping {
    *
    * @param string $field
    *   Field Name.
+   * @param string $alias
+   *   Field index alias.
    * @return RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addFile($field) {
+  public function addFile($field, $alias = '') {
     $mapping = array(
       'properties' => array(
         'id' => array('type' => 'integer'),
@@ -166,7 +182,7 @@ class Mapping {
         'url-thumb' => array('type' => 'string', 'index' => 'no'),
       ),
     );
-    $this->addFieldMapping($field, $mapping);
+    $this->addFieldMapping($field, $mapping, $alias);
     return $this;
   }
 
@@ -175,10 +191,12 @@ class Mapping {
    *
    * @param string $field
    *   Field Name.
+   * @param string $alias
+   *   Field index alias.
    * @return RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addImage($field) {
+  public function addImage($field, $alias = '') {
     $mapping = array(
       'properties' => array(
         'id' => array('type' => 'integer'),
@@ -196,7 +214,7 @@ class Mapping {
         ),
       ),
     );
-    $this->addFieldMapping($field, $mapping);
+    $this->addFieldMapping($field, $mapping, $alias);
     return $this;
   }
 
@@ -230,30 +248,45 @@ class Mapping {
   }
 
   /**
-   * Get common multifield name
-   * and create mapping for common field if it doesn't exist.
+   * Get common fields, creating their mappings if they don't exist.
    *
    * @param  string $field
    *   Base field.
    * @param  string $type
    *   Type of the common field.
-   * @return string
-   *   Common field name.
+   * @param  boolean $exact
+   *   Indicates if an exact (not analyzed) field should also be created.
+   * @return array
+   *   Common fields.
    */
-  private function getCommonField($field, $type = 'string') {
+  private function getCommonField($field, $type = 'string', $exact = TRUE) {
+    // Common field name.
     $name = 'common_' . str_replace('.', '_', $field);
+
+    // Common fields.
+    $fields = array($name);
+
     // Create the common field mapping if doesn't exist.
     if (!isset($this->mapping[$name])) {
       if ($type === 'string') {
-        $mapping = $this->getMultiFieldMapping();
+        $this->addString($name, TRUE, FALSE, $field);
+
+        // Exact field.
+        if ($exact) {
+          $this->addString($name . '_exact', FALSE, FALSE, $field . '.exact');
+        }
       }
       else {
-        $mapping = array('type' => $type);
+        $this->addFieldMapping($name, array('type' => $type), $field);
       }
-      $mapping['index_name'] = $field;
-      $this->addFieldMapping($name, $mapping, $field);
     }
-    return $name;
+
+    // Add the exact field to the list of common fields to copy to.
+    if ($type === 'string' && $exact) {
+      $fields[] = $name . '_exact';
+    }
+
+    return $fields;
   }
 
   /**

@@ -257,7 +257,7 @@ class Elasticsearch {
     // Send data if defined.
     if (isset($data)) {
       if (!is_string($data)) {
-        $data = json_encode($data, JSON_FORCE_OBJECT) . "\n";
+        $data = json_encode($data) . "\n";
       }
       curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
     }

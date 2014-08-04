@@ -71,6 +71,7 @@ class Report extends \RWAPIIndexer\Resource {
       'date_original' => array('time'),
       'headline' => array('bool'),
       'country' => array('primary'),
+      'primary_country' => array('single'),
     ),
     'references' => array(
       'primary_country' => array(
@@ -200,7 +201,7 @@ class Report extends \RWAPIIndexer\Resource {
           $headline['summary'] = $summary;
         }
         // Handle headline image.
-        if ($this->processor->processImage($item['headline_image']) === TRUE) {
+        if ($this->processor->processImage($item['headline_image'], TRUE) === TRUE) {
           $headline['image'] = $item['headline_image'];
         }
         $item['headline'] = $headline;
@@ -217,7 +218,7 @@ class Report extends \RWAPIIndexer\Resource {
     unset($item['headline_image']);
 
     // Handle image.
-    if ($this->processor->processImage($item['image']) !== TRUE) {
+    if ($this->processor->processImage($item['image'], TRUE) !== TRUE) {
       unset($item['image']);
     }
 

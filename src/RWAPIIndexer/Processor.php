@@ -134,7 +134,7 @@ class Processor {
           $item[$key] = $values;
           break;
 
-        // Check if a field as aprimary counter part field,
+        // Check if a field has a primary counter part field,
         // and add a 'primary' flag to the field sub item that
         // matches the value of the primary field.
         case 'primary':
@@ -154,6 +154,13 @@ class Processor {
                 }
               }
             }
+          }
+          break;
+
+        // Convert to single value field.
+        case 'single':
+          if (isset($item[$key][0])) {
+            $item[$key] = $item[$key][0];
           }
           break;
       }
@@ -185,9 +192,8 @@ class Processor {
         }
       }
 
-      $count = count($array);
-      if ($count > 0) {
-         $item[$key] = $count > 1 ? $array : $array[0];
+      if (!empty($array)) {
+         $item[$key] = $array;
       }
       else {
         unset($item[$key]);
@@ -228,12 +234,16 @@ class Processor {
   }
 
   /**
-   * Process a file field.
+   * Process an image field.
    *
    * @param string $field
-   *   File information to convert to file fields.
+   *   Image information to convert to image field.
+   * @param boolean $single
+   *   Indicates that the field should could contain a single value.
+   * @return boolean
+   *   Processing success.
    */
-  public function processImage(&$field) {
+  public function processImage(&$field, $single = FALSE) {
     if (isset($field) && !empty($field)) {
       $items = array();
       foreach (explode('%%%', $field) as $item) {
@@ -262,9 +272,8 @@ class Processor {
 
         $items[] = $array;
       }
-      $count = count($items);
-      if ($count > 0) {
-        $field = $count > 1 ? $items : $items[0];
+      if (!empty($items)) {
+        $field = $single ? $items[0] : $items;
         return TRUE;
       }
     }
@@ -275,9 +284,13 @@ class Processor {
    * Process a file field.
    *
    * @param string $field
-   *   File information to convert to file fields.
+   *   File information to convert to file field.
+   * @param boolean $single
+   *   Indicates that the field should could contain a single value.
+   * @return boolean
+   *   Processing success.
    */
-  public function processFile(&$field) {
+  public function processFile(&$field, $single = FALSE) {
     if (isset($field) && !empty($field)) {
       $items = array();
       foreach (explode('%%%', $field) as $item) {
@@ -316,9 +329,8 @@ class Processor {
 
         $items[] = $array;
       }
-      $count = count($items);
-      if ($count > 0) {
-        $field = $count > 1 ? $items : $items[0];
+      if (!empty($items)) {
+        $field = $single ? $items[0] : $items;
         return TRUE;
       }
     }

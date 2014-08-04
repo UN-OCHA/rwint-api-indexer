@@ -45,6 +45,8 @@ class Disaster extends \RWAPIIndexer\Resource {
       'featured' => array('bool'),
       'country' => array('primary'),
       'type' => array('primary'),
+      'primary_country' => array('single'),
+      'primary_type' => array('single'),
     ),
     'references' => array(
       'primary_country' => array(

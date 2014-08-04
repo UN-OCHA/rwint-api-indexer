@@ -43,6 +43,7 @@ class Source extends \RWAPIIndexer\Resource {
     'conversion' => array(
       'description' => array('links', 'html'),
       'content_type' => array('multi_int'),
+      'type' => array('single'),
     ),
     'references' => array(
       'type' => array(

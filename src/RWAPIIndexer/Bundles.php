@@ -8,30 +8,118 @@ namespace RWAPIIndexer;
 class Bundles {
   // List of Resources entity bundles and their corresponding class.
   public static $bundles = array(
-    'report' => '\RWAPIIndexer\Resources\Report',
-    'job' => '\RWAPIIndexer\Resources\Job',
-    'training' => '\RWAPIIndexer\Resources\Training',
-    'country' => '\RWAPIIndexer\Resources\Country',
-    'disaster' => '\RWAPIIndexer\Resources\Disaster',
-    'source' => '\RWAPIIndexer\Resources\Source',
+    'report' => array(
+        'class' => '\RWAPIIndexer\Resources\Report',
+        'type' => 'node',
+        'index' => 'reports',
+    ),
+    'job' => array(
+      'class' => '\RWAPIIndexer\Resources\Job',
+      'type' => 'node',
+      'index' => 'jobs',
+    ),
+    'training' => array(
+      'class' => '\RWAPIIndexer\Resources\Training',
+      'type' => 'node',
+      'index' => 'training',
+    ),
+    'country' => array(
+      'class' => '\RWAPIIndexer\Resources\Country',
+      'type' => 'taxonomy_term',
+      'index' => 'countries',
+    ),
+    'disaster' => array(
+      'class' => '\RWAPIIndexer\Resources\Disaster',
+      'type' => 'taxonomy_term',
+      'index' => 'disasters',
+    ),
+    'source' => array(
+      'class' => '\RWAPIIndexer\Resources\Source',
+      'type' => 'taxonomy_term',
+      'index' => 'sources',
+    ),
 
     // References.
-    'career_categories' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'city' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'content_format' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'disaster_type' => '\RWAPIIndexer\Resources\DisasterType',
-    'feature' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'job_type' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'language' => '\RWAPIIndexer\Resources\Language',
-    'ocha_product' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'organization_type' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    //'region' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    //'tags' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'theme' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'training_format' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'training_type' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'vulnerable_groups' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-    'job_experience' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+    'career_categories' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'career_categories',
+    ),
+    'city' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'cities',
+    ),
+    'content_format' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'report_formats',
+    ),
+    'disaster_type' => array(
+      'class' => '\RWAPIIndexer\Resources\DisasterType',
+      'type' => 'taxonomy_term',
+      'index' => 'disaster_types',
+    ),
+    'feature' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'features',
+    ),
+    'job_type' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'job_types',
+    ),
+    'language' => array(
+      'class' => '\RWAPIIndexer\Resources\Language',
+      'type' => 'taxonomy_term',
+      'index' => 'langauges',
+    ),
+    'ocha_product' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'ocha_products',
+    ),
+    'organization_type' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'source_types',
+    ),
+    /*'region' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'regions',
+    ),*/
+    /*'tags' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'tags',
+    ),*/
+    'theme' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'themes',
+    ),
+    'training_format' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'training_formats',
+    ),
+    'training_type' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'training_types',
+    ),
+    'vulnerable_groups' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'vulnerable_groups',
+    ),
+    'job_experience' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'job_experiences',
+    ),
   );
 
   /**
@@ -43,8 +131,11 @@ class Bundles {
    *   Resource handler for the given bundle.
    */
   public static function getResourceHandler($bundle, $elasticsearch, $connection, $processor, $references, $options) {
-    if (isset(self::$bundles[$bundle])) {
-      return new self::$bundles[$bundle]($bundle, $elasticsearch, $connection, $processor, $references, $options);
+    if (!empty(self::$bundles[$bundle]['class']) && class_exists(self::$bundles[$bundle]['class'])) {
+      $class = self::$bundles[$bundle]['class'];
+      $index = self::$bundles[$bundle]['index'];
+      $type = self::$bundles[$bundle]['type'];
+      return new $class($bundle, $type, $index, $elasticsearch, $connection, $processor, $references, $options);
     }
     else {
       $bundles = implode(', ', array_keys(self::$bundles));

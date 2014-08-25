@@ -6,10 +6,6 @@ namespace RWAPIIndexer\Resources;
  * Job resource handler.
  */
 class Job extends \RWAPIIndexer\Resource {
-  // Entity type and bundle.
-  protected $entity_type = 'node';
-  protected $bundle = 'job';
-
   // Options used for building the query to get the items to index.
   protected $query_options = array(
     'fields' => array(

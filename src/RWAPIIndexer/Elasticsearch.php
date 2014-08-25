@@ -80,10 +80,13 @@ class Elasticsearch {
    *   Elasticsearch index name.
    * @param string $type
    *   Elasticsearch index type.
+   * @param string $alias
+   *   Index alias.
    */
-  public function create($index, $type, $mapping) {
+  public function create($index, $type, $mapping, $alias) {
     $this->createIndex($index);
     $this->createType($index, $type, $mapping);
+    $this->createAlias($index, $type, $alias);
   }
 
   /**
@@ -121,15 +124,16 @@ class Elasticsearch {
   public function createType($index, $type, $mapping) {
     $path = $this->base . $index . "/" . $type . "/_mapping";
 
+    $mapping = array(
+      $type => array(
+        '_all' => array('enabled' => FALSE),
+        '_timestamp' => array('enabled' => TRUE, 'store' => TRUE, 'index' => 'no'),
+        'properties' => $mapping,
+      ),
+    );
+
     // Try to set up the mapping of the type.
     try {
-      $mapping = array(
-        $type => array(
-          '_all' => array('enabled' => FALSE),
-          '_timestamp' => array('enabled' => TRUE, 'store' => TRUE, 'index' => 'no'),
-          'properties' => $mapping,
-        ),
-      );
       $this->request('PUT', $path, $mapping);
     }
     catch (\Exception $exception) {
@@ -139,6 +143,63 @@ class Elasticsearch {
         throw $exception;
       }
     }
+  }
+
+  /**
+   * Create an alias for the index pointing to the type.
+   *
+   * @param string $index
+   *   Index name.
+   * @param string $type
+   *   Index type.
+   * @param string $alias
+   *   Index alias.
+   */
+  public function createAlias($index, $type, $alias) {
+    $data = array(
+      'actions' => array(
+        array(
+          'add' => array(
+            'index' => $this->base . $index,
+            'alias' => $this->base . $alias,
+            'filter' => array(
+              'type' =>  array(
+                'value' => $type,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Try to create the index alias.
+    try {
+      $this->request('POST', '_aliases', $data);
+    }
+    catch (\Exception $exception) {
+      $message = $exception->getMessage();
+      if (strpos($message, 'InvalidAliasNameException') !== 0) {
+        throw $exception;
+      }
+      else {
+        throw new \Exception('Invalid alias name "' . $this->base . $alias . '", an index exists with the same name as the alias.');
+      }
+    }
+  }
+
+  /**
+   * Remove the elasticsearch index type of this entity bundle.
+   *
+   * @param string $index
+   *   Index name.
+   * @param string $type
+   *   Index type.
+   * @param string $alias
+   *   Index alias.
+   */
+  public function remove($index, $type, $alias) {
+    $this->removeType($index, $type);
+    $this->removeAlias($index, $alias);
   }
 
   /**
@@ -160,6 +221,39 @@ class Elasticsearch {
       $message = $exception->getMessage();
       // Exception other than type missing, rethrow.
       if (strpos($message, 'TypeMissingException') !== 0) {
+        throw $exception;
+      }
+    }
+  }
+
+  /**
+   * Remove the elasticsearch index type of this entity bundle.
+   *
+   * @param string $index
+   *   Index name.
+   * @param string $alias
+   *   Index alias.
+   */
+  public function removeAlias($index, $alias) {
+    $data = array(
+      'actions' => array(
+        array(
+          'remove' => array(
+            'index' => $this->base . $index,
+            'alias' => $this->base . $alias,
+          ),
+        ),
+      ),
+    );
+
+    // Try to remove the index alias.
+    try {
+      $this->request('POST', '_aliases', $data);
+    }
+    catch (\Exception $exception) {
+      $message = $exception->getMessage();
+      // Exception other than alias missing, rethrow.
+      if (strpos($message, 'AliasesMissingException') !== 0) {
         throw $exception;
       }
     }

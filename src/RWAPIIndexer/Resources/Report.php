@@ -6,10 +6,6 @@ namespace RWAPIIndexer\Resources;
  * Report resource handler.
  */
 class Report extends \RWAPIIndexer\Resource {
-  // Entity type and bundle.
-  protected $entity_type = 'node';
-  protected $bundle = 'report';
-
   // Options used for building the query to get the items to index.
   protected $query_options = array(
     'fields' => array(

@@ -6,9 +6,6 @@ namespace RWAPIIndexer\Resources;
  * Disaster type resource handler.
  */
 class DisasterType extends \RWAPIIndexer\Resource {
-  protected $entity_type = 'taxonomy_term';
-  protected $bundle = 'disaster_type';
-
   // Options used for building the query to get the items to index.
   protected $query_options = array(
     'field_joins' => array(

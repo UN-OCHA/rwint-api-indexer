@@ -6,10 +6,6 @@ namespace RWAPIIndexer\Resources;
  * Training resource handler.
  */
 class Training extends \RWAPIIndexer\Resource {
-  // Entity type and bundle.
-  protected $entity_type = 'node';
-  protected $bundle = 'training';
-
   // Options used for building the query to get the items to index.
   protected $query_options = array(
     'fields' => array(

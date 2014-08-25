@@ -10,6 +10,9 @@ abstract class Resource {
   protected $entity_type = '';
   protected $bundle = '';
 
+  // Index name for this resource.
+  protected $index;
+
   // Options used for building the query to get the items to index.
   protected $query_options = array();
 
@@ -36,6 +39,10 @@ abstract class Resource {
    *
    * @param string $bundle
    *   Bundle of this resource.
+   * @param string $entity_type
+   *   Entity type of this resource.
+   * @param string $index
+   *   Index name for this resource.
    * @param \RWAPIIndexer\Elasticsearch $elasticsearch
    *   Elasticsearch handler.
    * @param \RWAPIIndexer\Database\Connection $connection
@@ -43,8 +50,10 @@ abstract class Resource {
    * @param \RWAPIIndexer\Options $options
    *   Indexing options.
    */
-  public function __construct($bundle, $elasticsearch, $connection, $processor, $references, $options) {
+  public function __construct($bundle, $entity_type, $index, $elasticsearch, $connection, $processor, $references, $options) {
     $this->bundle = $bundle;
+    $this->entity_type = $entity_type;
+    $this->index = $index;
     $this->elasticsearch = $elasticsearch;
     $this->connection = $connection;
     $this->processor = $processor;
@@ -200,7 +209,7 @@ abstract class Resource {
     $this->log("Indexing {$this->bundle} entities.\n");
 
     // Create the index and set up the mapping for the entity bundle.
-    $this->elasticsearch->create($this->entity_type, $this->bundle, $this->getMapping());
+    $this->elasticsearch->create($this->entity_type, $this->bundle, $this->getMapping(), $this->index);
 
     // Get the offset from which to start indexing.
     $offset = $this->query->getOffset($this->options->get('offset'));
@@ -277,12 +286,12 @@ abstract class Resource {
    * Remove the index.
    */
   public function remove() {
-    $this->elasticsearch->removeType($this->entity_type, $this->bundle);
+    $this->elasticsearch->remove($this->entity_type, $this->bundle, $this->index);
     $this->log("Index successfully removed.\n");
   }
 
   /**
-   * Return the mapping for the current indexable.
+   * Return the mapping for the resource.
    *
    * @return array
    *   Elasticsearch index type mapping.

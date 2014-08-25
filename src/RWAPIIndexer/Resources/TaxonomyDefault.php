@@ -6,8 +6,6 @@ namespace RWAPIIndexer\Resources;
  * Taxnomy default resource handler.
  */
 class TaxonomyDefault extends \RWAPIIndexer\Resource {
-  protected $entity_type = 'taxonomy_term';
-
   /**
    * Return the mapping for the current resource.
    *

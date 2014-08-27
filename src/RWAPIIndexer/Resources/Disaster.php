@@ -82,7 +82,7 @@ class Disaster extends \RWAPIIndexer\Resource {
             ->addString('description-html', NULL)
             // Primary country.
             ->addTaxonomy('primary_country', array('shortname', 'iso3'))
-            ->addGeoPoint('country.location')
+            ->addGeoPoint('primary_country.location')
             // Country.
             ->addTaxonomy('country', array('shortname', 'iso3'))
             ->addGeoPoint('country.location')

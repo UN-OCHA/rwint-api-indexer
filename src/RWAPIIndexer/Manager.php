@@ -63,10 +63,12 @@ class Manager {
    */
   public function execute() {
     $bundle = $this->options->get('bundle');
+    $id = $this->options->get('id');
+    $remove = $this->options->get('remove');
 
     // Remove or index a particular entity.
-    if (!empty($this->options->get('id'))) {
-      if (!empty($this->options->get('remove'))) {
+    if (!empty($id)) {
+      if (!empty($remove)) {
         $this->removeItem($bundle, $this->options->get('id'));
       }
       else {
@@ -75,7 +77,7 @@ class Manager {
     }
     // Or remove the index or index entities.
     else {
-      if (!empty($this->options->get('remove'))) {
+      if (!empty($remove)) {
         $this->remove($bundle);
       }
       else {

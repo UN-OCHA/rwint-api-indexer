@@ -281,8 +281,9 @@ class Options {
   */
   static public function displayUsage() {
     echo "Usage: php PATH/TO/Indexer.php <entity-bundle> [options]\n" .
+          "     -h, --help display this help \n" .
           "     -e, --elasticsearch <arg> Elasticsearch URL, defaults to http://127.0.0.1:9200 \n" .
-          "     -h, --mysql-host <arg> Mysql host, defaults to localhost \n" .
+          "     -H, --mysql-host <arg> Mysql host, defaults to localhost \n" .
           "     -P, --mysql-port <arg> Mysql port, defaults to 3306 \n" .
           "     -u, --mysql-user <arg> Mysql user, defaults to root \n" .
           "     -p, --mysql-pass <arg> Mysql pass, defaults to none \n" .

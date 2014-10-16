@@ -8,6 +8,7 @@ Command line
 
 ```
 Usage: php PATH/TO/Indexer.php <entity-bundle> [options]
+     -h, --help display this help
      -e, --elasticsearch <arg> Elasticsearch URL, defaults to http://127.0.0.1:9200
      -H, --mysql-host <arg> Mysql host, defaults to localhost
      -P, --mysql-port <arg> Mysql port, defaults to 3306

@@ -131,14 +131,14 @@ class Bundles {
    *   Resource handler for the given bundle.
    */
   public static function getResourceHandler($bundle, $elasticsearch, $connection, $processor, $references, $options) {
-    if (!empty(self::$bundles[$bundle]['class']) && class_exists(self::$bundles[$bundle]['class'])) {
-      $class = self::$bundles[$bundle]['class'];
-      $index = self::$bundles[$bundle]['index'];
-      $type = self::$bundles[$bundle]['type'];
+    if (!empty(static::$bundles[$bundle]['class']) && class_exists(static::$bundles[$bundle]['class'])) {
+      $class = static::$bundles[$bundle]['class'];
+      $index = static::$bundles[$bundle]['index'];
+      $type = static::$bundles[$bundle]['type'];
       return new $class($bundle, $type, $index, $elasticsearch, $connection, $processor, $references, $options);
     }
     else {
-      $bundles = implode(', ', array_keys(self::$bundles));
+      $bundles = implode(', ', array_keys(static::$bundles));
       throw new \Exception("No resource handler for the bundle '$bundle'. Valid ones are: " . $bundles . "\n");
     }
   }
@@ -152,6 +152,6 @@ class Bundles {
    *   Return TRUE if the bundle exists.
    */
   public static function has($bundle) {
-    return isset(self::$bundles[$bundle]);
+    return isset(static::$bundles[$bundle]);
   }
 }

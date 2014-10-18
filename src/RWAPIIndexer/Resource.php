@@ -209,7 +209,7 @@ abstract class Resource {
     $this->log("Indexing {$this->bundle} entities.\n");
 
     // Create the index and set up the mapping for the entity bundle.
-    $this->elasticsearch->create($this->entity_type, $this->bundle, $this->getMapping(), $this->index);
+    $this->elasticsearch->create($this->index, $this->getMapping());
 
     // Get the offset from which to start indexing.
     $offset = $this->query->getOffset($this->options->get('offset'));
@@ -234,7 +234,7 @@ abstract class Resource {
       $items = $this->getItems(min($limit - $count, $chunk_size), $offset);
 
       if (!empty($items)) {
-        $offset = $this->elasticsearch->indexItems($this->entity_type, $this->bundle, $items);
+        $offset = $this->elasticsearch->indexItems($this->index, $items);
       }
       else {
         // Nothing else index.
@@ -258,13 +258,14 @@ abstract class Resource {
 
   /**
    * Index the entity with the given id.
+   *
    * @param integer $id
    *   Id of the entity to index.
    */
   public function indexItem($id) {
     $items = $this->getItems(1, 0, array($id));
     if (!empty($items)) {
-      $this->elasticsearch->indexItems($this->entity_type, $this->bundle, $items);
+      $this->elasticsearch->indexItems($this->index, $items);
       $this->log("Successfully indexed the entity with the id {$id}.\n");
     }
     else {
@@ -278,7 +279,7 @@ abstract class Resource {
    *   Id of the entity to remove.
    */
   public function removeItem($id) {
-    $this->elasticsearch->removeItem($this->entity_type, $this->bundle, $id);
+    $this->elasticsearch->removeItem($this->index, $id);
     $this->log("Successfully removed the entity with the id {$id}.\n");
   }
 
@@ -286,8 +287,25 @@ abstract class Resource {
    * Remove the index.
    */
   public function remove() {
-    $this->elasticsearch->remove($this->entity_type, $this->bundle, $this->index);
-    $this->log("Index successfully removed.\n");
+    $this->elasticsearch->remove($this->index);
+    $this->log("Successfully removed index.\n");
+  }
+
+  /**
+   * Set or remove the alias for the index.
+   *
+   * @param boolean $remove
+   *   Remove or set alias.
+   */
+  public function setAlias($remove = FALSE) {
+    if (empty($remove)) {
+      $this->elasticsearch->addAlias($this->index);
+      $this->log("Successfully added index alias.\n");
+    }
+    else {
+      $this->elasticsearch->removeAlias($this->index);
+      $this->log("Successfully removed index alias.\n");
+    }
   }
 
   /**
@@ -301,14 +319,18 @@ abstract class Resource {
   }
 
   /**
-   * Log indexing message if run from the console.
+   * Log indexing messages.
    *
    * @param string $message
    *   Message to log.
    */
   public function log($message) {
-    if ($this->options->get('console')) {
+    $callback = $this->options->get('log');
+    if ($callback === 'echo') {
       echo $message;
+    }
+    elseif (!empty($callback) && is_callable($callback)) {
+      $callback($message);
     }
   }
 }

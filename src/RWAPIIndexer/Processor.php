@@ -212,7 +212,13 @@ class Processor {
   public function processMarkdown($text) {
     switch ($this->markdown) {
       case 'sundown':
-        $sundown = new \Sundown($text);
+        $sundown = new \Sundown($text, array(
+            'tables' => TRUE,
+            'no_intra_emphasis' => TRUE,
+            'fenced_code_blocks' => TRUE,
+            'autolink' => TRUE,
+            'safe_links_only' => TRUE,
+          ));
         return $sundown->toHTML();
 
       case 'markdown':

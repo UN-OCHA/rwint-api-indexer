@@ -6,6 +6,9 @@ namespace RWAPIIndexer;
  * Resource manager class.
  */
 class Manager {
+  // Metrics handler.
+  protected $metrics = NULL;
+
   // Indexing options handler.
   protected $options = NULL;
 
@@ -27,7 +30,9 @@ class Manager {
    * @param array $options
    *   Indexing options.
    */
-  public function __construct($options = NULL) {
+  public function __construct($options = array()) {
+    $this->metrics = new \RWAPIIndexer\Metrics();
+
     // Indexing options.
     $this->options = new \RWAPIIndexer\Options($options);
 
@@ -38,7 +43,7 @@ class Manager {
     $this->references = new \RWAPIIndexer\References();
 
     // Create a new elasticsearch handler.
-    $this->elasticsearch = new \RWAPIIndexer\Elasticsearch($this->options->get('elasticsearch'), $this->options->get('base-index-name'));
+    $this->elasticsearch = new \RWAPIIndexer\Elasticsearch($this->options->get('elasticsearch'), $this->options->get('base-index-name'), $this->options->get('tag'));
 
     // Create a new field processor object to prepare items before indexing.
     $this->processor = new \RWAPIIndexer\Processor($this->options->get('website'), $this->references);
@@ -65,6 +70,8 @@ class Manager {
     $bundle = $this->options->get('bundle');
     $id = $this->options->get('id');
     $remove = $this->options->get('remove');
+    $alias = $this->options->get('alias');
+    $aliasOnly = $this->options->get('alias-only');
 
     // Remove or index a particular entity.
     if (!empty($id)) {
@@ -76,13 +83,21 @@ class Manager {
       }
     }
     // Or remove the index or index entities.
-    else {
+    elseif (empty($aliasOnly)) {
       if (!empty($remove)) {
         $this->remove($bundle);
       }
       else {
         $this->index($bundle);
       }
+      // Set or remove the alias.
+      if (!empty($alias)) {
+        $this->setAlias($bundle, !empty($remove));
+      }
+    }
+    // Only set up or remove the alias.
+    else {
+      $this->setAlias($bundle, !empty($remove));
     }
   }
 
@@ -120,7 +135,7 @@ class Manager {
   }
 
   /**
-   * Index a particular entity item og the given bundle.
+   * Index a particular entity item of the given bundle.
    *
    * @param string $bundle
    *   Bundle of the entity item.
@@ -136,7 +151,7 @@ class Manager {
   }
 
   /**
-   * Remove the elasticsearch index type for this resource.
+   * Remove the elasticsearch index for this resource.
    *
    * @param string $bundle
    *   Bundle of the resource to remove.
@@ -145,8 +160,24 @@ class Manager {
     // Get the resource handler for the bundle.
     $handler = $this->getResourceHandler($bundle);
 
-    // Remove the elasticsearch index type for this resource.
+    // Remove the elasticsearch index for this resource.
     $handler->remove();
+  }
+
+  /**
+   * Set or remove the alias for the index corresponding to the given bundle.
+   *
+   * @param string $bundle
+   *   Bundle of the entity item.
+   * @param boolean $remove
+   *   Remove or set the alias.
+   */
+  public function setAlias($bundle, $remove = FALSE) {
+    // Get the resource handler for the bundle.
+    $handler = $this->getResourceHandler($bundle);
+
+    // Set the index alias for this resource.
+    $handler->setAlias($remove);
   }
 
   /**
@@ -159,7 +190,7 @@ class Manager {
     foreach ($references as $bundle) {
       // If not already set, load the reference items for this bundle.
       if (!$this->references->has($bundle)) {
-        $this->log("Loading '{$bundle}' reference items.\n");
+        $this->log("Preloading '{$bundle}' reference items.\n");
         // Get the resource handler for this bundle.
         $handler = $this->getResourceHandler($bundle);
         // Recursively load references.
@@ -183,14 +214,28 @@ class Manager {
   }
 
   /**
-   * Log indexing message if in run from the console.
+   * Get the metrics Handler.
+   *
+   * @return \RWAPIIndexer\Metrics
+   *   Metrics handler.
+   */
+  public function getMetrics() {
+    return $this->metrics;
+  }
+
+  /**
+   * Log indexing messages.
    *
    * @param string $message
    *   Message to log.
    */
   public function log($message) {
-    if ($this->options->get('console')) {
+    $callback = $this->options->get('log');
+    if ($callback === 'echo') {
       echo $message;
+    }
+    elseif (!empty($callback) && is_callable($callback)) {
+      $callback($message);
     }
   }
 }

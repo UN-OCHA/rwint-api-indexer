@@ -16,13 +16,16 @@ class Options {
     'mysql-pass' => '',
     'database' => 'reliefwebint_0',
     'base-index-name' => 'reliefwebint_0',
+    'tag' => '',
     'website' => 'http://reliefweb.int',
     'limit' => 0,
     'offset' => 0,
     'chunk-size' => 500,
     'id' => 0,
     'remove' => FALSE,
-    'console' => FALSE,
+    'alias' => FALSE,
+    'alias-only' => FALSE,
+    'log' => NULL,
   );
 
   /**
@@ -33,25 +36,28 @@ class Options {
    * @param array $options
    *   Indexing options.
    */
-  public function __construct($options = NULL) {
-    // Set flag indicating the indexing is run from the command line.
-    $this->options['console'] = php_sapi_name() == 'cli';
+  public function __construct($options = array()) {
+    // Called from ommand line.
+    if (php_sapi_name() == 'cli') {
+      $this->options['log'] = 'echo';
 
-    // Set or parse the options.
-    if ($this->options['console'] && !isset($options)) {
-      $this->parseArguments();
-    }
-    else {
-      $this->options = array_replace($this->options, $options);
+      // Parse the options from the command line arguments if not set.
+      if (empty($options)) {
+        $options = static::parseArguments();
+      }
     }
 
+    // Replace the default options.
+    $this->options = array_replace($this->options, $options);
+
+    // Validate the options.
     $this->validateOptions($this->options);
   }
 
   /**
    * Parse the options form the command line.
    */
-  public function parseArguments() {
+  public static function parseArguments() {
     global $argv;
 
     // Remove the name of the executing script.
@@ -59,93 +65,114 @@ class Options {
 
     // No parameters, we display the usage.
     if (empty($argv)) {
-      $this->displayUsage();
+      static::displayUsage();
     }
-
-    // Display usage if first argument is help.
-    $first_arg = array_shift($argv);
-    if ($first_arg === '-h' || $first_arg === '--help') {
-      $this->displayUsage();
-    }
-
-    // Set the bundle options.
-    $this->options['bundle'] = $first_arg;
 
     // Parse the arguments.
     while (($arg = array_shift($argv)) !== NULL) {
       switch ($arg) {
         case '--elasticsearch':
         case '-e':
-          $this->options['elasticsearch'] = array_shift($argv);
+          $options['elasticsearch'] = array_shift($argv);
           break;
 
         case '--mysql-host':
         case '-H':
-          $this->options['mysql-host'] = array_shift($argv);
+          $options['mysql-host'] = array_shift($argv);
           break;
 
         case '--mysql-port':
         case '-P':
-          $this->options['mysql-port'] = (int) array_shift($argv);
+          $options['mysql-port'] = (int) array_shift($argv);
           break;
 
         case '--mysql-user':
         case '-u':
-          $this->options['mysql-user'] = array_shift($argv);
+          $options['mysql-user'] = array_shift($argv);
           break;
 
         case '--mysql-pass':
         case '-p':
-          $this->options['mysql-pass'] = array_shift($argv);
+          $options['mysql-pass'] = array_shift($argv);
           break;
 
         case '--database':
         case '-d':
-          $this->options['database'] = array_shift($argv);
+          $options['database'] = array_shift($argv);
           break;
 
         case '--base-index-name':
         case '-b':
-          $this->options['base-index-name'] = array_shift($argv);
+          $options['base-index-name'] = array_shift($argv);
+          break;
+
+        case '--tag':
+        case '-t':
+          $options['tag'] = array_shift($argv);
           break;
 
         case '--website':
         case '-w':
-          $this->options['website'] = array_shift($argv);
+          $options['website'] = array_shift($argv);
           break;
 
         case '--limit':
         case '-l':
-          $this->options['limit'] = (int) array_shift($argv);
+          $options['limit'] = (int) array_shift($argv);
           break;
 
         case '--offset':
         case '-o':
-          $this->options['offset'] = (int) array_shift($argv);
+          $options['offset'] = (int) array_shift($argv);
           break;
 
         case '--chunk-size':
         case '-c':
-          $this->options['chunk-size'] = (int) array_shift($argv);
+          $options['chunk-size'] = (int) array_shift($argv);
           break;
 
         case '--id':
         case '-i':
-          $this->options['id'] = (int) array_shift($argv);
+          $options['id'] = (int) array_shift($argv);
           break;
 
         case '--remove':
         case '-r':
-          $this->options['remove'] = TRUE;
+          $options['remove'] = TRUE;
+          break;
+
+        case '--alias':
+        case '-a':
+          $options['alias'] = TRUE;
+          break;
+
+        case '--alias-only':
+        case '-A':
+          $options['alias-only'] = TRUE;
           break;
 
         case '--help':
         case '-h':
+          static::displayUsage();
+          break;
+
         default:
-          $this->displayUsage();
+          if (strpos($arg, '-') === 0) {
+            static::displayUsage("Invalid argument '{$arg}'.");
+          }
+          else {
+            $options['bundle'] = $arg;
+          }
           break;
       }
     }
+
+    // Display usage if no entity bundle is provided.
+    if (empty($options['bundle'])) {
+      static::displayUsage("No entity bundle provided.");
+    }
+
+    return $options;
   }
 
   /**
@@ -230,12 +257,17 @@ class Options {
       ),
       'database' => array(
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^\S*$/'),
+        'options' => array('regexp' => '/^[a-zA-Z0-9_-]*$/'),
         'flags' => FILTER_NULL_ON_FAILURE,
       ),
       'base-index-name' => array(
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^\S*$/'),
+        'options' => array('regexp' => '/^[a-zA-Z0-9_-]*$/'),
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ),
+      'tag' => array(
+        'filter' => FILTER_VALIDATE_REGEXP,
+        'options' => array('regexp' => '/^[a-zA-Z0-9_-]*$/'),
         'flags' => FILTER_NULL_ON_FAILURE,
       ),
       'website' => array(
@@ -264,6 +296,14 @@ class Options {
         'filter' => FILTER_VALIDATE_BOOLEAN,
         'flags' => FILTER_NULL_ON_FAILURE,
       ),
+      'alias' => array(
+        'filter' => FILTER_VALIDATE_BOOLEAN,
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ),
+      'alias-only' => array(
+        'filter' => FILTER_VALIDATE_BOOLEAN,
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ),
     ));
 
     foreach ($results as $key => $value) {
@@ -279,9 +319,13 @@ class Options {
   * @return string
   *   Usage and indexing options.
   */
-  static public function displayUsage() {
-    echo "Usage: php PATH/TO/Indexer.php <entity-bundle> [options]\n" .
-          "     -h, --help display this help \n" .
+  public static function displayUsage($error = '') {
+    if  (!empty($error)) {
+      echo "[ERROR] " . $error . "\n\n";
+    }
+
+    echo "Usage: php PATH/TO/Indexer.php [options] <entity-bundle>\n" .
+          "     -h, --help Display this help message \n" .
           "     -e, --elasticsearch <arg> Elasticsearch URL, defaults to http://127.0.0.1:9200 \n" .
           "     -H, --mysql-host <arg> Mysql host, defaults to localhost \n" .
           "     -P, --mysql-port <arg> Mysql port, defaults to 3306 \n" .
@@ -289,12 +333,15 @@ class Options {
           "     -p, --mysql-pass <arg> Mysql pass, defaults to none \n" .
           "     -d, --database <arg> Database name, deaults to reliefwebint_0 \n" .
           "     -b, --base-index-name <arg> Base index name, deaults to reliefwebint_0 \n" .
+          "     -t, --tag <arg> Tag appended to the index name, defaults to empty string \n" .
           "     -w, --website <arg> Website URL, deaults to http://reliefweb.int \n" .
           "     -l, --limit <arg> Maximum number of entities to index, defaults to 0 (all) \n" .
           "     -o, --offset <arg> ID of the entity from which to start the indexing, defaults to the most recent one \n" .
           "     -c, --chunk-size <arg> Number of entities to index at one time, defaults to 500 \n" .
           "     -i, --id Id of an entity item to index, defaults to 0 (none) \n" .
           "     -r, --remove Removes an entity if 'id' is provided or the index for the given entity bundle \n" .
+          "     -a, --alias Set up the alias for the index after the indexing, ignored if id is provided \n" .
+          "     -A, --alias-only Set up the alias for the index without indexing, ignored if id is provided \n" .
           "\n";
     exit();
   }

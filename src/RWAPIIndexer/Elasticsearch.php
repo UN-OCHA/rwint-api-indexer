@@ -12,6 +12,9 @@ class Elasticsearch {
   // Base index name.
   protected $base = '';
 
+  // Index tag.
+  protected $tag = '';
+
   // Default index settings.
   protected $default_settings = array(
     'settings' => array(
@@ -67,36 +70,62 @@ class Elasticsearch {
    *   Address of the elasticsearch server.
    * @param string $base
    *   Base index name.
+   * @param string $tag
+   *   Index tag.
    */
-  public function __construct($server, $base) {
+  public function __construct($server, $base, $tag = '') {
     $this->server = $server;
     $this->base = $base . '_';
+    $this->tag = !empty($tag) ? '_' . $tag : '';
   }
 
   /**
-   * Create the index type with the given mapping if it doesn't exist.
+   * Get the index path (with or without the type).
+   *
+   * @param string $index
+   *   Index name.
+   * @param boolean $type
+   *   Whether to append the index type or not.
+   * @return string
+   *   Index path.
+   */
+  public function getIndexPath($index, $type = FALSE) {
+    return $this->base . $index . '_index' . $this->tag . ($type ? '/' . $index : '');
+  }
+
+  /**
+   * Get the index alias.
+   *
+   * @param string $index
+   *   Index name.
+   * @return string
+   *   Index alias.
+   */
+  public function getIndexAlias($index, $type = FALSE) {
+    return $this->base . $index;
+  }
+
+  /**
+   * Create an index and index type with the given mapping if it doesn't exist.
    *
    * @param string $index
    *   Elasticsearch index name.
-   * @param string $type
-   *   Elasticsearch index type.
-   * @param string $alias
-   *   Index alias.
+   * @param array $mapping
+   *   Index mapping.
    */
-  public function create($index, $type, $mapping, $alias) {
+  public function create($index, $mapping) {
     $this->createIndex($index);
-    $this->createType($index, $type, $mapping);
-    $this->createAlias($index, $type, $alias);
+    $this->createType($index, $mapping);
   }
 
   /**
-   * Create the elasticsearch index if doesn't already exists.
+   * Create an elasticsearch index if doesn't already exists.
    *
    * @param string $index
    *   Index to create.
    */
   public function createIndex($index) {
-    $path = $this->base . $index;
+    $path = $this->getIndexPath($index);
 
     // Try to create the elasticsearch index.
     try {
@@ -112,20 +141,18 @@ class Elasticsearch {
   }
 
   /**
-   * Create the index type if doesn't already exist and set its mapping.
+   * Create an index type if doesn't already exist and set its mapping.
    *
    * @param string $index
    *   Index name.
-   * @param string $type
-   *   Index type.
    * @param array $mapping
    *   Mapping for the given index type.
    */
-  public function createType($index, $type, $mapping) {
-    $path = $this->base . $index . "/" . $type . "/_mapping";
+  public function createType($index, $mapping) {
+    $path = $this->getIndexPath($index, TRUE) . '/_mapping';
 
     $mapping = array(
-      $type => array(
+      $index => array(
         '_all' => array('enabled' => FALSE),
         '_timestamp' => array('enabled' => TRUE, 'store' => TRUE, 'index' => 'no'),
         'properties' => $mapping,
@@ -146,27 +173,53 @@ class Elasticsearch {
   }
 
   /**
+   * Remove an elasticsearch index.
+   *
+   * @param string $index
+   *   Index name.
+   */
+  public function remove($index) {
+    $path = $this->getIndexPath($index);
+
+    // Try to delete the elasticsearch index.
+    try {
+      $this->request('DELETE', $path);
+    }
+    catch (\Exception $exception) {
+      $message = $exception->getMessage();
+      // Exception other than index missing, rethrow.
+      if (strpos($message, 'IndexMissingException') !== 0) {
+        throw $exception;
+      }
+    }
+  }
+
+
+  /**
    * Create an alias for the index pointing to the type.
    *
    * @param string $index
    *   Index name.
-   * @param string $type
-   *   Index type.
+   * @param boolean $remove
+   *   Whether to remove the index or add it.
    * @param string $alias
    *   Index alias.
    */
-  public function createAlias($index, $type, $alias) {
+  public function addAlias($index) {
+    $alias = $this->getIndexAlias($index);
+
     $data = array(
       'actions' => array(
         array(
+          'remove' => array(
+            'index' => '*',
+            'alias' => $alias,
+          ),
+        ),
+        array(
           'add' => array(
-            'index' => $this->base . $index,
-            'alias' => $this->base . $alias,
-            'filter' => array(
-              'type' =>  array(
-                'value' => $type,
-              ),
-            ),
+            'index' => $this->getIndexPath($index),
+            'alias' => $alias,
           ),
         ),
       ),
@@ -178,69 +231,33 @@ class Elasticsearch {
     }
     catch (\Exception $exception) {
       $message = $exception->getMessage();
-      if (strpos($message, 'InvalidAliasNameException') !== 0) {
-        throw $exception;
+      if (strpos($message, 'InvalidAliasNameException') === 0) {
+        throw new \Exception('Invalid alias name "' . $alias . '", an index exists with the same name as the alias.');
+      }
+      elseif (strpos($message, 'IndexMissingException') === 0) {
+        throw new \Exception('Index "' . $this->getIndexPath($index) . '" does not exist.');
       }
       else {
-        throw new \Exception('Invalid alias name "' . $this->base . $alias . '", an index exists with the same name as the alias.');
-      }
-    }
-  }
-
-  /**
-   * Remove the elasticsearch index type of this entity bundle.
-   *
-   * @param string $index
-   *   Index name.
-   * @param string $type
-   *   Index type.
-   * @param string $alias
-   *   Index alias.
-   */
-  public function remove($index, $type, $alias) {
-    $this->removeType($index, $type);
-    $this->removeAlias($index, $alias);
-  }
-
-  /**
-   * Remove the elasticsearch index type of this entity bundle.
-   *
-   * @param string $index
-   *   Index name.
-   * @param string $type
-   *   Index type.
-   */
-  public function removeType($index, $type) {
-    $path = $this->base . $index . "/" . $type;
-
-    // Try to create the elasticsearch index.
-    try {
-      $this->request('DELETE', $path);
-    }
-    catch (\Exception $exception) {
-      $message = $exception->getMessage();
-      // Exception other than type missing, rethrow.
-      if (strpos($message, 'TypeMissingException') !== 0) {
         throw $exception;
       }
     }
   }
 
   /**
-   * Remove the elasticsearch index type of this entity bundle.
+   * Remove the alias for the given index.
    *
    * @param string $index
    *   Index name.
-   * @param string $alias
-   *   Index alias.
    */
-  public function removeAlias($index, $alias) {
+  public function removeAlias($index) {
+    $alias = $this->getIndexAlias($index);
+
     $data = array(
       'actions' => array(
         array(
           'remove' => array(
-            'index' => $this->base . $index,
-            'alias' => $this->base . $alias,
+            'index' => $this->getIndexPath($index),
+            'alias' => $alias,
           ),
         ),
       ),
@@ -253,7 +270,7 @@ class Elasticsearch {
     catch (\Exception $exception) {
       $message = $exception->getMessage();
       // Exception other than alias missing, rethrow.
-      if (strpos($message, 'AliasesMissingException') !== 0) {
+      if (strpos($message, 'AliasesMissingException') !== 0 && strpos($message, 'IndexMissingException') !== 0) {
         throw $exception;
       }
     }
@@ -264,16 +281,14 @@ class Elasticsearch {
    *
    * @param string $index
    *   Index name.
-   * @param string $type
-   *   Index type.
    * @param array $items
    *   Items to index.
    * @return integer
    *   ID of the last indexed item.
    */
-  public function indexItems($index, $type, &$items) {
+  public function indexItems($index, &$items) {
     $data = '';
-    $path = $this->base . $index . "/" . $type . "/_bulk";
+    $path = $this->getIndexPath($index, TRUE) . '/_bulk';
 
     // Get last id.
     end($items);
@@ -281,11 +296,11 @@ class Elasticsearch {
     reset($items);
 
     // Prepare bulk indexing.
-    foreach ($items as &$item) {
+    foreach ($items as $item) {
       // Add the document to the bulk indexing data.
       $action = array('index' => array(
-        '_index' => $this->base . $index,
-        '_type' => $type,
+        '_index' => $this->getIndexPath($index),
+        '_type' => $index,
         '_id' => $item['id'],
       ));
 
@@ -304,13 +319,11 @@ class Elasticsearch {
    *
    * @param string $index
    *   Index name.
-   * @param string $type
-   *   Index type.
    * @param array $item
    *   Item to index.
    */
-  public function indexItem($index, $type, &$item) {
-    $path = $this->base . $index . "/" . $type . "/" . $item['id'];
+  public function indexItem($index, $item) {
+    $path = $this->getIndexPath($index, TRUE) . '/' . $item['id'];
     $data = json_encode($item);
     $this->request('POST', $path, $data);
   }
@@ -320,13 +333,11 @@ class Elasticsearch {
    *
    * @param string $index
    *   Index name.
-   * @param string $type
-   *   Index type.
    * @param array $id
    *   Id of the item to remove.
    */
-  public function removeItem($index, $type, $id) {
-    $path = $this->base . $index . "/" . $type . "/" . $id;
+  public function removeItem($index, $id) {
+    $path = $this->getIndexPath($index, TRUE) . "/" . $id;
     $this->request('DELETE', $path);
   }
 

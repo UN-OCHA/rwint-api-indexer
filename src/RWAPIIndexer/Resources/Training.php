@@ -17,6 +17,9 @@ class Training extends \RWAPIIndexer\Resource {
       'field_status' => array(
         'status' => 'value',
       ),
+      'field_cost' => array(
+        'cost' => 'value',
+      ),
       'field_registration_deadline' => array(
         'date_registration' => 'value',
       ),
@@ -26,6 +29,9 @@ class Training extends \RWAPIIndexer\Resource {
       ),
       'body' => array(
         'body' => 'value',
+      ),
+      'field_how_to_apply' => array(
+        'how_to_register' => 'value',
       ),
       'field_file' => array(
         'file' => 'file_reference',
@@ -47,6 +53,7 @@ class Training extends \RWAPIIndexer\Resource {
   protected $processing_options = array(
     'conversion' => array(
       'body' => array('links', 'html'),
+      'how_to_register' => array('links', 'html'),
       'date_created' => array('time'),
       'date_changed' => array('time'),
       'date_registration' => array('time'),
@@ -96,8 +103,13 @@ class Training extends \RWAPIIndexer\Resource {
             // Body.
             ->addString('body')
             ->addString('body-html', NULL)
+            // How to register.
+            ->addString('how_to_register')
+            ->addString('how_to_register-html', NULL)
             // Dates.
             ->addDates('date', array('created', 'changed', 'registration', 'start', 'end'))
+            // Cost.
+            ->addString('cost', FALSE)
             // Language.
             ->addTaxonomy('language')
             ->addString('language.code', FALSE)

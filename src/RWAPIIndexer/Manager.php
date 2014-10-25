@@ -56,7 +56,7 @@ class Manager {
     $dbname = $this->options->get('database');
     $host = $this->options->get('mysql-host');
     $port = $this->options->get('mysql-port');
-    $dsn = "mysql:dbname={$dbname};host={$host};port={$port}";
+    $dsn = "mysql:dbname={$dbname};host={$host};port={$port};charset=utf8";
     $user = $this->options->get('mysql-user');
     $password = $this->options->get('mysql-pass');
 

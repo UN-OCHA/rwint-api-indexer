@@ -134,7 +134,7 @@ class Elasticsearch {
     catch (\Exception $exception) {
       $message = $exception->getMessage();
       // Exception not because index already exists, rethrow.
-      if (strpos($message, 'IndexAlreadyExistsException') !== 0) {
+      if (strpos($message, 'IndexAlreadyExistsException') === FALSE) {
         throw $exception;
       }
     }

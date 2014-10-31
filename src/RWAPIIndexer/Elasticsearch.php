@@ -166,7 +166,7 @@ class Elasticsearch {
     catch (\Exception $exception) {
       $message = $exception->getMessage();
       // Exception not because mapping already set, rethrow.
-      if (strpos($message, 'IndexAlreadyExistsException') !== 0) {
+      if (strpos($message, 'IndexAlreadyExistsException') === FALSE) {
         throw $exception;
       }
     }
@@ -188,7 +188,7 @@ class Elasticsearch {
     catch (\Exception $exception) {
       $message = $exception->getMessage();
       // Exception other than index missing, rethrow.
-      if (strpos($message, 'IndexMissingException') !== 0) {
+      if (strpos($message, 'IndexMissingException') === FALSE) {
         throw $exception;
       }
     }
@@ -231,10 +231,10 @@ class Elasticsearch {
     }
     catch (\Exception $exception) {
       $message = $exception->getMessage();
-      if (strpos($message, 'InvalidAliasNameException') === 0) {
+      if (strpos($message, 'InvalidAliasNameException') !== FALSE) {
         throw new \Exception('Invalid alias name "' . $alias . '", an index exists with the same name as the alias.');
       }
-      elseif (strpos($message, 'IndexMissingException') === 0) {
+      elseif (strpos($message, 'IndexMissingException') !== FALSE) {
         throw new \Exception('Index "' . $this->getIndexPath($index) . '" does not exist.');
       }
       else {
@@ -270,7 +270,7 @@ class Elasticsearch {
     catch (\Exception $exception) {
       $message = $exception->getMessage();
       // Exception other than alias missing, rethrow.
-      if (strpos($message, 'AliasesMissingException') !== 0 && strpos($message, 'IndexMissingException') !== 0) {
+      if (strpos($message, 'AliasesMissingException') === FALSE && strpos($message, 'IndexMissingException') === FALSE) {
         throw $exception;
       }
     }

@@ -25,7 +25,7 @@ class Options {
     'remove' => FALSE,
     'alias' => FALSE,
     'alias-only' => FALSE,
-    'log' => NULL,
+    'log' => '',
   );
 
   /**

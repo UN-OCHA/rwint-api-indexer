@@ -9,11 +9,13 @@ namespace RWAPIIndexer\Database;
 class Query {
   private $table = '';
   private $alias = '';
+  private $connection = NULL;
   private $parts = array();
 
-  public function __construct($table, $alias) {
+  public function __construct($table, $alias, $connection) {
     $this->table = $table;
     $this->alias = $alias;
+    $this->connection = $connection;
   }
 
   public function addField($table, $field, $alias) {
@@ -44,13 +46,13 @@ class Query {
       case 'IN':
         $values = array();
         foreach ($value as $data) {
-          $values[] = db_quote($data);
+          $values[] = $this->connection->quote($data);
         }
         $this->parts['where'][] = "{$field} IN (" . implode(",", $values) . ")";
         break;
 
       default:
-        $value = db_quote($value);
+        $value = $this->connection->quote($value);
         $this->parts['where'][] = "{$field} {$operator} {$value}";
     }
     return $this;
@@ -125,7 +127,7 @@ class Query {
 
   public function execute() {
     $query = $this->build();
-    return db_query($query);
+    return $this->connection->query($query);
   }
 
   public function __tostring() {

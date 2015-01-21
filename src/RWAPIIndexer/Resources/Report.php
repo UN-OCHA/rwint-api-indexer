@@ -33,7 +33,7 @@ class Report extends \RWAPIIndexer\Resource {
       'field_headline_image' => array(
         'headline_image' => 'image_reference',
       ),
-      'field_featured' => array(
+      'field_headline_featured' => array(
         'headline_featured' => 'value',
       ),
       'field_image' => array(

@@ -33,6 +33,9 @@ class Report extends \RWAPIIndexer\Resource {
       'field_headline_image' => array(
         'headline_image' => 'image_reference',
       ),
+      'field_headline_featured' => array(
+        'headline_featured' => 'value',
+      ),
       'field_image' => array(
         'image' => 'image_reference',
       ),
@@ -66,6 +69,7 @@ class Report extends \RWAPIIndexer\Resource {
       'date_changed' => array('time'),
       'date_original' => array('time'),
       'headline' => array('bool'),
+      'headline_featured' => array('bool'),
       'country' => array('primary'),
       'primary_country' => array('single'),
     ),
@@ -128,6 +132,7 @@ class Report extends \RWAPIIndexer\Resource {
             ->addString('headline.title', TRUE, TRUE)
             ->addString('headline.summary')
             ->addImage('headline.image')
+            ->addBoolean('headline.featured')
             // Language.
             ->addTaxonomy('language')
             ->addString('language.code', FALSE)
@@ -200,6 +205,10 @@ class Report extends \RWAPIIndexer\Resource {
         if ($this->processor->processImage($item['headline_image'], TRUE) === TRUE) {
           $headline['image'] = $item['headline_image'];
         }
+        // Headline featured.
+        if (!empty($item['headline_featured'])) {
+          $headline['featured'] = TRUE;
+        }
         $item['headline'] = $headline;
       }
       else {
@@ -212,6 +221,7 @@ class Report extends \RWAPIIndexer\Resource {
     unset($item['headline_title']);
     unset($item['headline_summary']);
     unset($item['headline_image']);
+    unset($item['headline_featured']);
 
     // Handle image.
     if ($this->processor->processImage($item['image'], TRUE) !== TRUE) {

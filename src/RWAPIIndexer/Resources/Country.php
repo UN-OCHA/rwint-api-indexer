@@ -21,6 +21,9 @@ class Country extends \RWAPIIndexer\Resource {
       'field_iso3' => array(
         'iso3' => 'value',
       ),
+      'field_profile' => array(
+        'profile' => 'value',
+      ),
       'field_featured' => array(
         'featured' => 'value',
       ),
@@ -77,6 +80,13 @@ class Country extends \RWAPIIndexer\Resource {
   public function processItem(&$item) {
     // Current.
     $item['current'] = !empty($item['status']) && $item['status'] === 'current';
+
+    // Only keep the description if the profile is checked.
+    if (empty($item['profile'])) {
+      unset($item['description']);
+      unset($item['description-html']);
+    }
+    unset($item['profile']);
 
     // Centroid coordinates.
     if (isset($item['latitude'], $item['longitude'])) {

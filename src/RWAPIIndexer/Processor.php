@@ -13,7 +13,7 @@ class Processor {
   protected $references = NULL;
 
   // Markdown converter.
-  protected $markdown = 'sundown';
+  protected $markdown = 'markdown';
 
   // Base public scheme for URLs.
   private $public_scheme_url = '';
@@ -72,8 +72,17 @@ class Processor {
   public function __construct($website, $references) {
     $this->website = $website;
     $this->references = $references;
-    $this->markdown = class_exists('\Sundown') ? 'sundown' : 'markdown';
     $this->public_scheme_url = $website . '/sites/reliefweb.int/files/';
+    // Markdown library.
+    if (class_exists('\Hoedown')) {
+      $this->markdown = 'hoedown';
+    }
+    elseif (class_exists('\Sundown')) {
+      $this->markdown = 'sundown';
+    }
+    else {
+      $this->markdown = 'markdown';
+    }
   }
 
   /**
@@ -211,6 +220,13 @@ class Processor {
    */
   public function processMarkdown($text) {
     switch ($this->markdown) {
+      case 'hoedown':
+        static $hoedown;
+        if (!isset($hoedown)) {
+          $hoedown = new \Hoedown();
+        }
+        return $hoedown->parse($text);
+
       case 'sundown':
         $sundown = new \Sundown($text, array(
             'tables' => TRUE,

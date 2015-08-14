@@ -27,6 +27,9 @@ class Source extends \RWAPIIndexer\Resource {
       'field_allowed_content_types' => array(
         'content_type' => 'multi_value',
       ),
+      'field_fts_id' => array(
+        'fts_id' => 'value',
+      ),
     ),
     'references' => array(
       'field_organization_type' => 'type',
@@ -40,6 +43,7 @@ class Source extends \RWAPIIndexer\Resource {
       'description' => array('links', 'html'),
       'content_type' => array('multi_int'),
       'type' => array('single'),
+      'fts_id' => array('int'),
     ),
     'references' => array(
       'type' => array(
@@ -78,7 +82,9 @@ class Source extends \RWAPIIndexer\Resource {
             ->addTaxonomy('country', array('shortname', 'iso3'))
             ->addGeoPoint('country.location')
             // Organization type.
-            ->addTaxonomy('type');
+            ->addTaxonomy('type')
+            // FTS ID
+            ->addInteger('fts_id');
 
     return $mapping->export();
   }

@@ -21,6 +21,9 @@ class Disaster extends \RWAPIIndexer\Resource {
       'field_glide' => array(
         'glide' => 'value',
       ),
+      'field_glide_related' => array(
+        'related_glide' => 'value',
+      ),
       'field_featured' => array(
         'featured' => 'value',
       ),
@@ -43,6 +46,7 @@ class Disaster extends \RWAPIIndexer\Resource {
       'type' => array('primary'),
       'primary_country' => array('single'),
       'primary_type' => array('single'),
+      'related_glide' => array('multi_string'),
     ),
     'references' => array(
       'primary_country' => array(
@@ -77,6 +81,7 @@ class Disaster extends \RWAPIIndexer\Resource {
             // Names.
             ->addString('name', TRUE, TRUE)
             ->addString('glide', TRUE, TRUE)
+            ->addString('related_glide', TRUE, TRUE)
             // Description.
             ->addString('description')
             ->addString('description-html', NULL)

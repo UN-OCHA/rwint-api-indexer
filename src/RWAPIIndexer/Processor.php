@@ -172,6 +172,12 @@ class Processor {
             $item[$key] = $item[$key][0];
           }
           break;
+
+        // Explode a list of strings seperated by spaces or commas into array.
+        // Includes " ", \r, \t, \n and \f.
+        case 'multi_string':
+          $item[$key] = preg_split("/[\s,]+/", $item[$key]);
+          break;
       }
     }
   }

@@ -123,7 +123,7 @@ class Processor {
         // Convert links to absolute links.
         case 'links':
           // TODO: replace reliefweb.int with $website.
-          $item[$key] = preg_replace('/(\]\(\/?)(?!http:\/\/)/', '](' . $this->website . '/', $item[$key]);
+          $item[$key] = preg_replace('/(\]\(\/?)(?!http[s]?:\/\/)/', '](' . $this->website . '/', $item[$key]);
           break;
 
         // Convert a field value in markdown format to HTML.

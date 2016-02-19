@@ -159,6 +159,7 @@ class Report extends \RWAPIIndexer\Resource {
             ->addString('disaster_type.code', FALSE)
             ->addTaxonomy('vulnerable_groups')
             ->addTaxonomy('ocha_product')
+            ->addTaxonomy('feature')
             // File and image.
             ->addImage('image')
             ->addFile('file');

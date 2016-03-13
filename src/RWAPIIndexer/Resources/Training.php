@@ -48,6 +48,7 @@ class Training extends \RWAPIIndexer\Resource {
       'field_theme' => 'theme',
       'field_training_type' => 'type',
       'field_training_format' => 'format',
+      'field_training_language' => 'training_language',
       'field_career_categories' => 'career_categories',
     ),
   );
@@ -84,6 +85,9 @@ class Training extends \RWAPIIndexer\Resource {
       ),
       'format' => array(
         'training_format' => array('id', 'name'),
+      ),
+      'training_language' => array(
+        'language' => array('id', 'name', 'code'),
       ),
       'career_categories' => array(
         'career_categories' => array('id', 'name'),
@@ -125,12 +129,15 @@ class Training extends \RWAPIIndexer\Resource {
             ->addTaxonomy('source', array('shortname', 'longname'))
             ->addString('source.homeage', NULL)
             ->addTaxonomy('source.type')
-            // Other taxonomies
+            // Other taxonomies.
             ->addTaxonomy('city')
             ->addTaxonomy('type')
             ->addTaxonomy('format')
             ->addTaxonomy('theme')
             ->addTaxonomy('career_categories')
+            // Training language.
+            ->addTaxonomy('training_language')
+            ->addString('training_language.code', FALSE)
             // File.
             ->addFile('file');
 

@@ -30,6 +30,9 @@ class Training extends \RWAPIIndexer\Resource {
       'body' => array(
         'body' => 'value',
       ),
+      'field_fee_information' => array(
+        'fee_information' => 'value',
+      ),
       'field_how_to_apply' => array(
         'how_to_register' => 'value',
       ),
@@ -103,6 +106,8 @@ class Training extends \RWAPIIndexer\Resource {
             // Body.
             ->addString('body')
             ->addString('body-html', NULL)
+            // Fee information.
+            ->addString('fee_information')
             // How to register.
             ->addString('how_to_register')
             ->addString('how_to_register-html', NULL)

@@ -144,6 +144,35 @@ abstract class Resource {
   }
 
   /**
+   * Retrieve the URL aliases for the given entity ids.
+   *
+   * @param array $ids
+   *   Entity Ids
+   *
+   * @return array
+   *   Associative array with entity ids as keys and url aliases as values.
+   */
+  public function fetchUrlAliases($ids) {
+    $base = $this->entity_type === 'taxonomy_term' ? 'taxonomy/term/' : 'node/';
+    $map = array();
+    foreach ($ids as $id) {
+      $map[$id] = $base . $id;
+    }
+    $query = new \RWAPIIndexer\Database\Query('url_alias', 'url_alias', $this->connection);
+    $query->addField('url_alias', 'source', 'source');
+    $query->addField('url_alias', 'alias', 'alias');
+    $query->condition('url_alias.source', $map, 'IN');
+    $query->orderBy('url_alias.pid', 'ASC');
+    $aliases = $query->execute()->fetchAllKeyed();
+    foreach ($map as $id => $source) {
+      if (isset($aliases[$source])) {
+        $map[$id] = $aliases[$source];
+      }
+    }
+    return $map;
+  }
+
+  /**
    * Get the resource handler for the given entity bundle.
    *
    * @param string $bundle
@@ -164,9 +193,11 @@ abstract class Resource {
   public function processItems(&$items) {
     $options = $this->processing_options;
 
+    $url_aliases = $this->fetchUrlAliases(array_keys($items));
+
     foreach ($items as $id => &$item) {
       // Add the entity link to the main website.
-      $this->processor->processURL($this->entity_type, $item);
+      $this->processor->processURL($this->entity_type, $item, $url_aliases[$id]);
 
       // Convert ID to integer.
       $item['id'] = (int) $item['id'];

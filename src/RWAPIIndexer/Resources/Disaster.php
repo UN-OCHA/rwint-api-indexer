@@ -74,6 +74,7 @@ class Disaster extends \RWAPIIndexer\Resource {
     $mapping = new \RWAPIIndexer\Mapping();
     $mapping->addInteger('id')
             ->addString('url', FALSE)
+            ->addString('url_alias', FALSE)
             ->addString('status', FALSE)
             ->addDates('date', array('created'))
             ->addBoolean('featured')

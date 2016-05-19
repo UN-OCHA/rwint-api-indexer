@@ -16,6 +16,7 @@ class TaxonomyDefault extends \RWAPIIndexer\Resource {
     $mapping = new \RWAPIIndexer\Mapping();
     $mapping->addInteger('id')
             ->addString('url', FALSE)
+            ->addString('url_alias', FALSE)
             ->addString('status', FALSE)
             // Names.
             ->addString('name', TRUE, TRUE)

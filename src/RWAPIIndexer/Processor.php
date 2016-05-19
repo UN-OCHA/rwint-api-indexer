@@ -256,9 +256,12 @@ class Processor {
    *   Entity type of the item.
    * @param array $item
    *   Item to which add the URL field.
+   * @param string $alias
+   *   URL alias for the entity.
    */
-  public function processURL($entity_type, &$item) {
+  public function processURL($entity_type, &$item, $alias) {
     $item['url'] = $this->website . '/' . str_replace('_', '/', $entity_type) . '/' . $item['id'];
+    $item['url_alias'] = $this->website . '/' . $alias;
   }
 
   /**

@@ -168,18 +168,21 @@ class Mapping {
    * @return RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addFile($field, $alias = '') {
+  public function addImage($field, $alias = '') {
     $mapping = array(
       'properties' => array(
         'id' => array('type' => 'integer'),
         'mimetype' => array('type' => 'string', 'index' => 'not_analyzed'),
         'filename' => array('type' => 'string', 'index' => 'not_analyzed'),
+        'filesize' => array('type' => 'integer'),
         'caption' => array('type' => 'string', 'norms' => array('enabled' => FALSE)),
         'copyright' => array('type' => 'string'),
         'url' => array('type' => 'string', 'index' => 'not_analyzed'),
         'url-large' => array('type' => 'string', 'index' => 'no'),
         'url-small' => array('type' => 'string', 'index' => 'no'),
         'url-thumb' => array('type' => 'string', 'index' => 'no'),
+        'width' => array('type' => 'integer'),
+        'height' => array('type' => 'integer'),
       ),
     );
     $this->addFieldMapping($field, $mapping, $alias);
@@ -196,12 +199,13 @@ class Mapping {
    * @return RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addImage($field, $alias = '') {
+  public function addFile($field, $alias = '') {
     $mapping = array(
       'properties' => array(
         'id' => array('type' => 'integer'),
         'mimetype' => array('type' => 'string', 'index' => 'not_analyzed'),
         'filename' => array('type' => 'string', 'index' => 'not_analyzed'),
+        'filesize' => array('type' => 'integer'),
         'description' => array('type' => 'string', 'norms' => array('enabled' => FALSE)),
         'url' => array('type' => 'string', 'index' => 'not_analyzed'),
         'preview' => array(

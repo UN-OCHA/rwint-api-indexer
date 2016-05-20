@@ -271,7 +271,7 @@ class Processor {
    * @return boolean
    *   Processing success.
    */
-  public function processImage(&$field, $single = FALSE) {
+  public function processImage(&$field, $single = FALSE, $meta = TRUE, $styles = TRUE) {
     if (isset($field) && !empty($field)) {
       $items = array();
       foreach (explode('%%%', $field) as $item) {
@@ -279,18 +279,24 @@ class Processor {
 
         $array = array(
           'id' => $parts[0],
-          'copyright' => preg_replace('/^@+/', '', $parts[1]),
-          'caption' => $parts[2],
           'width' => $parts[3],
           'height' => $parts[4],
-          'url' => str_replace('public://', $this->public_scheme_url, $parts[5]),
-          'url-large' => str_replace('public://', $this->public_scheme_url . 'styles/attachment-large/public/', $parts[5]),
-          'url-small' => str_replace('public://', $this->public_scheme_url . 'styles/attachment-small/public/', $parts[5]),
-          'url-thumb' => str_replace('public://', $this->public_scheme_url . 'styles/m/public/', $parts[5]),
+          'url' => $this->processFilePath($parts[5]),
           'filename' => $parts[6],
-          'filemime' => $this->getMimeType($parts[6]),
+          'mimetype' => $this->getMimeType($parts[6]),
           'filesize' => $parts[7],
         );
+
+        if (!empty($meta)) {
+          $array['copyright'] = preg_replace('/^@+/', '', $parts[1]);
+          $array['caption'] = $parts[2];
+        }
+
+        if (!empty($styles)) {
+          $array['url-large'] = $this->processFilePath($parts[5], 'attachment-large');
+          $array['url-small'] = $this->processFilePath($parts[5], 'attachment-small');
+          $array['url-thumb'] = $this->processFilePath($parts[5], 'm');
+        }
 
         foreach ($array as $key => $value) {
           if (empty($value)) {
@@ -327,14 +333,14 @@ class Processor {
         $array = array(
           'id' => $parts[0],
           'description' => preg_replace('/\|(\d+)\|(0|90|-90)$/', '', $parts[1]),
-          'url' => str_replace('public://', $this->public_scheme_url, $parts[2]),
+          'url' => $this->processFilePath($parts[2]),
           'filename' => $parts[3],
-          'filemime' => $this->getMimeType($parts[3]),
+          'mimetype' => $this->getMimeType($parts[3]),
           'filesize' => $parts[4],
         );
 
         // PDF attachment.
-        if ($array['filemime'] === 'application/pdf' && preg_match('/\|(\d+)\|(0|90|-90)$/', $parts[1]) === 1) {
+        if ($array['mimetype'] === 'application/pdf' && preg_match('/\|(\d+)\|(0|90|-90)$/', $parts[1]) === 1) {
           $directory = dirname($parts[2]) . '-pdf-previews';
           $filename = basename(urldecode($parts[3]), '.pdf');
           /*if (module_exists('transliteration')) {
@@ -342,10 +348,10 @@ class Processor {
           }*/
           $filename = $directory . '/' . $parts[0] . '-' . $filename . '.png';
           $array['preview'] = array(
-            'url' =>  str_replace('public://', $this->public_scheme_url, $filename),
-            'url-large' => str_replace('public://', $this->public_scheme_url . 'styles/attachment-large/public/', $filename),
-            'url-small' => str_replace('public://', $this->public_scheme_url . 'styles/attachment-small/public/', $filename),
-            'url-thumb' => str_replace('public://', $this->public_scheme_url . 'styles/m/public/', $filename),
+            'url' => $this->processFilePath($filename),
+            'url-large' => $this->processFilePath($filename, 'attachment-large'),
+            'url-small' => $this->processFilePath($filename, 'attachment-small'),
+            'url-thumb' => $this->processFilePath($filename, 'm'),
           );
         }
 
@@ -373,5 +379,23 @@ class Processor {
     $extension = array_pop($extension);
     $extension = strtolower($extension);
     return isset($this->mimeTypes[$extension]) ? $this->mimeTypes[$extension] : 'application/octet-stream';
+  }
+
+  /**
+   * Return the URL from a public file path.
+   *
+   * @param string $path
+   *   File path.
+   * @param string $style
+   *   Image style.
+   * @return string
+   *   File URL.
+   */
+  public function processFilePath($path, $style = '') {
+    $base = $this->public_scheme_url;
+    if (!empty($style)) {
+      $base .= 'styles/' . $style . '/public/';
+    }
+    return str_replace('public://', $base, $path);
   }
 }

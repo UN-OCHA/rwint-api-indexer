@@ -72,8 +72,9 @@ class Mapping {
    *
    * @param string $field
    *   Field Name.
-   * @param boolean $field
-   *   Indicates whether indexing or not and if analyzed.
+   * @param boolean $index
+   *   Indicates whether the field should be indexed and analyzed or not:
+   *   TRUE = indexed and analyzed, FALSE = not analyzed, NULL = not indexed.
    * @param boolean $exact
    *   Indicates if the string should have an exact not analyzed sufield.
    * @param string $alias

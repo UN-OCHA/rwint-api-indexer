@@ -55,6 +55,7 @@ class Country extends \RWAPIIndexer\Resource {
     $mapping = new \RWAPIIndexer\Mapping();
     $mapping->addInteger('id')
             ->addString('url', FALSE)
+            ->addString('url_alias', FALSE)
             ->addString('status', FALSE)
             ->addBoolean('current')
             ->addBoolean('featured')

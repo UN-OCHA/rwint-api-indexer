@@ -19,7 +19,7 @@ class Statement extends \PDOStatement {
     $return = array();
     if (isset($fetch)) {
       if (is_string($fetch)) {
-        $this->setFetchMode(PDO::FETCH_CLASS, $fetch);
+        $this->setFetchMode(\PDO::FETCH_CLASS, $fetch);
       }
       else {
         $this->setFetchMode($fetch);
@@ -31,6 +31,18 @@ class Statement extends \PDOStatement {
       $return[$record_key] = $record;
     }
 
+    return $return;
+  }
+
+  /**
+   * Returns the entire result set as a single associative array.
+   */
+  public function fetchAllKeyed($key_index = 0, $value_index = 1) {
+    $return = array();
+    $this->setFetchMode(\PDO::FETCH_NUM);
+    foreach ($this as $record) {
+      $return[$record[$key_index]] = $record[$value_index];
+    }
     return $return;
   }
 

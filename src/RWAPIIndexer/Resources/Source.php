@@ -30,6 +30,9 @@ class Source extends \RWAPIIndexer\Resource {
       'field_fts_id' => array(
         'fts_id' => 'value',
       ),
+      'field_term_image' => array(
+        'logo' => 'image_reference',
+      ),
     ),
     'references' => array(
       'field_organization_type' => 'type',
@@ -84,8 +87,10 @@ class Source extends \RWAPIIndexer\Resource {
             ->addGeoPoint('country.location')
             // Organization type.
             ->addTaxonomy('type')
-            // FTS ID
-            ->addInteger('fts_id');
+            // FTS ID.
+            ->addInteger('fts_id')
+            // Logo.
+            ->addImage('logo');
 
     return $mapping->export();
   }
@@ -102,6 +107,11 @@ class Source extends \RWAPIIndexer\Resource {
       foreach ($item['content_type'] as $key => $value) {
         $item['content_type'][$key] = $this->content_types[(int) $value];
       }
+    }
+
+    // Handle logo.
+    if ($this->processor->processImage($item['logo'], TRUE, FALSE, FALSE) !== TRUE) {
+      unset($item['logo']);
     }
   }
 }

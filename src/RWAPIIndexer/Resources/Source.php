@@ -73,7 +73,7 @@ class Source extends \RWAPIIndexer\Resource {
             ->addString('url', FALSE)
             ->addString('url_alias', FALSE)
             ->addString('status', FALSE)
-            ->addString('homepage', NULL)
+            ->addString('homepage', FALSE)
             ->addString('content_type', FALSE)
             // Names.
             ->addString('name', TRUE, TRUE)

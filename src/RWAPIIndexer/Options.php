@@ -20,6 +20,7 @@ class Options {
     'website' => 'http://reliefweb.int',
     'limit' => 0,
     'offset' => 0,
+    'filter' => '',
     'chunk-size' => 500,
     'id' => 0,
     'remove' => FALSE,
@@ -124,6 +125,11 @@ class Options {
         case '--offset':
         case '-o':
           $options['offset'] = (int) array_shift($argv);
+          break;
+
+        case '--filter':
+        case '-f':
+          $options['filter'] = (int) array_shift($argv);
           break;
 
         case '--chunk-size':
@@ -282,6 +288,11 @@ class Options {
         'filter' => FILTER_VALIDATE_INT,
         'flags' => FILTER_NULL_ON_FAILURE,
       ),
+      'filter' => array(
+        'filter' => FILTER_VALIDATE_REGEXP,
+        'options' => array('regexp' => '/^(([a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+)*)([+][a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+)*)*)*$/'),
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ),
       'chunk-size' => array(
         'filter'    => FILTER_VALIDATE_INT,
         'options'   => array('min_range' => 1, 'max_range' => 1000),
@@ -337,6 +348,7 @@ class Options {
           "     -w, --website <arg> Website URL, deaults to http://reliefweb.int \n" .
           "     -l, --limit <arg> Maximum number of entities to index, defaults to 0 (all) \n" .
           "     -o, --offset <arg> ID of the entity from which to start the indexing, defaults to the most recent one \n" .
+          "     -f, --filter <arg> Filter documents to index. Format: 'field1:value1,value2+field2:value1,value2' \n" .
           "     -c, --chunk-size <arg> Number of entities to index at one time, defaults to 500 \n" .
           "     -i, --id Id of an entity item to index, defaults to 0 (none) \n" .
           "     -r, --remove Removes an entity if 'id' is provided or the index for the given entity bundle \n" .

@@ -45,7 +45,7 @@ class Query {
     switch ($operator) {
       case 'IN':
         $values = array();
-        foreach ($value as $data) {
+        foreach ((array) $value as $data) {
           $values[] = $this->connection->quote($data);
         }
         $this->parts['where'][] = "{$field} IN (" . implode(",", $values) . ")";

@@ -52,4 +52,11 @@ class Statement extends \PDOStatement {
   public function fetchField($index = 0) {
     return $this->fetchColumn($index);
   }
+
+  /**
+   * Returns an entire single column of a result set as an indexed array.
+   */
+  public function fetchCol($index = 0) {
+    return $this->fetchAll(\PDO::FETCH_COLUMN, $index);
+  }
 }

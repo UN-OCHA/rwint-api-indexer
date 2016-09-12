@@ -145,6 +145,8 @@ class Query {
   /**
    * Filter the query with the given ids.
    *
+   * @param \RWAPIIndexer\Database\Query $query
+   *   Query to filter.
    * @param array $ids
    *   Entity Ids used to filter the query.
    */
@@ -155,15 +157,60 @@ class Query {
   }
 
   /**
+   * Filter the query with given conditions.
+   *
+   * @param \RWAPIIndexer\Database\Query $query
+   *   Query to filter.
+   * @param array $conditions
+   *   Conditions used to filter the query.
+   */
+  public function setFilters($query, $conditions) {
+    $entity_type = $this->entity_type;
+    $base_table = $this->base_table;
+    $base_field = $this->base_field;
+
+    foreach ($conditions as $category => $fields) {
+      foreach ($fields as $field =>  $values) {
+        if ($category === 'fields') {
+          $query->condition($base_table . '.' . $field, $valus, 'IN');
+        }
+        else {
+          $table = 'field_data_field_' . $field;
+          $alias = $table . '_filter';
+          $column = $category === 'references' ? 'tid' : 'value';
+          $condition = "{$alias}.entity_id = {$base_table}.{$base_field} AND {$alias}.entity_type = '{$entity_type}'";
+          $query->innerJoin($table, $alias, $condition);
+          $query->condition($alias . '.field_' . $field . '_' . $column, $values, 'IN');
+        }
+      }
+    }
+  }
+
+  /**
    * Get the maximum number of items to index.
+   *
+   * @param integer $limit
+   *   Maximum number of items to index.
+   * @param integer offset
+   *   Id of the entity from which to start the indexing.
    *
    * @return integer
    *   Limit.
    */
-  public function getLimit($limit = 0) {
+  public function getLimit($limit = 0, $offset = 0) {
     $query = $this->newQuery();
     $this->setBundle($query);
     $this->setCount($query);
+
+    // Set the offset.
+    if (!empty($offset)) {
+      $this->setOffset($query, $offset);
+    }
+
+    // Set filters.
+    if (!empty($this->options['filters'])) {
+      $this->setFilters($query, $this->options['filters']);
+    }
 
     $count = (int) $query->execute()->fetchField();
 
@@ -172,6 +219,9 @@ class Query {
 
   /**
    * Get the offset from which to start the indexing.
+   *
+   * @param integer offset
+   *   Id of the entity from which to start the indexing.
    *
    * @return integer
    *   Offset.
@@ -184,9 +234,51 @@ class Query {
       $this->setOrderBy($query);
       $this->setLimit($query, 1);
 
+      // Set filters.
+      if (!empty($this->options['filters'])) {
+        $this->setFilters($query, $this->options['filters']);
+      }
+
       $offset = (int) $query->execute()->fetchField();
     }
     return $offset;
+  }
+
+  /**
+   * Get ids of the entities to index.
+   *
+   * @param integer $limit
+   *   Maximum number of items to index.
+   * @param integer offset
+   *   Id of the entity from which to start the indexing.
+   * @param array ids
+   *   Ids of the entities to index.
+   *
+   * @return ids
+   *   array.
+   */
+  public function getIds($limit = NULL, $offset = NULL, $ids = NULL) {
+    if (!empty($ids)) {
+      return $ids;
+    }
+
+    // Base query.
+    $query = $this->newQuery();
+
+    $this->addIdField($query);
+    $this->setBundle($query);
+    $this->setIds($query, $ids);
+    $this->setOffset($query, $offset);
+    $this->setOrderBy($query);
+    $this->setLimit($query, $limit);
+
+    // Set filters.
+    if (!empty($this->options['filters'])) {
+      $this->setFilters($query, $this->options['filters']);
+    }
+
+    // Fetch the ids.
+    return $query->execute()->fetchCol();
   }
 
   /**
@@ -205,16 +297,18 @@ class Query {
     $base_table = $this->base_table;
     $base_field = $this->base_field;
 
+    // Get the id of the entities to retrieve.
+    $ids = $this->getIds($limit, $offset, $ids);
+    if (empty($ids)) {
+      return array();
+    }
+
     // Base query.
     $query = $this->newQuery();
-
     $this->addIdField($query);
     $this->setBundle($query);
     $this->setIds($query, $ids);
-    $this->setOffset($query, $offset);
     $this->setGroupBy($query);
-    $this->setOrderBy($query);
-    $this->setLimit($query, $limit);
 
     // Add the extra fields.
     if (isset($this->options['fields'])) {
@@ -281,6 +375,9 @@ class Query {
 
     // Fetch the items.
     $items = $query->execute()->fetchAllAssoc('id', \PDO::FETCH_ASSOC);
+    // Sort by ID desc.
+    krsort($items);
+
     // Load the references and attach them to the items.
     $this->loadReferences($items);
 
@@ -294,7 +391,7 @@ class Query {
    *   Items for which to load the references.
    */
   public function loadReferences(&$items) {
-    if (!empty($this->options['references'])) {
+    if (!empty($this->options['references']) && !empty($items)) {
       $ids = array_keys($items);
       $queries = array();
       foreach ($this->options['references'] AS $field_name => $alias) {

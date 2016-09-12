@@ -60,8 +60,46 @@ abstract class Resource {
     $this->references = $references;
     $this->options = $options;
 
+    $query_options = $this->query_options;
+
+    // Only apply filter to the resource being indexed (not to references).
+    if ($this->bundle === $options->get('bundle')) {
+      $query_options['filters'] = $this->parseFilters($options->get('filter'));
+    }
+
     // Create a new Query object to get the items to index.
-    $this->query = new \RWAPIIndexer\Query($connection, $this->entity_type, $this->bundle, $this->query_options);
+    $this->query = new \RWAPIIndexer\Query($connection, $this->entity_type, $this->bundle, $query_options);
+  }
+
+  /**
+   * Parse argument filters and return an array of conditions
+   * to apply to the query.
+   *
+   * @param string $filters
+   *   Document filters.
+   * @return array
+   *   Query conditions.
+   */
+  public function parseFilters($filters) {
+    $conditions = array();
+    if (!empty($filters)) {
+      foreach (explode('+', $filters) as $filter) {
+        list($field, $value) = explode(':', $filter, 2);
+        $values = explode(',', $value);
+        if (isset($this->query_options['fields'][$field])) {
+          $conditions['fields'][$field] = $values;
+        }
+        elseif (isset($this->query_options['field_joins']['field_' . $field])) {
+          if (reset($this->query_options['field_joins']['field_' . $field]) === 'value') {
+            $conditions['field_joins'][$field] = $values;
+          }
+        }
+        elseif (isset($this->query_options['references']['field_' . $field])) {
+          $conditions['references'][$field] = $values;
+        }
+      }
+    }
+    return $conditions;
   }
 
   /**
@@ -163,10 +201,13 @@ abstract class Resource {
     $query->addField('url_alias', 'alias', 'alias');
     $query->condition('url_alias.source', $map, 'IN');
     $query->orderBy('url_alias.pid', 'ASC');
-    $aliases = $query->execute()->fetchAllKeyed();
-    foreach ($map as $id => $source) {
-      if (isset($aliases[$source])) {
-        $map[$id] = $aliases[$source];
+    $result = $aliases = $query->execute();
+    if (!empty($result)) {
+      $aliases = $result->fetchAllKeyed();
+      foreach ($map as $id => $source) {
+        if (isset($aliases[$source])) {
+          $map[$id] = $aliases[$source];
+        }
       }
     }
     return $map;
@@ -245,7 +286,7 @@ abstract class Resource {
     // Get the offset from which to start indexing.
     $offset = $this->query->getOffset($this->options->get('offset'));
     // Get the maximum number of items to index.
-    $limit = $this->query->getLimit($this->options->get('limit'));
+    $limit = $this->query->getLimit($this->options->get('limit'), $offset);
     // Number of items to process per batch run.
     $chunk_size = $this->options->get('chunk-size');
 

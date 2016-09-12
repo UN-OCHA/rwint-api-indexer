@@ -20,6 +20,7 @@ Usage: php PATH/TO/Indexer.php [options] <entity-bundle>
     -w, --website <arg> Website URL, deaults to http://reliefweb.int
     -l, --limit <arg> Maximum number of entities to index, defaults to 0 (all)
     -o, --offset <arg> ID of the entity from which to start the indexing, defaults to the most recent one
+    -f, --filter <arg> Filter documents to index. Format: 'field1:value1,value2+field2:value1,value2'
     -c, --chunk-size <arg> Number of entities to index at one time, defaults to 500
     -i, --id Id of an entity item to index, defaults to 0 (none)
     -r, --remove Removes an entity if 'id' is provided or the index for the given entity bundle

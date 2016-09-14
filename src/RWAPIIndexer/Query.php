@@ -212,9 +212,12 @@ class Query {
       $this->setFilters($query, $this->options['filters']);
     }
 
-    $count = (int) $query->execute()->fetchField();
-
-    return $limit <= 0 ? $count : min($limit, $count);
+    $result = $query->execute();
+    if (!empty($result)) {
+      $count = (int) $result->fetchField();
+      return $limit <= 0 ? $count : min($limit, $count);
+    }
+    return 0;
   }
 
   /**
@@ -239,7 +242,8 @@ class Query {
         $this->setFilters($query, $this->options['filters']);
       }
 
-      $offset = (int) $query->execute()->fetchField();
+      $result = $query->execute();
+      $offset = !empty($result) ? (int) $result->fetchField() : 0;
     }
     return $offset;
   }
@@ -278,7 +282,8 @@ class Query {
     }
 
     // Fetch the ids.
-    return $query->execute()->fetchCol();
+    $result = $query->execute();
+    return !empty($result) ? $result->fetchCol() : array();
   }
 
   /**
@@ -374,7 +379,12 @@ class Query {
     }
 
     // Fetch the items.
-    $items = $query->execute()->fetchAllAssoc('id', \PDO::FETCH_ASSOC);
+    $result = $query->execute();
+    if (empty($result)) {
+      return array();
+    }
+    $items = $result->fetchAllAssoc('id', \PDO::FETCH_ASSOC);
+
     // Sort by ID desc.
     krsort($items);
 

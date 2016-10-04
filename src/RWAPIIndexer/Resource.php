@@ -243,6 +243,10 @@ abstract class Resource {
       // Convert ID to integer.
       $item['id'] = (int) $item['id'];
 
+      // Add timestamp.
+      $date = new \DateTime('now', new \DateTimeZone('UTC'));
+      $item['timestamp'] = $date->format(\DateTime::ATOM);
+
       // Generic conversion and reference handling.
       foreach ($item as $key => $value) {
         // Remove NULL properties.

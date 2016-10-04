@@ -154,7 +154,6 @@ class Elasticsearch {
     $mapping = array(
       $index => array(
         '_all' => array('enabled' => FALSE),
-        '_timestamp' => array('enabled' => TRUE, 'store' => TRUE, 'index' => 'no'),
         'properties' => $mapping,
       ),
     );
@@ -373,10 +372,20 @@ class Elasticsearch {
 
     // Elasticsearch error.
     if ($status != 200) {
-      $response = json_decode($response);
-      if (isset($response->error)) {
-        throw new \Exception($response->error);
+      if (!empty($response)) {
+        $response = json_decode($response);
+        if (isset($response->error->type)) {
+          $message = str_replace(' ', '', ucwords(str_replace('_', ' ', $response->error->type)));
+          if (isset($response->error->reason)) {
+            $message .= ' [reason: ' . $response->error->reason . ']';
+          }
+          if (isset($response->error->index)) {
+            $message .= ' [index: ' . $response->error->index . ']';
+          }
+          throw new \Exception($message);
+        }
       }
+      throw new \Exception("Unknown error");
     }
 
     return $response;

@@ -299,6 +299,7 @@ class Processor {
           $array['url-large'] = $this->processFilePath($parts[5], 'attachment-large');
           $array['url-small'] = $this->processFilePath($parts[5], 'attachment-small');
           $array['url-thumb'] = $this->processFilePath($parts[5], 'm');
+          $array['url-icon'] = $this->processFilePath($parts[5], 's');
         }
 
         foreach ($array as $key => $value) {

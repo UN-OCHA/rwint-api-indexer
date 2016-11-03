@@ -110,7 +110,7 @@ class Source extends \RWAPIIndexer\Resource {
     }
 
     // Handle logo.
-    if ($this->processor->processImage($item['logo'], TRUE, FALSE, FALSE) !== TRUE) {
+    if ($this->processor->processImage($item['logo'], TRUE, FALSE, TRUE) !== TRUE) {
       unset($item['logo']);
     }
   }

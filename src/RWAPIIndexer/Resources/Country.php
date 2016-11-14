@@ -96,7 +96,13 @@ class Country extends \RWAPIIndexer\Resource {
 
     // Centroid coordinates.
     if (isset($item['latitude'], $item['longitude'])) {
-      $item['location'] = array($item['longitude'], $item['latitude']);
+      // TODO: fix the coordinates in the main site instead.
+      if ($item['latitude'] < -90 || $item['latitude'] > 90) {
+        $item['location'] = array('lon' => $item['latitude'], 'lat' => $item['longitude']);
+      }
+      else {
+        $item['location'] = array('lat' => $item['latitude'], 'lon' => $item['longitude']);
+      }
       unset($item['longitude']);
       unset($item['latitude']);
     }

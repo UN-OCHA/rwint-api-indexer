@@ -7,7 +7,9 @@ namespace RWAPIIndexer;
  */
 class Mapping {
   // Mapping.
-  private $mapping = array();
+  private $mapping = array(
+    'timestamp' => array('type' => 'date', 'store' => TRUE, 'index' => 'no'),
+  );
 
   /**
    * Add an integer field definition to the mapping.
@@ -321,8 +323,10 @@ class Mapping {
     }
 
     $parent += $mapping;
-    if (!empty($alias)) {
+
+    // Deprecated in ES 2.x.
+    /*if (!empty($alias)) {
       $parent['index_name'] = $alias;
-    }
+    }*/
   }
 }

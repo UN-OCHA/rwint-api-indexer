@@ -20,6 +20,9 @@ class Elasticsearch {
     'settings' => array(
       'number_of_shards' => 1,
       'number_of_replicas' => 1,
+      # For deep pagination. Review "Search After" query when switching to 5.x.
+      # 2,000,000 should be enough for several years.
+      'max_result_window' => 2000000,
       'analysis' => array(
         'analyzer' => array(
           'default_index' => array(

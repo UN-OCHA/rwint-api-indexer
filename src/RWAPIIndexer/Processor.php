@@ -399,6 +399,18 @@ class Processor {
     if (!empty($style)) {
       $base .= 'styles/' . $style . '/public/';
     }
-    return str_replace('public://', $base, $path);
+    return $base . $this->encodePath(str_replace('public://', '', $path));
+  }
+
+  /**
+   * Encode url path.
+   *
+   * @param string $path
+   *   Path to encode.
+   * @return string
+   *   Encoded path.
+   */
+  public function encodePath($path) {
+    return str_replace('%2F', '/', rawurlencode($path));
   }
 }

@@ -36,13 +36,15 @@ class Training extends \RWAPIIndexer\Resource {
       'field_how_to_apply' => array(
         'how_to_register' => 'value',
       ),
+      'field_city' => array(
+        'city' => 'value',
+      ),
       'field_file' => array(
         'file' => 'file_reference',
       ),
     ),
     'references' => array(
       'field_country' => 'country',
-      'field_city' => 'city',
       'field_source' => 'source',
       'field_language' => 'language',
       'field_theme' => 'theme',
@@ -67,9 +69,6 @@ class Training extends \RWAPIIndexer\Resource {
     'references' => array(
       'country' => array(
         'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
-      ),
-      'city' => array(
-        'city' => array('id', 'name'),
       ),
       'source' => array(
         'source' => array('id', 'name', 'shortname', 'longname', 'type', 'homepage'),
@@ -171,6 +170,11 @@ class Training extends \RWAPIIndexer\Resource {
     unset($item['date_registration']);
     unset($item['date_start']);
     unset($item['date_end']);
+
+    // Handle city. Keep compatibility.
+    if (isset($item['city'])) {
+      $item['city'] = array(array('name' => $item['city']));
+    }
 
     // Handle File.
     if ($this->processor->processFile($item['file']) !== TRUE) {

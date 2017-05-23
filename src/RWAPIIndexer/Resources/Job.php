@@ -26,13 +26,15 @@ class Job extends \RWAPIIndexer\Resource {
       'field_how_to_apply' => array(
         'how_to_apply' => 'value',
       ),
+      'field_city' => array(
+        'city' => 'value',
+      ),
       'field_file' => array(
         'file' => 'file_reference',
       ),
     ),
     'references' => array(
       'field_country' => 'country',
-      'field_city' => 'city',
       'field_source' => 'source',
       'field_language' => 'language',
       'field_theme' => 'theme',
@@ -54,9 +56,6 @@ class Job extends \RWAPIIndexer\Resource {
     'references' => array(
       'country' => array(
         'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
-      ),
-      'city' => array(
-        'city' => array('id', 'name'),
       ),
       'source' => array(
         'source' => array('id', 'name', 'shortname', 'longname', 'type', 'homepage'),
@@ -138,6 +137,11 @@ class Job extends \RWAPIIndexer\Resource {
     unset($item['date_created']);
     unset($item['date_changed']);
     unset($item['date_closing']);
+
+    // Handle city. Keep compatibility.
+    if (isset($item['city'])) {
+      $item['city'] = array(array('name' => $item['city']));
+    }
 
     // Handle File.
     if ($this->processor->processFile($item['file']) !== TRUE) {

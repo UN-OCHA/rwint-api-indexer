@@ -140,7 +140,7 @@ class Job extends \RWAPIIndexer\Resource {
 
     // Handle city. Keep compatibility.
     if (isset($item['city'])) {
-      $item['city'] = array('name' => $item['city']);
+      $item['city'] = array(array('name' => $item['city']));
     }
 
     // Handle File.

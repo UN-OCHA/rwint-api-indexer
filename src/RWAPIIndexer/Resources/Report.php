@@ -224,5 +224,10 @@ class Report extends \RWAPIIndexer\Resource {
     if ($this->processor->processFile($item['file']) !== TRUE) {
       unset($item['file']);
     }
+
+    // Handle origin field. Discard origin that may be email addresses.
+    if (isset($item['origin']) && strpos($item['origin'], '@') !== FALSE) {
+      unset($item['origin']);
+    }
   }
 }

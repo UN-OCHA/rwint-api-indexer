@@ -45,15 +45,10 @@ class Bundles {
       'type' => 'taxonomy_term',
       'index' => 'career_categories',
     ),
-    'city' => array(
-      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-      'type' => 'taxonomy_term',
-      'index' => 'cities',
-    ),
     'content_format' => array(
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
-      'index' => 'report_formats',
+      'index' => 'content_formats',
     ),
     'disaster_type' => array(
       'class' => '\RWAPIIndexer\Resources\DisasterType',
@@ -73,7 +68,7 @@ class Bundles {
     'language' => array(
       'class' => '\RWAPIIndexer\Resources\Language',
       'type' => 'taxonomy_term',
-      'index' => 'langauges',
+      'index' => 'languages',
     ),
     'ocha_product' => array(
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
@@ -83,7 +78,7 @@ class Bundles {
     'organization_type' => array(
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
-      'index' => 'source_types',
+      'index' => 'organization_types',
     ),
     /*'region' => array(
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',

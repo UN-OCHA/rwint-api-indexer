@@ -6,6 +6,13 @@ namespace RWAPIIndexer\Resources;
  * Taxnomy default resource handler.
  */
 class TaxonomyDefault extends \RWAPIIndexer\Resource {
+  // Options used for building the query to get the items to index.
+  protected $query_options = array(
+    'fields' => array(
+      'description' => 'description',
+    ),
+  );
+
   /**
    * Return the mapping for the current resource.
    *
@@ -15,14 +22,10 @@ class TaxonomyDefault extends \RWAPIIndexer\Resource {
   public function getMapping() {
     $mapping = new \RWAPIIndexer\Mapping();
     $mapping->addInteger('id')
-            ->addString('url', FALSE)
-            ->addString('url_alias', FALSE)
-            ->addString('status', FALSE)
             // Names.
             ->addString('name', TRUE, TRUE)
             // Description.
-            ->addString('description')
-            ->addString('description-html', NULL);
+            ->addString('description');
 
     return $mapping->export();
   }

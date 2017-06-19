@@ -5,7 +5,7 @@ namespace RWAPIIndexer\Resources;
 /**
  * Language resource handler.
  */
-class Language extends \RWAPIIndexer\Resource {
+class Language extends \RWAPIIndexer\Resources\TaxonomyDefault {
   // Options used for building the query to get the items to index.
   protected $query_options = array(
     'fields' => array(

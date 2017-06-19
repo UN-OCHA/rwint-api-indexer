@@ -29,4 +29,15 @@ class TaxonomyDefault extends \RWAPIIndexer\Resource {
 
     return $mapping->export();
   }
+
+  /**
+   * Process an item, preparing for the indexing.
+   *
+   * @param array $item
+   *   Item to process.
+   */
+  public function processItem(&$item) {
+    unset($item['url']);
+    unset($item['url_alias']);
+  }
 }

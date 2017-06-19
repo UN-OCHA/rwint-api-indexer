@@ -5,7 +5,7 @@ namespace RWAPIIndexer\Resources;
 /**
  * Disaster type resource handler.
  */
-class DisasterType extends \RWAPIIndexer\Resource {
+class DisasterType extends \RWAPIIndexer\Resources\TaxonomyDefault {
   // Options used for building the query to get the items to index.
   protected $query_options = array(
     'fields' => array(

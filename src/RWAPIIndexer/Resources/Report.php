@@ -174,7 +174,7 @@ class Report extends \RWAPIIndexer\Resource {
     $item['date'] = array(
       'created' => $item['date_created'],
       'changed' => $item['date_changed'],
-      'original' => !empty($item['date.original']) ? $item['date_original'] : $item['date_created'],
+      'original' => !empty($item['date_original']) ? $item['date_original'] : $item['date_created'],
     );
     unset($item['date_created']);
     unset($item['date_changed']);

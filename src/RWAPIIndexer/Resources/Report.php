@@ -141,7 +141,7 @@ class Report extends \RWAPIIndexer\Resource {
             ->addBoolean('country.primary')
             // Source.
             ->addTaxonomy('source', array('shortname', 'longname'))
-            ->addString('source.homeage', NULL)
+            ->addString('source.homepage', NULL)
             ->addTaxonomy('source.type')
             // Disaster.
             ->addTaxonomy('disaster', array('glide'))

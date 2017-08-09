@@ -107,7 +107,7 @@ class Job extends \RWAPIIndexer\Resource {
             ->addGeoPoint('country.location')
             // Source.
             ->addTaxonomy('source', array('shortname', 'longname'))
-            ->addString('source.homeage', NULL)
+            ->addString('source.homepage', NULL)
             ->addTaxonomy('source.type')
             // Other taxonomies
             ->addTaxonomy('city')

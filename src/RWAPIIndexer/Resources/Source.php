@@ -21,6 +21,9 @@ class Source extends \RWAPIIndexer\Resource {
       'field_longname' => array(
         'longname' => 'value',
       ),
+      'field_spanish_name' => array(
+        'spanish_name' => 'value',
+      ),
       'field_homepage' => array(
         'homepage' => 'url',
       ),
@@ -79,6 +82,7 @@ class Source extends \RWAPIIndexer\Resource {
             ->addString('name', TRUE, TRUE)
             ->addString('shortname', TRUE, TRUE)
             ->addString('longname', TRUE, TRUE)
+            ->addString('spanish_name', TRUE, TRUE)
             // Description.
             ->addString('description')
             ->addString('description-html', NULL)

@@ -77,7 +77,7 @@ class Report extends \RWAPIIndexer\Resource {
         'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
       ),
       'source' => array(
-        'source' => array('id', 'name', 'shortname', 'longname', 'type', 'homepage'),
+        'source' => array('id', 'name', 'shortname', 'longname', 'spanish_name', 'type', 'homepage'),
       ),
       'language' => array(
         'language' => array('id', 'name', 'code'),
@@ -140,7 +140,7 @@ class Report extends \RWAPIIndexer\Resource {
             ->addGeoPoint('country.location')
             ->addBoolean('country.primary')
             // Source.
-            ->addTaxonomy('source', array('shortname', 'longname'))
+            ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
             ->addString('source.homepage', NULL)
             ->addTaxonomy('source.type')
             // Disaster.

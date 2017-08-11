@@ -58,7 +58,7 @@ class Job extends \RWAPIIndexer\Resource {
         'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
       ),
       'source' => array(
-        'source' => array('id', 'name', 'shortname', 'longname', 'type', 'homepage'),
+        'source' => array('id', 'name', 'shortname', 'longname', 'spanish_name', 'type', 'homepage'),
       ),
       'language' => array(
         'language' => array('id', 'name', 'code'),
@@ -106,7 +106,7 @@ class Job extends \RWAPIIndexer\Resource {
             ->addTaxonomy('country', array('shortname', 'iso3'))
             ->addGeoPoint('country.location')
             // Source.
-            ->addTaxonomy('source', array('shortname', 'longname'))
+            ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
             ->addString('source.homepage', NULL)
             ->addTaxonomy('source.type')
             // Other taxonomies

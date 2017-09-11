@@ -122,14 +122,35 @@ class Processor {
 
         // Convert links to absolute links.
         case 'links':
-          // TODO: replace reliefweb.int with $website.
-          $item[$key] = preg_replace('/(\]\(\/?)(?!http[s]?:\/\/)/', '](' . $this->website . '/', $item[$key]);
+          $item[$key] = $this->processLinks($item[$key]);
           break;
 
         // Convert a field value in markdown format to HTML.
         case 'html':
           $html = $this->processMarkdown($item[$key]);
           if (!empty($html)) {
+            $html = $this->processHTML($html, TRUE);
+            $item[$key . '-html'] = $html;
+          }
+          break;
+
+        // Convert a field value in markdown format to HTML.
+        // Convert iframe special syntax.
+        case 'html_iframe':
+          $text = $this->processIframes($item[$key]);
+          $html = $this->processMarkdown($text);
+          if (!empty($html)) {
+            $html = $this->processHTML($html, TRUE);
+            $item[$key . '-html'] = $html;
+          }
+          break;
+
+        // Convert a field value in markdown format to HTML.
+        // Strip embedded images and iframes.
+        case 'html_strict':
+          $html = $this->processMarkdown($item[$key]);
+          if (!empty($html)) {
+            $html = $this->processHTML($html, FALSE);
             $item[$key . '-html'] = $html;
           }
           break;
@@ -217,6 +238,23 @@ class Processor {
   }
 
   /**
+   * Process links in text, converting to absolute links
+   * and substituting the domain for reliefweb links.
+   *
+   * @param string $text
+   *   Text to process.
+   * @param string
+   *   Text with processed links.
+   */
+  public function processLinks($text) {
+    // Convert relative links to absolute.
+    $text = preg_replace('@(\]\(|((src|href)=[\'"]?))(/*)(?!https?://)@', '$1' . $this->website . '/', $text);
+    // Substitute domain for reliefweb.int links.
+    $text = preg_replace('@https?://reliefweb\.int@', $this->website, $text);
+    return $text;
+  }
+
+  /**
    * Convert text from markdown to HTML.
    *
    * @param string $text
@@ -247,6 +285,54 @@ class Processor {
         return \Michelf\Markdown::defaultTransform($text);
     }
     return '';
+  }
+
+  /**
+   * Convert the special iframe markdown-like syntax to html.
+   *
+   * Syntax is: [iframe:width:height](link).
+   *
+   * @param string $text
+   *   Markdown text to process.
+   * @return string
+   *   Processed text.
+   */
+  public function processIframes($text) {
+    return preg_replace_callback("/\[iframe(?:[:](\d+))?(?:[:](\d+))?\]\(([^\)]+)\)/", static function($data) {
+      $width = !empty($data[1]) ? $data[1] : "1000";
+      $height = !empty($data[2]) ? $data[2] : "400";
+      return '<iframe width="' . $width . '" height="' . $height . '" src="' . $data[3] . '" frameborder="0" allowfullscreen></iframe>';
+    }, $text);
+  }
+
+  /**
+   * Strip unsupported tags.
+   *
+   * @todo Investigate using HTMLPurifier library.
+   * @todo Cleanup markdown text in Drupal instead so that it
+   * can safely be converted in the API without having to worry
+   * about XSS etc.
+   *
+   * @param string $html
+   *   HTML text to clean.
+   * @return string
+   *   Cleaned-up HTML.
+   */
+  public function processHTML($html, $embedded = FALSE) {
+    $tags = array('div', 'span', 'br', 'a', 'em', 'strong', 'cite', 'code', 'strike', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'blockquote', 'p', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'caption', 'thead', 'tbody', 'th', 'td', 'tr', 'sup', 'sub');
+
+    // Add iframe and image tags to the list of allowed tags.
+    if ($embedded) {
+      $tags = array_merge($tags, array('iframe', 'img'));
+    }
+
+    // Use Drupal filter_xss function if available.
+    if (function_exists('filter_xss')) {
+      return filter_xss($html, $tags);
+    }
+    else {
+      return strip_tags($html, '<' . implode('><', $tags) . '>');
+    }
   }
 
   /**

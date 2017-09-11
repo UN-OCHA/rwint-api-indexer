@@ -58,8 +58,8 @@ class Training extends \RWAPIIndexer\Resource {
   // Options used to process the entity items before indexing.
   protected $processing_options = array(
     'conversion' => array(
-      'body' => array('links', 'html'),
-      'how_to_register' => array('links', 'html'),
+      'body' => array('links', 'html_strict'),
+      'how_to_register' => array('links', 'html_strict'),
       'date_created' => array('time'),
       'date_changed' => array('time'),
       'date_registration' => array('time'),

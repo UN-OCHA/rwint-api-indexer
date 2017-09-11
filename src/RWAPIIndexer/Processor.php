@@ -148,8 +148,7 @@ class Processor {
         // Convert a field value in markdown format to HTML.
         // Strip embedded images and iframes.
         case 'html_strict':
-          $text = $this->processEmbedded($item[$key]);
-          $html = $this->processMarkdown($text);
+          $html = $this->processMarkdown($item[$key]);
           if (!empty($html)) {
             $html = $this->processHTML($html, FALSE);
             $item[$key . '-html'] = $html;

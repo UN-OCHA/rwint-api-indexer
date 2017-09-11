@@ -17,7 +17,7 @@ Usage: php PATH/TO/Indexer.php [options] <entity-bundle>
     -d, --database <arg> Database name, deaults to reliefwebint_0
     -b, --base-index-name <arg> Base index name, deaults to reliefwebint_0
     -t, --tag <arg> Tag appended to the index name, defaults to empty string
-    -w, --website <arg> Website URL, deaults to http://reliefweb.int
+    -w, --website <arg> Website URL, deaults to https://reliefweb.int
     -l, --limit <arg> Maximum number of entities to index, defaults to 0 (all)
     -o, --offset <arg> ID of the entity from which to start the indexing, defaults to the most recent one
     -f, --filter <arg> Filter documents to index. Format: 'field1:value1,value2+field2:value1,value2'
@@ -51,7 +51,7 @@ $options = array(
   'database' => 'DATABASE_NAME',
   'base-index-name' => 'ELASTICSEARCH_INDEX_PREFIX',
   'tag' => '',
-  'website' => 'http://reliefweb.int',
+  'website' => 'https://reliefweb.int',
   'limit' => 0,
   'offset' => 0,
   'chunk-size' => 500,

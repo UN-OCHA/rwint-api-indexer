@@ -17,7 +17,7 @@ class Options {
     'database' => 'reliefwebint_0',
     'base-index-name' => 'reliefwebint_0',
     'tag' => '',
-    'website' => 'http://reliefweb.int',
+    'website' => 'https://reliefweb.int',
     'limit' => 0,
     'offset' => 0,
     'filter' => '',
@@ -345,7 +345,7 @@ class Options {
           "     -d, --database <arg> Database name, deaults to reliefwebint_0 \n" .
           "     -b, --base-index-name <arg> Base index name, deaults to reliefwebint_0 \n" .
           "     -t, --tag <arg> Tag appended to the index name, defaults to empty string \n" .
-          "     -w, --website <arg> Website URL, deaults to http://reliefweb.int \n" .
+          "     -w, --website <arg> Website URL, deaults to https://reliefweb.int \n" .
           "     -l, --limit <arg> Maximum number of entities to index, defaults to 0 (all) \n" .
           "     -o, --offset <arg> ID of the entity from which to start the indexing, defaults to the most recent one \n" .
           "     -f, --filter <arg> Filter documents to index. Format: 'field1:value1,value2+field2:value1,value2' \n" .

@@ -248,7 +248,7 @@ class Processor {
    */
   public function processLinks($text) {
     // Convert relative links to absolute.
-    $text = preg_replace('@(\]\(|((src|href)=[\'"]?))(/*)(?!https?://)@', '$1' . $this->website . '/', $text);
+    $text = preg_replace('@((\]\(|((src|href)=))(?![\'"]?https?://)[\'"]?)/*@', '$1' . $this->website . '/', $text);
     // Substitute domain for reliefweb.int links.
     $text = preg_replace('@https?://reliefweb\.int@', $this->website, $text);
     return $text;

@@ -50,9 +50,24 @@ class Country extends \RWAPIIndexer\Resource {
 
   // Profile sections (id => label).
   private $profile_sections = array(
-    'key_content' => 'Key Content',
-    'appeals_response_plans' => 'Appeals & Response Plans',
-    'useful_links' => 'Useful Links',
+    'key_content' => array(
+      'label' => 'Key Content',
+      'internal' => TRUE,
+      'archives' => TRUE,
+      'image' => TRUE,
+    ),
+    'appeals_response_plans' => array(
+      'label' => 'Appeals & Response Plans',
+      'internal' => TRUE,
+      'archives' => TRUE,
+      'image' => TRUE,
+    ),
+    'useful_links' => array(
+      'label' => 'Useful Links',
+      'internal' => FALSE,
+      'archives' => FALSE,
+      'image' => TRUE,
+    ),
   );
 
   /**
@@ -99,15 +114,22 @@ class Country extends \RWAPIIndexer\Resource {
     $mapping->addString('profile.description-html', NULL);
 
     // Add the sections.
-    foreach ($this->profile_sections as $id => $label) {
+    foreach ($this->profile_sections as $id => $info) {
       $base = 'profile.' . $id;
+      $image_field = !empty($info['internal']) ? 'cover' : 'logo';
+
+      // Mapping for the active links.
       $mapping->addString($base . '.title', NULL)
               ->addString($base . '.active.url', NULL)
               ->addString($base . '.active.title', NULL)
-              ->addString($base . '.active.image', NULL)
-              ->addString($base . '.archive.url', NULL)
-              ->addString($base . '.archive.title', NULL)
-              ->addString($base . '.archive.image', NULL);
+              ->addString($base . '.active.' . $image_field, NULL);
+
+      // Add the mapping for the archived links.
+      if (!empty($info['archives'])) {
+        $mapping->addString($base . '.archive.url', NULL)
+                ->addString($base . '.archive.title', NULL)
+                ->addString($base . '.archive.' . $image_field, NULL);
+      }
     }
   }
 
@@ -158,7 +180,12 @@ class Country extends \RWAPIIndexer\Resource {
     }
 
     // Process the profile sections.
-    foreach ($this->profile_sections as $id => $label) {
+    foreach ($this->profile_sections as $id => $info) {
+      $label = $info['label'];
+      $keep_archives = !empty($info['archives']);
+      $use_image = !empty($info['image']);
+      $image_field = !empty($info['internal']) ? 'cover' : 'logo';
+
       $links = array();
       $section = array();
       $table = 'field_data_field_' . $id;
@@ -166,7 +193,7 @@ class Country extends \RWAPIIndexer\Resource {
       $query = new \RWAPIIndexer\Database\Query($table, $table, $this->connection);
       $query->addField($table, 'field_' . $id . '_url', 'url');
       $query->addField($table, 'field_' . $id . '_title', 'title');
-      $query->addField($table, 'field_' . $id . '_image', 'image');
+      $query->addField($table, 'field_' . $id . '_image', $image_field);
       $query->addField($table, 'field_' . $id . '_active', 'active');
       $query->condition($table . '.entity_type', $this->entity_type);
       $query->condition($table . '.entity_id', $item['id']);
@@ -185,6 +212,11 @@ class Country extends \RWAPIIndexer\Resource {
           $internal = FALSE;
           $title = '';
 
+          // Skip archived items if requested.
+          if (!$keep_archives && !$active) {
+            continue;
+          }
+
           // Remove the active info.
           unset($link['active']);
 
@@ -194,13 +226,13 @@ class Country extends \RWAPIIndexer\Resource {
             $internal = TRUE;
           }
 
-          // Remove the image if empty.
-          if (empty($link['image'])) {
-            unset($link['image']);
+          // Remove the image if empty or asked to.
+          if (empty($link[$image_field]) || !$use_image) {
+            unset($link[$image_field]);
           }
           // Expand internal images.
           elseif ($internal) {
-            $link['image'] = $this->processor->processFilePath($link['image'], 'attachment-small');
+            $link[$image_field] = $this->processor->processFilePath($link[$image_field], 'attachment-small');
           }
 
           // Set the title or remove it.
@@ -217,17 +249,17 @@ class Country extends \RWAPIIndexer\Resource {
           // Add the link to the description section if active.
           if ($active) {
             // Generate the image link.
-            if (!empty($link['image'])) {
+            if (!empty($link[$image_field])) {
               $alt = $internal ? 'Cover preview' : 'Logo';
 
               // If there is a title, we prepend it to the alt default text.
               if (!empty($title)) {
-                $image = '![' . $title . ' - ' . $alt . '](' . $link['image'] . ')';
+                $image = '![' . $title . ' - ' . $alt . '](' . $link[$image_field] . ')';
                 // For internal links, we want to display the title after the cover.
                 $title = $internal ? $image . ' ' . $title : $image;
               }
               else {
-                $title = '![' . $alt . '](' . $link['image'] . ')';
+                $title = '![' . $alt . '](' . $link[$image_field] . ')';
               }
             }
 

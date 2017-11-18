@@ -109,9 +109,9 @@ class Country extends \RWAPIIndexer\Resource {
    *   Elasticsearch index type mapping.
    */
   private function addProfileMapping($mapping) {
-    // Only index the description.
-    $mapping->addString('profile.description');
-    $mapping->addString('profile.description-html', NULL);
+    // Only index the overview.
+    $mapping->addString('profile.overview');
+    $mapping->addString('profile.overview-html', NULL);
 
     // Add the sections.
     foreach ($this->profile_sections as $id => $info) {
@@ -176,7 +176,7 @@ class Country extends \RWAPIIndexer\Resource {
     // The actual description comes first.
     if (!empty($item['description'])) {
       $description[] = $item['description'];
-      $profile['description'] = $item['description'];
+      $profile['overview'] = $item['description'];
     }
 
     // Process the profile sections.
@@ -297,8 +297,8 @@ class Country extends \RWAPIIndexer\Resource {
     if (!empty($profile)) {
       $item['profile'] = $profile;
       // Convert markdown.
-      if (!empty($item['profile']['description'])) {
-        $this->processor->processConversion(array('html'), $item['profile'], 'description');
+      if (!empty($item['profile']['overview'])) {
+        $this->processor->processConversion(array('html'), $item['profile'], 'overview');
       }
     }
   }

@@ -238,7 +238,7 @@ abstract class Resource {
 
     foreach ($items as $id => &$item) {
       // Add the entity link to the main website.
-      $this->processor->processURL($this->entity_type, $item, $url_aliases[$id]);
+      $this->processor->processEntityURL($this->entity_type, $item, $url_aliases[$id]);
 
       // Convert ID to integer.
       $item['id'] = (int) $item['id'];

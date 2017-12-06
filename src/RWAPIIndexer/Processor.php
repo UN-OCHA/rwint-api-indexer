@@ -248,7 +248,7 @@ class Processor {
    */
   public function processLinks($text) {
     // Convert relative links to absolute.
-    $text = preg_replace('@(\]\(|((src|href)=[\'"]?))(/*)(?!https?://)@', '$1' . $this->website . '/', $text);
+    $text = preg_replace('@((\]\(|((src|href)=))(?![\'"]?https?://)[\'"]?)/*@', '$1' . $this->website . '/', $text);
     // Substitute domain for reliefweb.int links.
     $text = preg_replace('@https?://reliefweb\.int@', $this->website, $text);
     return $text;
@@ -336,7 +336,7 @@ class Processor {
   }
 
   /**
-   * Add a url field to an entity item based on its entity type.
+   * Add a "url" field to an entity item based on its entity type.
    *
    * @param string $entity_type
    *   Entity type of the item.
@@ -345,9 +345,23 @@ class Processor {
    * @param string $alias
    *   URL alias for the entity.
    */
-  public function processURL($entity_type, &$item, $alias) {
+  public function processEntityURL($entity_type, &$item, $alias) {
     $item['url'] = $this->website . '/' . str_replace('_', '/', $entity_type) . '/' . $item['id'];
-    $item['url_alias'] = $this->website . '/' . $alias;
+    if (!empty($alias)) {
+      $item['url_alias'] = $this->website . '/' . $this->encodePath($alias);
+    }
+  }
+
+  /**
+   * Transform a relative URL starting with "/" into an encoded absolute URL.
+   *
+   * @paran string $url
+   *   Relative URL.
+   * @return string
+   *   Absolute URL.
+   */
+  public function processRelativeURL($url) {
+    return $this->website . $this->encodePath($url);
   }
 
   /**

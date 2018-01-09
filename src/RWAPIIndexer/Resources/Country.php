@@ -31,9 +31,6 @@ class Country extends \RWAPIIndexer\Resource {
         'latitude' => 'lat',
         'longitude' => 'lon',
       ),
-      'field_video_playlist' => array(
-        'video_playlist' => 'value',
-      ),
     ),
   );
 
@@ -92,9 +89,7 @@ class Country extends \RWAPIIndexer\Resource {
             ->addString('iso3', TRUE, TRUE)
             // Description -- legacy.
             ->addString('description')
-            ->addString('description-html', NULL)
-            // Video playlist.
-            ->addString('video_playlist', FALSE);
+            ->addString('description-html', NULL);
 
     // Profile mapping.
     $this->addProfileMapping($mapping);

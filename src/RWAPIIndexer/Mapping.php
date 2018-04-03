@@ -226,6 +226,38 @@ class Mapping {
   }
 
   /**
+   * Add a taxonomy term profile mapping.
+   *
+   * @param array $sections
+   *   Definition of the profile sections.
+   */
+  public function addProfile(array $sections) {
+    // Only index the overview.
+    $this->addString('profile.overview');
+    $this->addString('profile.overview-html', NULL);
+
+    // Add the sections.
+    foreach ($sections as $id => $info) {
+      $base = 'profile.' . $id;
+      $image_field = !empty($info['internal']) ? 'cover' : 'logo';
+
+      // Mapping for the active links.
+      $this->addString($base . '.title', NULL)
+              ->addString($base . '.active.url', NULL)
+              ->addString($base . '.active.title', NULL)
+              ->addString($base . '.active.' . $image_field, NULL);
+
+      // Add the mapping for the archived links.
+      if (!empty($info['archives'])) {
+        $this->addString($base . '.archive.url', NULL)
+                ->addString($base . '.archive.title', NULL)
+                ->addString($base . '.archive.' . $image_field, NULL);
+      }
+    }
+    return $this;
+  }
+
+  /**
    * Export the mapping.
    *
    * @return array

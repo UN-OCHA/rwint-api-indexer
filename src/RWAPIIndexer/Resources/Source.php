@@ -36,6 +36,9 @@ class Source extends \RWAPIIndexer\Resource {
       'field_term_image' => array(
         'logo' => 'image_reference',
       ),
+      'field_disclaimer' => array(
+        'disclaimer' => 'value',
+      ),
     ),
     'references' => array(
       'field_organization_type' => 'type',
@@ -94,7 +97,9 @@ class Source extends \RWAPIIndexer\Resource {
             // FTS ID.
             ->addInteger('fts_id')
             // Logo.
-            ->addImage('logo');
+            ->addImage('logo')
+            // Disclaimer.
+            ->addString('disclaimer', FALSE);
 
     return $mapping->export();
   }

@@ -77,7 +77,7 @@ class Report extends \RWAPIIndexer\Resource {
         'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
       ),
       'source' => array(
-        'source' => array('id', 'name', 'shortname', 'longname', 'spanish_name', 'type', 'homepage'),
+        'source' => array('id', 'name', 'shortname', 'longname', 'spanish_name', 'type', 'homepage', 'disclaimer'),
       ),
       'language' => array(
         'language' => array('id', 'name', 'code'),
@@ -142,6 +142,7 @@ class Report extends \RWAPIIndexer\Resource {
             // Source.
             ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
             ->addString('source.homepage', NULL)
+            ->addString('source.disclaimer', NULL)
             ->addTaxonomy('source.type')
             // Disaster.
             ->addTaxonomy('disaster', array('glide'))

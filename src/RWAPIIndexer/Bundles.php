@@ -23,6 +23,21 @@ class Bundles {
       'type' => 'node',
       'index' => 'training',
     ),
+    'blog_post' => array(
+      'class' => '\RWAPIIndexer\Resources\Blog',
+      'type' => 'node',
+      'index' => 'blog',
+    ),
+    'book' => array(
+      'class' => '\RWAPIIndexer\Resources\Book',
+      'type' => 'node',
+      'index' => 'book',
+    ),
+    'faq' => array(
+      'class' => '\RWAPIIndexer\Resources\Faq',
+      'type' => 'node',
+      'index' => 'faq',
+    ),
     'country' => array(
       'class' => '\RWAPIIndexer\Resources\Country',
       'type' => 'taxonomy_term',
@@ -55,6 +70,11 @@ class Bundles {
       'type' => 'taxonomy_term',
       'index' => 'disaster_types',
     ),
+    'faq_category' => array(
+      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
+      'type' => 'taxonomy_term',
+      'index' => 'faq_category',
+    ),
     'feature' => array(
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
@@ -85,11 +105,11 @@ class Bundles {
       'type' => 'taxonomy_term',
       'index' => 'regions',
     ),*/
-    /*'tags' => array(
+    'tags' => array(
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'tags',
-    ),*/
+    ),
     'theme' => array(
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',

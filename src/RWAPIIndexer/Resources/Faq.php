@@ -20,12 +20,8 @@ class Faq extends \RWAPIIndexer\Resource {
       'body' => array(
         'body' => 'value',
       ),
-      //'field_contact' => array(
-      //  'contact' => 'value',
-      //),
     ),
     'references' => array(
-      'field_language' => 'language',
       'field_faq_category' => 'faq_category',
     ),
   );
@@ -33,14 +29,11 @@ class Faq extends \RWAPIIndexer\Resource {
   // Options used to process the entity items before indexing.
   protected $processing_options = array(
     'conversion' => array(
-      'body' => array('links', 'html_strict'),
+      'body' => array('links', 'html_iframe'),
       'date_created' => array('time'),
       'date_changed' => array('time'),
     ),
     'references' => array(
-      'language' => array(
-        'language' => array('id', 'name', 'code'),
-      ),
       'faq_category' => array(
         'faq_category' => array('id', 'name'),
       ),
@@ -60,15 +53,11 @@ class Faq extends \RWAPIIndexer\Resource {
             ->addString('url_alias', FALSE)
             ->addString('status', FALSE)
             ->addString('title', TRUE, TRUE)
-            //->addString('contact')
             // Body.
             ->addString('body')
             ->addString('body-html', NULL)
             // Dates.
             ->addDates('date', array('created', 'changed'))
-            // Language.
-            ->addTaxonomy('language')
-            ->addString('language.code', FALSE)
             // Tags.
             ->addTaxonomy('faq_category');
 

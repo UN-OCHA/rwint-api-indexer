@@ -31,7 +31,6 @@ class Blog extends \RWAPIIndexer\Resource {
       ),
     ),
     'references' => array(
-      'field_language' => 'language',
       'field_tags' => 'tags',
     ),
   );
@@ -39,14 +38,11 @@ class Blog extends \RWAPIIndexer\Resource {
   // Options used to process the entity items before indexing.
   protected $processing_options = array(
     'conversion' => array(
-      'body' => array('links', 'html_strict'),
+      'body' => array('links', 'html_iframe'),
       'date_created' => array('time'),
       'date_changed' => array('time'),
     ),
     'references' => array(
-      'language' => array(
-        'language' => array('id', 'name', 'code'),
-      ),
       'tags' => array(
         'tags' => array('id', 'name'),
       ),
@@ -72,9 +68,6 @@ class Blog extends \RWAPIIndexer\Resource {
             ->addString('body-html', NULL)
             // Dates.
             ->addDates('date', array('created', 'changed'))
-            // Language.
-            ->addTaxonomy('language')
-            ->addString('language.code', FALSE)
             // Tags.
             ->addTaxonomy('tags')
             // Images.

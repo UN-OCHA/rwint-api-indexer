@@ -49,7 +49,7 @@ class Book extends \RWAPIIndexer\Resource {
             ->addString('body')
             ->addString('body-html', NULL)
             // Dates.
-            ->addDates('date', array('created', 'changed', 'closing'));
+            ->addDates('date', array('created', 'changed'));
 
     return $mapping->export();
   }

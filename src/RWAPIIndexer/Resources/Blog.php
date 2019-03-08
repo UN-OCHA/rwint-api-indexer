@@ -93,7 +93,7 @@ class Blog extends \RWAPIIndexer\Resource {
     unset($item['date_changed']);
 
     // Handle images.
-    if ($this->processor->processImage($item['attached_image'], TRUE) !== TRUE) {
+    if ($this->processor->processImage($item['attached_image']) !== TRUE) {
       unset($item['attached_image']);
     }
     if ($this->processor->processImage($item['image'], TRUE) !== TRUE) {

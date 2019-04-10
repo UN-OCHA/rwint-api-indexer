@@ -17,6 +17,9 @@ class Faq extends \RWAPIIndexer\Resource {
       'field_status' => array(
         'status' => 'value',
       ),
+      'field_order' => array(
+        'list_order' => 'value',
+      ),
       'body' => array(
         'body' => 'value',
       ),
@@ -52,6 +55,7 @@ class Faq extends \RWAPIIndexer\Resource {
             ->addString('url', FALSE)
             ->addString('url_alias', FALSE)
             ->addString('status', FALSE)
+            ->addInteger('list_order')
             ->addString('title', TRUE, TRUE)
             // Body.
             ->addString('body')

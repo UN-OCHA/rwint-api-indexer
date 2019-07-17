@@ -328,7 +328,7 @@ abstract class Resource {
     // Last indexed item.
     $offset += 1;
 
-    $this->log("\nSuccessfully indexed {$count}/{$limit} entities.\n");
+    $this->log("\n[OK] Successfully indexed {$count}/{$limit} entities.\n");
     $this->log("Last indexed entity is {$offset}.\n");
   }
 
@@ -342,7 +342,7 @@ abstract class Resource {
     $items = $this->getItems(1, 0, array($id));
     if (!empty($items)) {
       $this->elasticsearch->indexItems($this->index, $items);
-      $this->log("Successfully indexed the entity with the id {$id}.\n");
+      $this->log("[OK] Successfully indexed the entity with the id {$id}.\n");
     }
     else {
       $this->log("The entity with the id {$id} was not found and thus not indexed.\n");
@@ -356,7 +356,7 @@ abstract class Resource {
    */
   public function removeItem($id) {
     $this->elasticsearch->removeItem($this->index, $id);
-    $this->log("Successfully removed the entity with the id {$id}.\n");
+    $this->log("[OK] Successfully removed the entity with the id {$id}.\n");
   }
 
   /**
@@ -364,7 +364,7 @@ abstract class Resource {
    */
   public function remove() {
     $this->elasticsearch->remove($this->index);
-    $this->log("Successfully removed index.\n");
+    $this->log("[OK] Successfully removed index.\n");
   }
 
   /**
@@ -376,11 +376,11 @@ abstract class Resource {
   public function setAlias($remove = FALSE) {
     if (empty($remove)) {
       $this->elasticsearch->addAlias($this->index);
-      $this->log("Successfully added index alias.\n");
+      $this->log("[OK] Successfully added index alias.\n");
     }
     else {
       $this->elasticsearch->removeAlias($this->index);
-      $this->log("Successfully removed index alias.\n");
+      $this->log("[OK] Successfully removed index alias.\n");
     }
   }
 

@@ -8,7 +8,7 @@ namespace RWAPIIndexer;
 class Mapping {
   // Mapping.
   private $mapping = array(
-    'timestamp' => array('type' => 'date', 'store' => TRUE, 'index' => 'no'),
+    'timestamp' => array('type' => 'date', 'store' => TRUE, 'index' => FALSE),
   );
 
   /**
@@ -86,22 +86,24 @@ class Mapping {
    */
   public function addString($field, $index = TRUE, $exact = FALSE, $alias = '') {
     $mapping = array(
-      'type' => 'string',
+      'type' => 'text',
     );
     if ($index === NULL) {
-      $mapping['index'] = 'no';
+      $mapping['index'] = FALSE;
     }
     elseif ($index) {
-      $mapping['norms'] = array('enabled' => FALSE);
+      $mapping['norms'] = FALSE;
+      // TODO: Disable shingle, disable stop words in analyzer settings.
+      // $mapping['index_prefixes'] = true;
+      // $mapping['index_phrases'] = true;
     }
     else {
-      $mapping['index'] = 'not_analyzed';
+      $mapping['type'] = 'keyword';
     }
     if ($exact) {
       $mapping['fields'] = array(
         'exact' => array(
-          'type' => 'string',
-          'index' => 'not_analyzed',
+          'type' => 'keyword',
         ),
       );
     }
@@ -175,15 +177,15 @@ class Mapping {
     $mapping = array(
       'properties' => array(
         'id' => array('type' => 'integer'),
-        'mimetype' => array('type' => 'string', 'index' => 'not_analyzed'),
-        'filename' => array('type' => 'string', 'index' => 'not_analyzed'),
+        'mimetype' => array('type' => 'keyword'),
+        'filename' => array('type' => 'keyword'),
         'filesize' => array('type' => 'integer'),
-        'caption' => array('type' => 'string', 'norms' => array('enabled' => FALSE)),
-        'copyright' => array('type' => 'string'),
-        'url' => array('type' => 'string', 'index' => 'not_analyzed'),
-        'url-large' => array('type' => 'string', 'index' => 'no'),
-        'url-small' => array('type' => 'string', 'index' => 'no'),
-        'url-thumb' => array('type' => 'string', 'index' => 'no'),
+        'caption' => array('type' => 'text', 'norms' => FALSE),
+        'copyright' => array('type' => 'text', 'norms' => FALSE),
+        'url' => array('type' => 'keyword'),
+        'url-large' => array('type' => 'text', 'index' => FALSE),
+        'url-small' => array('type' => 'text', 'index' => FALSE),
+        'url-thumb' => array('type' => 'text', 'index' => FALSE),
         'width' => array('type' => 'integer'),
         'height' => array('type' => 'integer'),
       ),
@@ -206,17 +208,17 @@ class Mapping {
     $mapping = array(
       'properties' => array(
         'id' => array('type' => 'integer'),
-        'mimetype' => array('type' => 'string', 'index' => 'not_analyzed'),
-        'filename' => array('type' => 'string', 'index' => 'not_analyzed'),
+        'mimetype' => array('type' => 'keyword'),
+        'filename' => array('type' => 'keyword'),
         'filesize' => array('type' => 'integer'),
-        'description' => array('type' => 'string', 'norms' => array('enabled' => FALSE)),
-        'url' => array('type' => 'string', 'index' => 'not_analyzed'),
+        'description' => array('type' => 'text', 'norms' => FALSE),
+        'url' => array('type' => 'keyword'),
         'preview' => array(
           'properties' => array(
-            'url' => array('type' => 'string', 'index' => 'not_analyzed'),
-            'url-large' => array('type' => 'string', 'index' => 'no'),
-            'url-small' => array('type' => 'string', 'index' => 'no'),
-            'url-thumb' => array('type' => 'string', 'index' => 'no'),
+            'url' => array('type' => 'keyword'),
+            'url-large' => array('type' => 'text', 'index' => FALSE),
+            'url-small' => array('type' => 'text', 'index' => FALSE),
+            'url-thumb' => array('type' => 'text', 'index' => FALSE),
           ),
         ),
       ),
@@ -275,12 +277,11 @@ class Mapping {
    */
   private function getMultiFieldMapping() {
     return array(
-      'type' => 'string',
-      'norms' => array('enabled' => FALSE),
+      'type' => 'text',
+      'norms' => FALSE,
       'fields' => array(
         'exact' => array(
-          'type' => 'string',
-          'index' => 'not_analyzed',
+          'type' => 'keyword',
         ),
       ),
     );

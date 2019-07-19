@@ -415,7 +415,7 @@ class Elasticsearch {
     $response = curl_exec($curl);
     $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
     $error = curl_error($curl);
-    $errno = curl_error($curl);
+    $errno = curl_errno($curl);
     curl_close($curl);
 
     // Handle timeout and other errors.

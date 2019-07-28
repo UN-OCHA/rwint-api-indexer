@@ -180,5 +180,10 @@ class Training extends \RWAPIIndexer\Resource {
     if ($this->processor->processFile($item['file']) !== TRUE) {
       unset($item['file']);
     }
+
+    // Handle fee information. Remove if cost is free.
+    if (isset($item['cost'], $item['fee_information']) && $item['cost'] === 'free') {
+      unset($item['fee_information']);
+    }
   }
 }

@@ -92,7 +92,7 @@ class Report extends \RWAPIIndexer\Resource {
         'ocha_product' => array('id', 'name'),
       ),
       'disaster' => array(
-        'disaster' => array('id', 'name', 'glide', 'type'),
+        'disaster' => array('id', 'name', 'glide', 'type', 'status'),
       ),
       'disaster_type' => array(
         'disaster_type' => array('id', 'name', 'code'),
@@ -149,6 +149,7 @@ class Report extends \RWAPIIndexer\Resource {
             ->addTaxonomy('disaster.type')
             ->addString('disaster.type.code', FALSE)
             ->addBoolean('disaster.type.primary')
+            ->addString('disaster.status', FALSE)
             // Other taxonomies.
             ->addTaxonomy('format')
             ->addTaxonomy('theme')
@@ -229,6 +230,22 @@ class Report extends \RWAPIIndexer\Resource {
     // Handle origin field. Discard origin that may be email addresses.
     if (isset($item['origin']) && strpos($item['origin'], '@') !== FALSE) {
       unset($item['origin']);
+    }
+
+    // Handle disasters. Only index published disasters.
+    if (!empty($item['disaster'])) {
+      foreach ($item['disaster'] as $index => $disaster) {
+        $status = $disaster['status'] ?? '';
+        if ($status !== 'alert' && $status !== 'current' && $status !== 'past') {
+          unset($item['disaster'][$index]);
+        }
+      }
+      if (empty($item['disaster'])) {
+        unset($item['disaster']);
+      }
+      else {
+        $item['disaster'] = array_values($item['disaster']);
+      }
     }
   }
 }

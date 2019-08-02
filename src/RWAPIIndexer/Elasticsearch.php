@@ -369,7 +369,7 @@ class Elasticsearch {
   public function request($method, $path, $data = NULL, $bulk = FALSE) {
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $this->server . '/' . $path);
-    curl_setopt($curl, CURLOPT_TIMEOUT, 30);
+    curl_setopt($curl, CURLOPT_TIMEOUT, $bulk ? 200 : 20);
     curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 2);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
 

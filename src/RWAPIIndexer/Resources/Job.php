@@ -132,8 +132,10 @@ class Job extends \RWAPIIndexer\Resource {
     $item['date'] = array(
       'created' => $item['date_created'],
       'changed' => $item['date_changed'],
-      'closing' => $item['date_closing'],
     );
+    if (isset($item['date_closing'])) {
+      $item['date']['closing'] = $item['date_closing'];
+    }
     unset($item['date_created']);
     unset($item['date_changed']);
     unset($item['date_closing']);

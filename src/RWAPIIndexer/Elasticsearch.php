@@ -6,61 +6,91 @@ namespace RWAPIIndexer;
  * Elasticsearch handler class.
  */
 class Elasticsearch {
-  // Elasticsearch server.
+  /**
+   * Elasticsearch server.
+   *
+   * @var string
+   */
   protected $server = 'http://localhost:9200';
 
-  // Base index name.
+  /**
+   * Base index name.
+   *
+   * @var string
+   */
   protected $base = '';
 
-  // Index tag.
+  /**
+   * Index tag.
+   *
+   * @var string
+   */
   protected $tag = '';
 
-  // Default index settings.
-  protected $default_settings = array(
-    'settings' => array(
-      'number_of_shards' => 1,
-      'number_of_replicas' => 1,
-      # For deep pagination. Review "Search After" query when switching to 5.x.
-      # 2,000,000 should be enough for several years.
-      'max_result_window' => 2000000,
-      'analysis' => array(
-        'analyzer' => array(
-          'default_index' => array(
-            'type' => 'custom',
-            'tokenizer' => 'standard',
-            'filter' => array('standard', 'lowercase', 'asciifolding', 'elision', 'filter_stop', 'filter_stemmer_possessive', 'filter_word_delimiter', 'filter_shingle'),
-            'char_filter' => array('html_strip'),
+  /**
+   * Default index settings.
+   *
+   * @var array
+   */
+  protected $defaultSettings = array(
+    'number_of_shards' => 1,
+    'number_of_replicas' => 1,
+    // For deep pagination. Review "Search After" query when switching to 5.x.
+    // 2,000,000 should be enough for several years.
+    'max_result_window' => 2000000,
+    'analysis' => array(
+      'analyzer' => array(
+        'default' => array(
+          'type' => 'custom',
+          'tokenizer' => 'standard',
+          'filter' => array(
+            'lowercase',
+            'asciifolding',
+            'elision',
+            'filter_stop',
+            'filter_stemmer_possessive',
+            'filter_word_delimiter',
+            'filter_shingle',
           ),
-          'default_search' => array(
-            'type' => 'custom',
-            'tokenizer' => 'standard',
-            'filter' => array('standard', 'lowercase', 'asciifolding', 'elision', 'filter_stop', 'filter_stemmer_possessive', 'filter_word_delimiter', 'filter_shingle'),
+          'char_filter' => array('html_strip'),
+        ),
+        'default_search' => array(
+          'type' => 'custom',
+          'tokenizer' => 'standard',
+          'filter' => array(
+            'lowercase',
+            'asciifolding',
+            'elision',
+            'filter_stop',
+            'filter_stemmer_possessive',
+            'filter_word_delimiter',
+            'filter_shingle',
           ),
         ),
-        'filter' => array(
-          'filter_stemmer_possessive' => array(
-            'type' => 'stemmer',
-            'name' => 'possessive_english',
-          ),
-          'filter_shingle' => array(
-            'type' => 'shingle',
-            'min_shingle_size' => 2,
-            'max_shingle_size' => 4,
-            'output_unigrams' => TRUE,
-          ),
-          'filter_edge_ngram' => array(
-            'type' => 'edgeNGram',
-            'min_gram' => 1,
-            'max_gram' => 20,
-          ),
-          'filter_word_delimiter' => array(
-            'type' => 'word_delimiter',
-            'preserve_original' => TRUE,
-          ),
-          'filter_stop' => array(
-            'type' => 'stop',
-            'stopwords' => array('_english_'),
-          ),
+      ),
+      'filter' => array(
+        'filter_stemmer_possessive' => array(
+          'type' => 'stemmer',
+          'name' => 'possessive_english',
+        ),
+        'filter_shingle' => array(
+          'type' => 'shingle',
+          'min_shingle_size' => 2,
+          'max_shingle_size' => 4,
+          'output_unigrams' => TRUE,
+        ),
+        'filter_edge_ngram' => array(
+          'type' => 'edge_ngram',
+          'min_gram' => 1,
+          'max_gram' => 20,
+        ),
+        'filter_word_delimiter' => array(
+          'type' => 'word_delimiter',
+          'preserve_original' => TRUE,
+        ),
+        'filter_stop' => array(
+          'type' => 'stop',
+          'stopwords' => array('_english_'),
         ),
       ),
     ),
@@ -83,17 +113,16 @@ class Elasticsearch {
   }
 
   /**
-   * Get the index path (with or without the type).
+   * Get the index path.
    *
    * @param string $index
    *   Index name.
-   * @param boolean $type
-   *   Whether to append the index type or not.
+   *
    * @return string
    *   Index path.
    */
-  public function getIndexPath($index, $type = FALSE) {
-    return $this->base . $index . '_index' . $this->tag . ($type ? '/' . $index : '');
+  public function getIndexPath($index) {
+    return $this->base . $index . '_index' . $this->tag;
   }
 
   /**
@@ -101,10 +130,11 @@ class Elasticsearch {
    *
    * @param string $index
    *   Index name.
+   *
    * @return string
    *   Index alias.
    */
-  public function getIndexAlias($index, $type = FALSE) {
+  public function getIndexAlias($index) {
     return $this->base . $index;
   }
 
@@ -116,9 +146,32 @@ class Elasticsearch {
    * @param array $mapping
    *   Index mapping.
    */
-  public function create($index, $mapping) {
-    $this->createIndex($index);
-    $this->createType($index, $mapping);
+  public function create($index, array $mapping) {
+    if (!$this->indexExists($index)) {
+      $this->createIndex($index, $mapping);
+    }
+  }
+
+  /**
+   * Check if an index already exists.
+   *
+   * @param string $index
+   *   Elasticsearch index name.
+   */
+  public function indexExists($index) {
+    $path = $this->getIndexPath($index);
+
+    try {
+      $this->request('HEAD', $path);
+      return TRUE;
+    }
+    catch (\Exception $exception) {
+      // Exception is not due to the index being missing, rethrow.
+      if ($exception->getCode() !== 404) {
+        throw $exception;
+      }
+    }
+    return FALSE;
   }
 
   /**
@@ -126,52 +179,18 @@ class Elasticsearch {
    *
    * @param string $index
    *   Index to create.
+   * @param array $mapping
+   *   Index mapping.
    */
-  public function createIndex($index) {
+  public function createIndex($index, array $mapping) {
     $path = $this->getIndexPath($index);
 
-    // Try to create the elasticsearch index.
-    try {
-      $this->request('POST', $path, $this->default_settings);
-    }
-    catch (\Exception $exception) {
-      $message = $exception->getMessage();
-      // Exception not because index already exists, rethrow.
-      if (strpos($message, 'IndexAlreadyExistsException') === FALSE) {
-        throw $exception;
-      }
-    }
-  }
-
-  /**
-   * Create an index type if doesn't already exist and set its mapping.
-   *
-   * @param string $index
-   *   Index name.
-   * @param array $mapping
-   *   Mapping for the given index type.
-   */
-  public function createType($index, $mapping) {
-    $path = $this->getIndexPath($index, TRUE) . '/_mapping';
-
-    $mapping = array(
-      $index => array(
-        '_all' => array('enabled' => FALSE),
+    $this->request('PUT', $path, array(
+      'settings' => $this->defaultSettings,
+      'mappings' => array(
         'properties' => $mapping,
       ),
-    );
-
-    // Try to set up the mapping of the type.
-    try {
-      $this->request('PUT', $path, $mapping);
-    }
-    catch (\Exception $exception) {
-      $message = $exception->getMessage();
-      // Exception not because mapping already set, rethrow.
-      if (strpos($message, 'IndexAlreadyExistsException') === FALSE) {
-        throw $exception;
-      }
-    }
+    ));
   }
 
   /**
@@ -188,24 +207,18 @@ class Elasticsearch {
       $this->request('DELETE', $path);
     }
     catch (\Exception $exception) {
-      $message = $exception->getMessage();
       // Exception other than index missing, rethrow.
-      if (strpos($message, 'IndexMissingException') === FALSE) {
+      if ($exception->getCode() !== 404) {
         throw $exception;
       }
     }
   }
-
 
   /**
    * Create an alias for the index pointing to the type.
    *
    * @param string $index
    *   Index name.
-   * @param boolean $remove
-   *   Whether to remove the index or add it.
-   * @param string $alias
-   *   Index alias.
    */
   public function addAlias($index) {
     $alias = $this->getIndexAlias($index);
@@ -232,11 +245,7 @@ class Elasticsearch {
       $this->request('POST', '_aliases', $data);
     }
     catch (\Exception $exception) {
-      $message = $exception->getMessage();
-      if (strpos($message, 'InvalidAliasNameException') !== FALSE) {
-        throw new \Exception('Invalid alias name "' . $alias . '", an index exists with the same name as the alias.');
-      }
-      elseif (strpos($message, 'IndexMissingException') !== FALSE) {
+      if ($exception->getCode() === 404) {
         throw new \Exception('Index "' . $this->getIndexPath($index) . '" does not exist.');
       }
       else {
@@ -270,9 +279,8 @@ class Elasticsearch {
       $this->request('POST', '_aliases', $data);
     }
     catch (\Exception $exception) {
-      $message = $exception->getMessage();
       // Exception other than alias missing, rethrow.
-      if (strpos($message, 'AliasesMissingException') === FALSE && strpos($message, 'IndexMissingException') === FALSE) {
+      if ($exception->getCode() !== 404) {
         throw $exception;
       }
     }
@@ -285,12 +293,13 @@ class Elasticsearch {
    *   Index name.
    * @param array $items
    *   Items to index.
-   * @return integer
+   *
+   * @return int
    *   ID of the last indexed item.
    */
-  public function indexItems($index, &$items) {
+  public function indexItems($index, array &$items) {
     $data = '';
-    $path = $this->getIndexPath($index, TRUE) . '/_bulk';
+    $path = $this->getIndexPath($index);
 
     // Get last id.
     end($items);
@@ -300,18 +309,19 @@ class Elasticsearch {
     // Prepare bulk indexing.
     foreach ($items as $item) {
       // Add the document to the bulk indexing data.
-      $action = array('index' => array(
-        '_index' => $this->getIndexPath($index),
-        '_type' => $index,
-        '_id' => $item['id'],
-      ));
+      $action = array(
+        'index' => array(
+          '_index' => $path,
+          '_id' => $item['id'],
+        ),
+      );
 
       $data .= json_encode($action, JSON_FORCE_OBJECT) . "\n";
       $data .= json_encode($item) . "\n";
     }
 
     // Bulk index the documents.
-    $this->request('POST', $path, $data);
+    $this->request('POST', $path . '/_bulk', $data, TRUE);
 
     return $offset;
   }
@@ -324,8 +334,8 @@ class Elasticsearch {
    * @param array $item
    *   Item to index.
    */
-  public function indexItem($index, $item) {
-    $path = $this->getIndexPath($index, TRUE) . '/' . $item['id'];
+  public function indexItem($index, array $item) {
+    $path = $this->getIndexPath($index) . '/' . $item['id'];
     $data = json_encode($item);
     $this->request('POST', $path, $data);
   }
@@ -335,11 +345,11 @@ class Elasticsearch {
    *
    * @param string $index
    *   Index name.
-   * @param array $id
+   * @param int $id
    *   Id of the item to remove.
    */
   public function removeItem($index, $id) {
-    $path = $this->getIndexPath($index, TRUE) . "/" . $id;
+    $path = $this->getIndexPath($index) . "/" . $id;
     $this->request('DELETE', $path);
   }
 
@@ -352,29 +362,70 @@ class Elasticsearch {
    *   Elasticsearch resource path.
    * @param array|string $data
    *   Optional data to convey with the request.
+   * @param bool $bulk
+   *   Indicates that this is bulk request so that we can set the appropriate
+   *   header.
    */
-  public function request($method, $path, &$data = NULL) {
+  public function request($method, $path, $data = NULL, $bulk = FALSE) {
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $this->server . '/' . $path);
-    curl_setopt($curl, CURLOPT_TIMEOUT, 200);
+    curl_setopt($curl, CURLOPT_TIMEOUT, $bulk ? 200 : 20);
     curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 2);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
 
-    // Send data if defined.
-    if (isset($data)) {
-      if (!is_string($data)) {
-        $data = json_encode($data) . "\n";
+    if ($method === 'HEAD') {
+      curl_setopt($curl, CURLOPT_NOBODY, TRUE);
+    }
+    else {
+      curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+
+      // Tell ES that we accept compressed responses. CURL will decode them.
+      curl_setopt($curl, CURLOPT_ENCODING, '');
+
+      // Send data if defined.
+      if (isset($data)) {
+        if (!is_string($data)) {
+          $data = json_encode($data) . "\n";
+        }
+
+        // Request headers.
+        $headers = array();
+
+        if ($bulk) {
+          $headers[] = 'Content-Type: application/x-ndjson';
+        }
+        else {
+          $headers[] = 'Content-Type: application/json';
+        }
+
+        // Compress the data and tell ES that it's compressed.
+        $data = gzencode($data);
+        $headers[] = 'Content-Encoding: gzip';
+
+        // Prevent curl from expecting a 100 Continue with data is large.
+        $headers[] = 'Expect:';
+
+        $headers[] = 'Content-Length: ' . strlen($data);
+
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
       }
-      curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
     }
 
     $response = curl_exec($curl);
     $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    $error = curl_error($curl);
+    $errno = curl_errno($curl);
     curl_close($curl);
+
+    // Handle timeout and other errors.
+    if (!empty($errno)) {
+      throw new \Exception($error, $errno);
+    }
 
     // Elasticsearch error.
     if ($status != 200) {
+      $message = "Unknown error";
       if (!empty($response)) {
         $response = json_decode($response);
         if (isset($response->error->type)) {
@@ -385,12 +436,12 @@ class Elasticsearch {
           if (isset($response->error->index)) {
             $message .= ' [index: ' . $response->error->index . ']';
           }
-          throw new \Exception($message);
         }
       }
-      throw new \Exception("Unknown error");
+      throw new \Exception($message, (int) $status);
     }
 
     return $response;
   }
+
 }

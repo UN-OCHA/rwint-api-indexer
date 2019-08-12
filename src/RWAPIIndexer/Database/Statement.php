@@ -10,6 +10,23 @@ namespace RWAPIIndexer\Database;
 class Statement extends \PDOStatement {
 
   /**
+   * Database connection.
+   *
+   * @var \RWAPIIndexer\Database\DatabaseConnection
+   */
+  public $connection;
+
+  /**
+   * Construct the statement.
+   *
+   * @param \RWAPIIndexer\Database\DatabaseConnection $connection
+   *   Database connection.
+   */
+  protected function __construct(DatabaseConnection $connection) {
+    $this->connection = $connection;
+  }
+
+  /**
    * Returns the result set as an associative array keyed by the given field.
    *
    * @param string $key

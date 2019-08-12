@@ -2,6 +2,8 @@
 
 namespace RWAPIIndexer;
 
+use RWAPIIndexer\Database\DatabaseConnection;
+
 /**
  * Bundles class manager.
  */

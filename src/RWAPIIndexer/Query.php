@@ -188,7 +188,7 @@ class Query {
    * @param array $ids
    *   Entity Ids used to filter the query.
    */
-  public function setIds(DatabaseQuery $query, array $ids) {
+  public function setIds(DatabaseQuery $query, array $ids = NULL) {
     if (!empty($ids)) {
       $query->condition($this->baseTable . '.' . $this->baseField, $ids, 'IN');
     }

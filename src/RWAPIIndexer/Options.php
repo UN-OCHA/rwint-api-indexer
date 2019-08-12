@@ -6,7 +6,12 @@ namespace RWAPIIndexer;
  * Indexing options handler class.
  */
 class Options {
-  // Indexing options.
+
+  /**
+   * Indexing options.
+   *
+   * @var array
+   */
   protected $options = array(
     'bundle' => '',
     'elasticsearch' => 'http://127.0.0.1:9200',
@@ -32,12 +37,10 @@ class Options {
   /**
    * Construct the Options handler.
    *
-   * @param array $bundles
-   *   Allowed entity bundles.
    * @param array $options
    *   Indexing options.
    */
-  public function __construct($options = array()) {
+  public function __construct(array $options = array()) {
     // Called from ommand line.
     if (php_sapi_name() == 'cli') {
       $this->options['log'] = 'echo';
@@ -57,6 +60,9 @@ class Options {
 
   /**
    * Parse the options form the command line.
+   *
+   * @return array
+   *   Parsed options.
    */
   public static function parseArguments() {
     global $argv;
@@ -186,7 +192,8 @@ class Options {
    *
    * @param string $key
    *   Option key.
-   * @return integer|string|array
+   *
+   * @return int|string|array
    *   All indexing options or option value for the given key.
    */
   public function get($key = NULL) {
@@ -208,7 +215,7 @@ class Options {
    *   Entity bundle to validate.
    */
   public function validateBundle($bundle) {
-    return \RWAPIIndexer\Bundles::has($bundle) ? $bundle : FALSE;
+    return Bundles::has($bundle) ? $bundle : FALSE;
   }
 
   /**
@@ -227,10 +234,10 @@ class Options {
   /**
    * Validate the indexing options.
    *
-   * @param  array $options
+   * @param array $options
    *   Options to validate.
    */
-  public function validateOptions($options) {
+  public function validateOptions(array $options) {
     $results = filter_var_array($options, array(
       'bundle' => array(
         'filter' => FILTER_CALLBACK,
@@ -324,14 +331,14 @@ class Options {
     }
   }
 
- /**
-  * Display the script usage.
-  *
-  * @return string
-  *   Usage and indexing options.
-  */
+  /**
+   * Display the script usage and indexing options.
+   *
+   * @param string $error
+   *   Error message.
+   */
   public static function displayUsage($error = '') {
-    if  (!empty($error)) {
+    if (!empty($error)) {
       echo "[ERROR] " . $error . "\n\n";
     }
 
@@ -357,4 +364,5 @@ class Options {
           "\n";
     exit();
   }
+
 }

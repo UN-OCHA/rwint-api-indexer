@@ -2,12 +2,18 @@
 
 namespace RWAPIIndexer\Resources;
 
+use RWAPIIndexer\Resource;
+use RWAPIIndexer\Mapping;
+
 /**
  * Report resource handler.
  */
-class Report extends \RWAPIIndexer\Resource {
-  // Options used for building the query to get the items to index.
-  protected $query_options = array(
+class Report extends Resource {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $queryOptions = array(
     'fields' => array(
       'title' => 'title',
       'date_created' => 'created',
@@ -58,8 +64,10 @@ class Report extends \RWAPIIndexer\Resource {
     ),
   );
 
-  // Options used to process the entity items before indexing.
-  protected $processing_options = array(
+  /**
+   * {@inheritdoc}
+   */
+  protected $processingOptions = array(
     'conversion' => array(
       'body' => array('links', 'html'),
       'date_created' => array('time'),
@@ -77,7 +85,16 @@ class Report extends \RWAPIIndexer\Resource {
         'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
       ),
       'source' => array(
-        'source' => array('id', 'name', 'shortname', 'longname', 'spanish_name', 'type', 'homepage', 'disclaimer'),
+        'source' => array(
+          'id',
+          'name',
+          'shortname',
+          'longname',
+          'spanish_name',
+          'type',
+          'homepage',
+          'disclaimer',
+        ),
       ),
       'language' => array(
         'language' => array('id', 'name', 'code'),
@@ -107,69 +124,63 @@ class Report extends \RWAPIIndexer\Resource {
   );
 
   /**
-   * Return the mapping for the current indexable.
-   *
-   * @return array
-   *   Elasticsearch index type mapping.
+   * {@inheritdoc}
    */
   public function getMapping() {
-    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping = new Mapping();
     $mapping->addInteger('id')
-            ->addString('url', FALSE)
-            ->addString('url_alias', FALSE)
-            ->addString('status', FALSE)
-            ->addString('title', TRUE, TRUE)
-            ->addString('origin', FALSE)
-            // Body.
-            ->addString('body')
-            ->addString('body-html', NULL)
-            // Dates.
-            ->addDates('date', array('created', 'changed', 'original'))
-            // Headline.
-            ->addString('headline.title', TRUE, TRUE)
-            ->addString('headline.summary')
-            ->addImage('headline.image')
-            // Language.
-            ->addTaxonomy('language')
-            ->addString('language.code', FALSE)
-            // Primary country.
-            ->addTaxonomy('primary_country', array('shortname', 'iso3'))
-            ->addGeoPoint('primary_country.location')
-            // Country.
-            ->addTaxonomy('country', array('shortname', 'iso3'))
-            ->addGeoPoint('country.location')
-            ->addBoolean('country.primary')
-            // Source.
-            ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
-            ->addString('source.homepage', NULL)
-            ->addString('source.disclaimer', NULL)
-            ->addTaxonomy('source.type')
-            // Disaster.
-            ->addTaxonomy('disaster', array('glide'))
-            ->addTaxonomy('disaster.type')
-            ->addString('disaster.type.code', FALSE)
-            ->addBoolean('disaster.type.primary')
-            ->addString('disaster.status', FALSE)
-            // Other taxonomies.
-            ->addTaxonomy('format')
-            ->addTaxonomy('theme')
-            ->addTaxonomy('disaster_type')
-            ->addString('disaster_type.code', FALSE)
-            ->addTaxonomy('vulnerable_groups')
-            ->addTaxonomy('ocha_product')
-            ->addTaxonomy('feature')
-            // File and image.
-            ->addImage('image')
-            ->addFile('file');
+      ->addString('url', FALSE)
+      ->addString('url_alias', FALSE)
+      ->addString('status', FALSE)
+      ->addString('title', TRUE, TRUE)
+      ->addString('origin', FALSE)
+      // Body.
+      ->addString('body')
+      ->addString('body-html', NULL)
+      // Dates.
+      ->addDates('date', array('created', 'changed', 'original'))
+      // Headline.
+      ->addString('headline.title', TRUE, TRUE)
+      ->addString('headline.summary')
+      ->addImage('headline.image')
+      // Language.
+      ->addTaxonomy('language')
+      ->addString('language.code', FALSE)
+      // Primary country.
+      ->addTaxonomy('primary_country', array('shortname', 'iso3'))
+      ->addGeoPoint('primary_country.location')
+      // Country.
+      ->addTaxonomy('country', array('shortname', 'iso3'))
+      ->addGeoPoint('country.location')
+      ->addBoolean('country.primary')
+      // Source.
+      ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
+      ->addString('source.homepage', NULL)
+      ->addString('source.disclaimer', NULL)
+      ->addTaxonomy('source.type')
+      // Disaster.
+      ->addTaxonomy('disaster', array('glide'))
+      ->addTaxonomy('disaster.type')
+      ->addString('disaster.type.code', FALSE)
+      ->addBoolean('disaster.type.primary')
+      ->addString('disaster.status', FALSE)
+      // Other taxonomies.
+      ->addTaxonomy('format')
+      ->addTaxonomy('theme')
+      ->addTaxonomy('disaster_type')
+      ->addString('disaster_type.code', FALSE)
+      ->addTaxonomy('vulnerable_groups')
+      ->addTaxonomy('ocha_product')
+      ->addTaxonomy('feature')
+      // File and image.
+      ->addImage('image')
+      ->addFile('file');
 
     return $mapping->export();
   }
 
   /**
-   * Process an item, preparing for the indexing.
-   *
-   * @param array $item
-   *   Item to process.
+   * {@inheritdoc}
    */
   public function processItem(&$item) {
     // Handle dates.
@@ -248,4 +259,5 @@ class Report extends \RWAPIIndexer\Resource {
       }
     }
   }
+
 }

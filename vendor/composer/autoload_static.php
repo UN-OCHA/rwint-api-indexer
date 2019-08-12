@@ -23,10 +23,43 @@ class ComposerStaticInited2f462c00d51ac618432735cb7806f0
         ),
     );
 
+    public static $classMap = array (
+        'Michelf\\Markdown' => __DIR__ . '/..' . '/michelf/php-markdown/Michelf/Markdown.php',
+        'Michelf\\MarkdownExtra' => __DIR__ . '/..' . '/michelf/php-markdown/Michelf/MarkdownExtra.php',
+        'Michelf\\MarkdownInterface' => __DIR__ . '/..' . '/michelf/php-markdown/Michelf/MarkdownInterface.php',
+        'Michelf\\_MarkdownExtra_TmpImpl' => __DIR__ . '/..' . '/michelf/php-markdown/Michelf/Markdown.php',
+        'RWAPIIndexer\\Bundles' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Bundles.php',
+        'RWAPIIndexer\\Database\\DatabaseConnection' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Database/DatabaseConnection.php',
+        'RWAPIIndexer\\Database\\Query' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Database/Query.php',
+        'RWAPIIndexer\\Database\\Statement' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Database/Statement.php',
+        'RWAPIIndexer\\Elasticsearch' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Elasticsearch.php',
+        'RWAPIIndexer\\Manager' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Manager.php',
+        'RWAPIIndexer\\Mapping' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Mapping.php',
+        'RWAPIIndexer\\Metrics' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Metrics.php',
+        'RWAPIIndexer\\Options' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Options.php',
+        'RWAPIIndexer\\Processor' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Processor.php',
+        'RWAPIIndexer\\Query' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Query.php',
+        'RWAPIIndexer\\References' => __DIR__ . '/../..' . '/src/RWAPIIndexer/References.php',
+        'RWAPIIndexer\\Resource' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resource.php',
+        'RWAPIIndexer\\Resources\\Blog' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/Blog.php',
+        'RWAPIIndexer\\Resources\\Book' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/Book.php',
+        'RWAPIIndexer\\Resources\\Country' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/Country.php',
+        'RWAPIIndexer\\Resources\\Disaster' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/Disaster.php',
+        'RWAPIIndexer\\Resources\\DisasterType' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/DisasterType.php',
+        'RWAPIIndexer\\Resources\\Faq' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/Faq.php',
+        'RWAPIIndexer\\Resources\\Job' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/Job.php',
+        'RWAPIIndexer\\Resources\\Language' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/Language.php',
+        'RWAPIIndexer\\Resources\\Report' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/Report.php',
+        'RWAPIIndexer\\Resources\\Source' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/Source.php',
+        'RWAPIIndexer\\Resources\\TaxonomyDefault' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/TaxonomyDefault.php',
+        'RWAPIIndexer\\Resources\\Training' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Resources/Training.php',
+    );
+
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
             $loader->prefixesPsr0 = ComposerStaticInited2f462c00d51ac618432735cb7806f0::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInited2f462c00d51ac618432735cb7806f0::$classMap;
 
         }, null, ClassLoader::class);
     }

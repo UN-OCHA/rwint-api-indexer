@@ -2,12 +2,18 @@
 
 namespace RWAPIIndexer\Resources;
 
+use RWAPIIndexer\Resource;
+use RWAPIIndexer\Mapping;
+
 /**
  * Job resource handler.
  */
-class Job extends \RWAPIIndexer\Resource {
-  // Options used for building the query to get the items to index.
-  protected $query_options = array(
+class Job extends Resource {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $queryOptions = array(
     'fields' => array(
       'title' => 'title',
       'date_created' => 'created',
@@ -44,8 +50,10 @@ class Job extends \RWAPIIndexer\Resource {
     ),
   );
 
-  // Options used to process the entity items before indexing.
-  protected $processing_options = array(
+  /**
+   * {@inheritdoc}
+   */
+  protected $processingOptions = array(
     'conversion' => array(
       'body' => array('links', 'html_strict'),
       'how_to_apply' => array('links', 'html_strict'),
@@ -58,7 +66,15 @@ class Job extends \RWAPIIndexer\Resource {
         'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
       ),
       'source' => array(
-        'source' => array('id', 'name', 'shortname', 'longname', 'spanish_name', 'type', 'homepage'),
+        'source' => array(
+          'id',
+          'name',
+          'shortname',
+          'longname',
+          'spanish_name',
+          'type',
+          'homepage',
+        ),
       ),
       'language' => array(
         'language' => array('id', 'name', 'code'),
@@ -79,53 +95,47 @@ class Job extends \RWAPIIndexer\Resource {
   );
 
   /**
-   * Return the mapping for the current indexable.
-   *
-   * @return array
-   *   Elasticsearch index type mapping.
+   * {@inheritdoc}
    */
   public function getMapping() {
-    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping = new Mapping();
     $mapping->addInteger('id')
-            ->addString('url', FALSE)
-            ->addString('url_alias', FALSE)
-            ->addString('status', FALSE)
-            ->addString('title', TRUE, TRUE)
-            // Body.
-            ->addString('body')
-            ->addString('body-html', NULL)
-            // How to apply.
-            ->addString('how_to_apply')
-            ->addString('how_to_apply-html', NULL)
-            // Dates.
-            ->addDates('date', array('created', 'changed', 'closing'))
-            // Language.
-            ->addTaxonomy('language')
-            ->addString('language.code', FALSE)
-            // Country.
-            ->addTaxonomy('country', array('shortname', 'iso3'))
-            ->addGeoPoint('country.location')
-            // Source.
-            ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
-            ->addString('source.homepage', NULL)
-            ->addTaxonomy('source.type')
-            // Other taxonomies
-            ->addTaxonomy('city')
-            ->addTaxonomy('type')
-            ->addTaxonomy('theme')
-            ->addTaxonomy('career_categories')
-            ->addTaxonomy('experience')
-            // File.
-            ->addFile('file');
+      ->addString('url', FALSE)
+      ->addString('url_alias', FALSE)
+      ->addString('status', FALSE)
+      ->addString('title', TRUE, TRUE)
+      // Body.
+      ->addString('body')
+      ->addString('body-html', NULL)
+      // How to apply.
+      ->addString('how_to_apply')
+      ->addString('how_to_apply-html', NULL)
+      // Dates.
+      ->addDates('date', array('created', 'changed', 'closing'))
+      // Language.
+      ->addTaxonomy('language')
+      ->addString('language.code', FALSE)
+      // Country.
+      ->addTaxonomy('country', array('shortname', 'iso3'))
+      ->addGeoPoint('country.location')
+      // Source.
+      ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
+      ->addString('source.homepage', NULL)
+      ->addTaxonomy('source.type')
+      // Other taxonomies.
+      ->addTaxonomy('city')
+      ->addTaxonomy('type')
+      ->addTaxonomy('theme')
+      ->addTaxonomy('career_categories')
+      ->addTaxonomy('experience')
+      // File.
+      ->addFile('file');
 
     return $mapping->export();
   }
 
   /**
-   * Process an item, preparing for the indexing.
-   *
-   * @param array $item
-   *   Item to process.
+   * {@inheritdoc}
    */
   public function processItem(&$item) {
     // Handle dates.
@@ -150,4 +160,5 @@ class Job extends \RWAPIIndexer\Resource {
       unset($item['file']);
     }
   }
+
 }

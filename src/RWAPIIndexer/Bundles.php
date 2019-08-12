@@ -6,12 +6,17 @@ namespace RWAPIIndexer;
  * Bundles class manager.
  */
 class Bundles {
-  // List of Resources entity bundles and their corresponding class.
+
+  /**
+   * List of Resources entity bundles and their corresponding class.
+   *
+   * @var array
+   */
   public static $bundles = array(
     'report' => array(
-        'class' => '\RWAPIIndexer\Resources\Report',
-        'type' => 'node',
-        'index' => 'reports',
+      'class' => '\RWAPIIndexer\Resources\Report',
+      'type' => 'node',
+      'index' => 'reports',
     ),
     'job' => array(
       'class' => '\RWAPIIndexer\Resources\Job',
@@ -142,10 +147,21 @@ class Bundles {
    *
    * @param string $bundle
    *   Bundle of the resource.
+   * @param \RWAPIIndexer\Elasticsearch $elasticsearch
+   *   Elasticsearch handler.
+   * @param \RWAPIIndexer\Database\DatabaseConnection $connection
+   *   Database connection.
+   * @param \RWAPIIndexer\Processor $processor
+   *   Field processor.
+   * @param \RWAPIIndexer\References $references
+   *   References handler.
+   * @param \RWAPIIndexer\Options $options
+   *   Options.
+   *
    * @return \RWAPIIndexer\Resource
    *   Resource handler for the given bundle.
    */
-  public static function getResourceHandler($bundle, $elasticsearch, $connection, $processor, $references, $options) {
+  public static function getResourceHandler($bundle, Elasticsearch $elasticsearch, DatabaseConnection $connection, Processor $processor, References $references, Options $options) {
     if (!empty(static::$bundles[$bundle]['class']) && class_exists(static::$bundles[$bundle]['class'])) {
       $class = static::$bundles[$bundle]['class'];
       $index = static::$bundles[$bundle]['index'];
@@ -161,12 +177,14 @@ class Bundles {
   /**
    * Check if the given bundle is supported.
    *
-   * @param string  $bundle
+   * @param string $bundle
    *   Bundle to check.
-   * @return boolean
+   *
+   * @return bool
    *   Return TRUE if the bundle exists.
    */
   public static function has($bundle) {
     return isset(static::$bundles[$bundle]);
   }
+
 }

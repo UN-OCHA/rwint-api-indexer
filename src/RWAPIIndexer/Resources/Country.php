@@ -2,12 +2,18 @@
 
 namespace RWAPIIndexer\Resources;
 
+use RWAPIIndexer\Resource;
+use RWAPIIndexer\Mapping;
+
 /**
  * Country resource handler.
  */
-class Country extends \RWAPIIndexer\Resource {
-  // Options used for building the query to get the items to index.
-  protected $query_options = array(
+class Country extends Resource {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $queryOptions = array(
     'fields' => array(
       'description' => 'description',
     ),
@@ -34,8 +40,10 @@ class Country extends \RWAPIIndexer\Resource {
     ),
   );
 
-  // Options used to process the entity items before indexing.
-  protected $processing_options = array(
+  /**
+   * {@inheritdoc}
+   */
+  protected $processingOptions = array(
     'conversion' => array(
       'description' => array('links'),
       'current' => array('bool'),
@@ -45,8 +53,12 @@ class Country extends \RWAPIIndexer\Resource {
     ),
   );
 
-  // Profile sections (id => settings).
-  private $profile_sections = array(
+  /**
+   * Profile sections (id => settings).
+   *
+   * @var array
+   */
+  private $profileSections = array(
     'key_content' => array(
       'label' => 'Key Content',
       'internal' => TRUE,
@@ -68,39 +80,33 @@ class Country extends \RWAPIIndexer\Resource {
   );
 
   /**
-   * Return the mapping for the current resource.
-   *
-   * @return array
-   *   Elasticsearch index type mapping.
+   * {@inheritdoc}
    */
   public function getMapping() {
-    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping = new Mapping();
     $mapping->addInteger('id')
-            ->addString('url', FALSE)
-            ->addString('url_alias', FALSE)
-            ->addString('status', FALSE)
-            ->addBoolean('current')
-            ->addBoolean('featured')
-            // Centroid Coordinates.
-            ->addGeoPoint('location')
-            // Names.
-            ->addString('name', TRUE, TRUE)
-            ->addString('shortname', TRUE, TRUE)
-            ->addString('iso3', TRUE, TRUE)
-            // Description -- legacy.
-            ->addString('description')
-            ->addString('description-html', NULL)
-            // Profile.
-            ->addProfile($this->profile_sections);
+      ->addString('url', FALSE)
+      ->addString('url_alias', FALSE)
+      ->addString('status', FALSE)
+      ->addBoolean('current')
+      ->addBoolean('featured')
+      // Centroid Coordinates.
+      ->addGeoPoint('location')
+      // Names.
+      ->addString('name', TRUE, TRUE)
+      ->addString('shortname', TRUE, TRUE)
+      ->addString('iso3', TRUE, TRUE)
+      // Description -- legacy.
+      ->addString('description')
+      ->addString('description-html', NULL)
+      // Profile.
+      ->addProfile($this->profileSections);
 
     return $mapping->export();
   }
 
   /**
-   * Process an item, preparing for the indexing.
-   *
-   * @param array $item
-   *   Item to process.
+   * {@inheritdoc}
    */
   public function processItem(&$item) {
     // Current.
@@ -111,7 +117,7 @@ class Country extends \RWAPIIndexer\Resource {
       unset($item['description']);
     }
     else {
-      $this->processor->processProfile($this->connection, $item, $this->profile_sections);
+      $this->processor->processProfile($this->connection, $item, $this->profileSections);
     }
     unset($item['show_profile']);
 
@@ -128,4 +134,5 @@ class Country extends \RWAPIIndexer\Resource {
       unset($item['latitude']);
     }
   }
+
 }

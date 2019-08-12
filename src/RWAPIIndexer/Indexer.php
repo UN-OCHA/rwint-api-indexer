@@ -1,11 +1,18 @@
 <?php
 
+/**
+ * @file
+ * Handle indexing using command line arguments.
+ */
+
+use RWAPIIndexer\Manager;
+
 // DEBUG.
 error_reporting(-1);
 ini_set("display_errors", 1);
 
 // Make sure there is enough memory.
-ini_set('memory_limit','256M');
+ini_set('memory_limit', '256M');
 
 // Load the libraries.
 require "vendor/autoload.php";
@@ -19,7 +26,7 @@ if (!(php_sapi_name() == 'cli')) {
 // Launch the indexing or index removal.
 try {
   // Create a new Indexing manager.
-  $manager = new \RWAPIIndexer\Manager();
+  $manager = new Manager();
   // Perform indexing or index removal.
   $manager->execute();
 
@@ -30,10 +37,3 @@ catch (\Exception $exception) {
   echo "[ERROR] " . $exception->getMessage() . "\n";
   exit(-1);
 }
-
-
-
-
-
-
-

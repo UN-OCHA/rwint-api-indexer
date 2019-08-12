@@ -2,23 +2,48 @@
 
 namespace RWAPIIndexer;
 
+use RWAPIIndexer\Database\DatabaseConnection;
+use RWAPIIndexer\Database\Query as DatabaseQuery;
+use Michelf\Markdown;
+
 /**
  * Entity field processor class.
  */
 class Processor {
-  // Website URL.
+
+  /**
+   * Website URL.
+   *
+   * @var string
+   */
   protected $website = '';
 
-  // References handler.
+  /**
+   * References handler.
+   *
+   * @var \RWAPIIndexer\References
+   */
   protected $references = NULL;
 
-  // Markdown converter.
+  /**
+   * Markdown converter.
+   *
+   * @var string
+   */
   protected $markdown = 'markdown';
 
-  // Base public scheme for URLs.
-  private $public_scheme_url = '';
+  /**
+   * Base public scheme for URLs.
+   *
+   * @var string
+   */
+  private $publicSchemeUrl = '';
 
-  // Default mimetypes.
+  /**
+   * Default mimetypes.
+   *
+   * @var array
+   */
   protected $mimeTypes = array(
     'txt' => 'text/plain',
     'htm' => 'text/html',
@@ -30,7 +55,7 @@ class Processor {
     'xml' => 'application/xml',
     'swf' => 'application/x-shockwave-flash',
     'flv' => 'video/x-flv',
-    // images.
+    // Images.
     'png' => 'image/png',
     'jpe' => 'image/jpeg',
     'jpeg' => 'image/jpeg',
@@ -42,37 +67,44 @@ class Processor {
     'tif' => 'image/tiff',
     'svg' => 'image/svg+xml',
     'svgz' => 'image/svg+xml',
-    // archives.
+    // Archives.
     'zip' => 'application/zip',
     'rar' => 'application/x-rar-compressed',
     'exe' => 'application/x-msdownload',
     'msi' => 'application/x-msdownload',
     'cab' => 'application/vnd.ms-cab-compressed',
-    // audio/video.
+    // Audio/video.
     'mp3' => 'audio/mpeg',
     'qt' => 'video/quicktime',
     'mov' => 'video/quicktime',
-    // adobe.
+    // Adobe.
     'pdf' => 'application/pdf',
     'psd' => 'image/vnd.adobe.photoshop',
     'ai' => 'application/postscript',
     'eps' => 'application/postscript',
     'ps' => 'application/postscript',
-    // ms office.
+    // Ms office.
     'doc' => 'application/msword',
     'rtf' => 'application/rtf',
     'xls' => 'application/vnd.ms-excel',
     'ppt' => 'application/vnd.ms-powerpoint',
-    // open office.
+    // Open office.
     'odt' => 'application/vnd.oasis.opendocument.text',
     'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
   );
 
-  // Check if the Markdown function is available.
-  public function __construct($website, $references) {
+  /**
+   * Check if the Markdown function is available.
+   *
+   * @param string $website
+   *   Website URL.
+   * @param \RWAPIIndexer\References $references
+   *   References handler.
+   */
+  public function __construct($website, References $references) {
     $this->website = $website;
     $this->references = $references;
-    $this->public_scheme_url = $website . '/sites/reliefweb.int/files/';
+    $this->publicSchemeUrl = $website . '/sites/reliefweb.int/files/';
     // Markdown library.
     if (class_exists('\Hoedown')) {
       $this->markdown = 'hoedown';
@@ -94,10 +126,8 @@ class Processor {
    *   Entity item being processed.
    * @param string $key
    *   Field to process.
-   * @param string $value
-   *   Field value to convert.
    */
-  public function processConversion($definition, &$item, $key) {
+  public function processConversion(array $definition, array &$item, $key) {
     foreach ($definition as $conversion) {
       switch ($conversion) {
         // Convert a value to boolean.
@@ -129,7 +159,7 @@ class Processor {
         case 'html':
           $html = $this->processMarkdown($item[$key]);
           if (!empty($html)) {
-            $html = $this->processHTML($html, TRUE);
+            $html = $this->processHtml($html, TRUE);
             $item[$key . '-html'] = $html;
           }
           break;
@@ -140,7 +170,7 @@ class Processor {
           $text = $this->processIframes($item[$key]);
           $html = $this->processMarkdown($text);
           if (!empty($html)) {
-            $html = $this->processHTML($html, TRUE);
+            $html = $this->processHtml($html, TRUE);
             $item[$key . '-html'] = $html;
           }
           break;
@@ -150,7 +180,7 @@ class Processor {
         case 'html_strict':
           $html = $this->processMarkdown($item[$key]);
           if (!empty($html)) {
-            $html = $this->processHTML($html, FALSE);
+            $html = $this->processHtml($html, FALSE);
             $item[$key . '-html'] = $html;
           }
           break;
@@ -204,6 +234,8 @@ class Processor {
   }
 
   /**
+   * Process reference.
+   *
    * Process a reference field of an entity item,
    * replacing the ID with the reference taxanomy term.
    *
@@ -214,7 +246,7 @@ class Processor {
    * @param string $key
    *   Reference field to process.
    */
-  public function processReference($definition, &$item, $key) {
+  public function processReference(array $definition, array &$item, $key) {
     $bundle = key($definition);
 
     if ($this->references->has($bundle)) {
@@ -229,7 +261,7 @@ class Processor {
       }
 
       if (!empty($array)) {
-         $item[$key] = $array;
+        $item[$key] = $array;
       }
       else {
         unset($item[$key]);
@@ -238,12 +270,15 @@ class Processor {
   }
 
   /**
+   * Process links.
+   *
    * Process links in text, converting to absolute links
    * and substituting the domain for reliefweb links.
    *
    * @param string $text
    *   Text to process.
-   * @param string
+   *
+   * @return string
    *   Text with processed links.
    */
   public function processLinks($text) {
@@ -259,6 +294,7 @@ class Processor {
    *
    * @param string $text
    *   Text to convert.
+   *
    * @return string
    *   Text converted to HTML.
    */
@@ -273,16 +309,16 @@ class Processor {
 
       case 'sundown':
         $sundown = new \Sundown($text, array(
-            'tables' => TRUE,
-            'no_intra_emphasis' => TRUE,
-            'fenced_code_blocks' => TRUE,
-            'autolink' => TRUE,
-            'safe_links_only' => TRUE,
-          ));
+          'tables' => TRUE,
+          'no_intra_emphasis' => TRUE,
+          'fenced_code_blocks' => TRUE,
+          'autolink' => TRUE,
+          'safe_links_only' => TRUE,
+        ));
         return $sundown->toHTML();
 
       case 'markdown':
-        return \Michelf\Markdown::defaultTransform($text);
+        return Markdown::defaultTransform($text);
     }
     return '';
   }
@@ -294,11 +330,12 @@ class Processor {
    *
    * @param string $text
    *   Markdown text to process.
+   *
    * @return string
    *   Processed text.
    */
   public function processIframes($text) {
-    return preg_replace_callback("/\[iframe(?:[:](\d+))?(?:[:](\d+))?\]\(([^\)]+)\)/", static function($data) {
+    return preg_replace_callback("/\[iframe(?:[:](\d+))?(?:[:](\d+))?\]\(([^\)]+)\)/", static function ($data) {
       $width = !empty($data[1]) ? $data[1] : "1000";
       $height = !empty($data[2]) ? $data[2] : "400";
       return '<iframe width="' . $width . '" height="' . $height . '" src="' . $data[3] . '" frameborder="0" allowfullscreen></iframe>';
@@ -315,11 +352,48 @@ class Processor {
    *
    * @param string $html
    *   HTML text to clean.
+   * @param bool $embedded
+   *   Whether embedded content is allowed or not.
+   *
    * @return string
    *   Cleaned-up HTML.
    */
-  public function processHTML($html, $embedded = FALSE) {
-    $tags = array('div', 'span', 'br', 'a', 'em', 'strong', 'cite', 'code', 'strike', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'blockquote', 'p', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'caption', 'thead', 'tbody', 'th', 'td', 'tr', 'sup', 'sub');
+  public function processHtml($html, $embedded = FALSE) {
+    $tags = array(
+      'div',
+      'span',
+      'br',
+      'a',
+      'em',
+      'strong',
+      'cite',
+      'code',
+      'strike',
+      'ul',
+      'ol',
+      'li',
+      'dl',
+      'dt',
+      'dd',
+      'blockquote',
+      'p',
+      'pre',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'table',
+      'caption',
+      'thead',
+      'tbody',
+      'th',
+      'td',
+      'tr',
+      'sup',
+      'sub',
+    );
 
     // Add iframe and image tags to the list of allowed tags.
     if ($embedded) {
@@ -345,7 +419,7 @@ class Processor {
    * @param string $alias
    *   URL alias for the entity.
    */
-  public function processEntityURL($entity_type, &$item, $alias) {
+  public function processEntityUrl($entity_type, array &$item, $alias) {
     $item['url'] = $this->website . '/' . str_replace('_', '/', $entity_type) . '/' . $item['id'];
     if (!empty($alias)) {
       $item['url_alias'] = $this->website . '/' . $this->encodePath($alias);
@@ -357,10 +431,11 @@ class Processor {
    *
    * @paran string $url
    *   Relative URL.
+   *
    * @return string
    *   Absolute URL.
    */
-  public function processRelativeURL($url) {
+  public function processEnprocessRelativeUrl($url) {
     return $this->website . $this->encodePath($url);
   }
 
@@ -369,9 +444,14 @@ class Processor {
    *
    * @param string $field
    *   Image information to convert to image field.
-   * @param boolean $single
+   * @param bool $single
    *   Indicates that the field should could contain a single value.
-   * @return boolean
+   * @param bool $meta
+   *   Whether to add the copyright and caption.
+   * @param bool $styles
+   *   Whether to add urls to the derivative images.
+   *
+   * @return bool
    *   Processing success.
    */
   public function processImage(&$field, $single = FALSE, $meta = TRUE, $styles = TRUE) {
@@ -422,12 +502,13 @@ class Processor {
    *
    * @param string $field
    *   File information to convert to file field.
-   * @param boolean $single
+   * @param bool $single
    *   Indicates that the field should could contain a single value.
-   * @return boolean
+   *
+   * @return bool
    *   Processing success.
    */
-  public function processFile(&$field, $single = FALSE) {
+  public function processFile($field, $single = FALSE) {
     if (isset($field) && !empty($field)) {
       $items = array();
       foreach (explode('%%%', $field) as $item) {
@@ -446,9 +527,6 @@ class Processor {
         if ($array['mimetype'] === 'application/pdf' && preg_match('/\|(\d+)\|(0|90|-90)$/', $parts[1]) === 1) {
           $directory = dirname($parts[2]) . '-pdf-previews';
           $filename = basename(urldecode($parts[3]), '.pdf');
-          /*if (module_exists('transliteration')) {
-            $filename = transliteration_clean_filename($filename);
-          }*/
           $filename = $directory . '/' . $parts[0] . '-' . $filename . '.png';
           $array['preview'] = array(
             'url' => $this->processFilePath($filename),
@@ -476,6 +554,12 @@ class Processor {
 
   /**
    * Return a file mime type.
+   *
+   * @param string $filename
+   *   File name.
+   *
+   * @return string
+   *   Mime type.
    */
   public function getMimeType($filename) {
     $extension = explode('.', $filename);
@@ -491,11 +575,12 @@ class Processor {
    *   File path.
    * @param string $style
    *   Image style.
+   *
    * @return string
    *   File URL.
    */
   public function processFilePath($path, $style = '') {
-    $base = $this->public_scheme_url;
+    $base = $this->publicSchemeUrl;
     if (!empty($style)) {
       $base .= 'styles/' . $style . '/public/';
     }
@@ -507,6 +592,7 @@ class Processor {
    *
    * @param string $path
    *   Path to encode.
+   *
    * @return string
    *   Encoded path.
    */
@@ -517,14 +603,14 @@ class Processor {
   /**
    * Process the profile of a taxonomy term (country or disaster).
    *
-   * @param \RWAPIIndexer\Database\Connection $connection
+   * @param \RWAPIIndexer\Database\DatabaseConnection $connection
    *   Database connection.
    * @param array $item
    *   Item to process.
    * @param array $sections
    *   Definition of the profile sections.
    */
-  public function processProfile($connection, &$item, array $sections) {
+  public function processProfile(DatabaseConnection $connection, array &$item, array $sections) {
     $description = array();
     $profile = array();
 
@@ -547,7 +633,7 @@ class Processor {
       $section = array();
       $table = 'field_data_field_' . $id;
 
-      $query = new \RWAPIIndexer\Database\Query($table, $table, $connection);
+      $query = new DatabaseQuery($table, $table, $connection);
       $query->addField($table, 'field_' . $id . '_url', 'url');
       $query->addField($table, 'field_' . $id . '_title', 'title');
       $query->addField($table, 'field_' . $id . '_image', $image_field);
@@ -579,7 +665,7 @@ class Processor {
 
           // Transform internal urls to absolute urls.
           if (strpos($link['url'], '/node') === 0) {
-            $link['url'] = $this->processRelativeURL($link['url']);
+            $link['url'] = $this->processEnprocessRelativeUrl($link['url']);
             $internal = TRUE;
           }
 
@@ -612,7 +698,7 @@ class Processor {
               // If there is a title, we prepend it to the alt default text.
               if (!empty($title)) {
                 $image = '![' . $title . ' - ' . $alt . '](' . $link[$image_field] . ')';
-                // For internal links, we want to display the title after the cover.
+                // For internal links, display the title after the cover.
                 $title = $internal ? $image . ' ' . $title : $image;
               }
               else {
@@ -659,4 +745,5 @@ class Processor {
       }
     }
   }
+
 }

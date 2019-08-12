@@ -3,6 +3,8 @@
 namespace RWAPIIndexer\Database;
 
 /**
+ * Database connection handler.
+ *
  * Really basic database connection layer
  * that mimics Drupal's interface for compatibility.
  */
@@ -27,4 +29,5 @@ class DatabaseConnection extends \PDO {
     // Make sure we can return all the concatenated data.
     $this->query('SET SESSION group_concat_max_len = 100000');
   }
+
 }

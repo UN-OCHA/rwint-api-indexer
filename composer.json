@@ -1,18 +1,42 @@
 {
   "name": "reliefweb/api-indexer",
   "description": "Standalone application to index the RW database into the API elasticsearch indexes.",
-  "keywords": ["reliefweb","api", "elasticsearch"],
+  "keywords": [
+    "reliefweb",
+    "api",
+    "elasticsearch"
+  ],
   "type": "application",
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://packagist.org"
+    },
+    {
+      "packagist": false
+    }
+  ],
   "require": {
     "php": ">=5.3.3",
     "michelf/php-markdown": "1.4.0"
   },
   "require-dev": {
-      "phpunit/phpunit": "4.1.*"
+    "phpunit/phpunit": "4.1.*",
+    "drupal/coder": "8.2.*"
   },
   "autoload": {
     "psr-0": {
       "RWAPIIndexer": "src/"
     }
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "./composer-phpcs-install.sh",
+      "git config core.hooksPath git-hooks"
+    ],
+    "post-update-cmd": [
+      "./composer-phpcs-install.sh",
+      "git config core.hooksPath git-hooks"
+    ]
   }
 }

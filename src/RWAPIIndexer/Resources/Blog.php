@@ -2,12 +2,18 @@
 
 namespace RWAPIIndexer\Resources;
 
+use RWAPIIndexer\Resource;
+use RWAPIIndexer\Mapping;
+
 /**
  * Blog resource handler.
  */
-class Blog extends \RWAPIIndexer\Resource {
-  // Options used for building the query to get the items to index.
-  protected $query_options = array(
+class Blog extends Resource {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $queryOptions = array(
     'fields' => array(
       'title' => 'title',
       'date_created' => 'created',
@@ -35,8 +41,10 @@ class Blog extends \RWAPIIndexer\Resource {
     ),
   );
 
-  // Options used to process the entity items before indexing.
-  protected $processing_options = array(
+  /**
+   * {@inheritdoc}
+   */
+  protected $processingOptions = array(
     'conversion' => array(
       'body' => array('links', 'html_iframe'),
       'date_created' => array('time'),
@@ -50,38 +58,32 @@ class Blog extends \RWAPIIndexer\Resource {
   );
 
   /**
-   * Return the mapping for the current indexable.
-   *
-   * @return array
-   *   Elasticsearch index type mapping.
+   * {@inheritdoc}
    */
   public function getMapping() {
-    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping = new Mapping();
     $mapping->addInteger('id')
-            ->addString('url', FALSE)
-            ->addString('url_alias', FALSE)
-            ->addString('status', FALSE)
-            ->addString('title', TRUE, TRUE)
-            ->addString('author', TRUE, TRUE)
-            // Body.
-            ->addString('body')
-            ->addString('body-html', NULL)
-            // Dates.
-            ->addDates('date', array('created', 'changed'))
-            // Tags.
-            ->addTaxonomy('tags')
-            // Images.
-            ->addImage('attached_image')
-            ->addImage('image');
+      ->addString('url', FALSE)
+      ->addString('url_alias', FALSE)
+      ->addString('status', FALSE)
+      ->addString('title', TRUE, TRUE)
+      ->addString('author', TRUE, TRUE)
+      // Body.
+      ->addString('body')
+      ->addString('body-html', NULL)
+      // Dates.
+      ->addDates('date', array('created', 'changed'))
+      // Tags.
+      ->addTaxonomy('tags')
+      // Images.
+      ->addImage('attached_image')
+      ->addImage('image');
 
     return $mapping->export();
   }
 
   /**
-   * Process an item, preparing for the indexing.
-   *
-   * @param array $item
-   *   Item to process.
+   * {@inheritdoc}
    */
   public function processItem(&$item) {
     // Handle dates.
@@ -100,4 +102,5 @@ class Blog extends \RWAPIIndexer\Resource {
       unset($item['image']);
     }
   }
+
 }

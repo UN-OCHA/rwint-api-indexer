@@ -2,12 +2,18 @@
 
 namespace RWAPIIndexer\Resources;
 
+use RWAPIIndexer\Resource;
+use RWAPIIndexer\Mapping;
+
 /**
  * Disaster resource handler.
  */
-class Disaster extends \RWAPIIndexer\Resource {
-  // Options used for building the query to get the items to index.
-  protected $query_options = array(
+class Disaster extends Resource {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $queryOptions = array(
     'fields' => array(
       'description' => 'description',
     ),
@@ -39,8 +45,10 @@ class Disaster extends \RWAPIIndexer\Resource {
     ),
   );
 
-// Options used to process the entity items before indexing.
-  protected $processing_options = array(
+  /**
+   * {@inheritdoc}
+   */
+  protected $processingOptions = array(
     'conversion' => array(
       'description' => array('links'),
       'date' => array('time'),
@@ -67,8 +75,12 @@ class Disaster extends \RWAPIIndexer\Resource {
     ),
   );
 
-  // Profile sections (id => label).
-  private $profile_sections = array(
+  /**
+   * Profile sections (id => label).
+   *
+   * @var array
+   */
+  private $profileSections = array(
     'key_content' => array(
       'label' => 'Key Content',
       'internal' => TRUE,
@@ -89,54 +101,47 @@ class Disaster extends \RWAPIIndexer\Resource {
     ),
   );
 
-
   /**
-   * Return the mapping for the current indexable.
-   *
-   * @return array
-   *   Elasticsearch index type mapping.
+   * {@inheritdoc}
    */
   public function getMapping() {
-    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping = new Mapping();
     $mapping->addInteger('id')
-            ->addString('url', FALSE)
-            ->addString('url_alias', FALSE)
-            ->addString('status', FALSE)
-            ->addDates('date', array('created'))
-            ->addBoolean('featured')
-            ->addBoolean('current')
-            // Names.
-            ->addString('name', TRUE, TRUE)
-            ->addString('glide', TRUE, TRUE)
-            ->addString('related_glide', TRUE, TRUE)
-            // Description - legacy.
-            ->addString('description')
-            ->addString('description-html', NULL)
-            // Profile.
-            ->addProfile($this->profile_sections)
-            // Primary country.
-            ->addTaxonomy('primary_country', array('shortname', 'iso3'))
-            ->addGeoPoint('primary_country.location')
-            // Country.
-            ->addTaxonomy('country', array('shortname', 'iso3'))
-            ->addGeoPoint('country.location')
-            ->addBoolean('country.primary')
-            // Primary disaster type.
-            ->addTaxonomy('primary_type')
-            ->addString('primary_type.code', FALSE)
-            // Disaster types.
-            ->addTaxonomy('type')
-            ->addString('type.code', FALSE)
-            ->addBoolean('type.primary');
+      ->addString('url', FALSE)
+      ->addString('url_alias', FALSE)
+      ->addString('status', FALSE)
+      ->addDates('date', array('created'))
+      ->addBoolean('featured')
+      ->addBoolean('current')
+      // Names.
+      ->addString('name', TRUE, TRUE)
+      ->addString('glide', TRUE, TRUE)
+      ->addString('related_glide', TRUE, TRUE)
+      // Description - legacy.
+      ->addString('description')
+      ->addString('description-html', NULL)
+      // Profile.
+      ->addProfile($this->profileSections)
+      // Primary country.
+      ->addTaxonomy('primary_country', array('shortname', 'iso3'))
+      ->addGeoPoint('primary_country.location')
+      // Country.
+      ->addTaxonomy('country', array('shortname', 'iso3'))
+      ->addGeoPoint('country.location')
+      ->addBoolean('country.primary')
+      // Primary disaster type.
+      ->addTaxonomy('primary_type')
+      ->addString('primary_type.code', FALSE)
+      // Disaster types.
+      ->addTaxonomy('type')
+      ->addString('type.code', FALSE)
+      ->addBoolean('type.primary');
 
     return $mapping->export();
   }
 
   /**
-   * Process an item, preparing for the indexing.
-   *
-   * @param array $item
-   *   Item to process.
+   * {@inheritdoc}
    */
   public function processItem(&$item) {
     // Current.
@@ -147,7 +152,7 @@ class Disaster extends \RWAPIIndexer\Resource {
       unset($item['description']);
     }
     else {
-      $this->processor->processProfile($this->connection, $item, $this->profile_sections);
+      $this->processor->processProfile($this->connection, $item, $this->profileSections);
     }
     unset($item['show_profile']);
 
@@ -155,6 +160,4 @@ class Disaster extends \RWAPIIndexer\Resource {
     $item['date'] = array('created' => $item['date']);
   }
 
-
 }
-

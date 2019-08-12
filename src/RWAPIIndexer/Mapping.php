@@ -6,18 +6,25 @@ namespace RWAPIIndexer;
  * Mapping generation class.
  */
 class Mapping {
-  // Mapping.
+
+  /**
+   * Mapping.
+   *
+   * @var array
+   */
   private $mapping = array(
     'timestamp' => array('type' => 'date', 'store' => TRUE, 'index' => FALSE),
   );
 
   /**
    * Add an integer field definition to the mapping.
+   *
    * @param string $field
    *   Field Name.
    * @param string $alias
    *   Field index alias.
-   * @return RWAPIIndexer\Mapping
+   *
+   * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
   public function addInteger($field, $alias = '') {
@@ -27,11 +34,13 @@ class Mapping {
 
   /**
    * Add a float field definition to the mapping.
+   *
    * @param string $field
    *   Field Name.
    * @param string $alias
    *   Field index alias.
-   * @return RWAPIIndexer\Mapping
+   *
+   * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
   public function addFloat($field, $alias = '') {
@@ -46,7 +55,8 @@ class Mapping {
    *   Field Name.
    * @param string $alias
    *   Field index alias.
-   * @return RWAPIIndexer\Mapping
+   *
+   * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
   public function addBoolean($field, $alias = '') {
@@ -61,7 +71,8 @@ class Mapping {
    *   Field Name.
    * @param string $alias
    *   Field index alias.
-   * @return RWAPIIndexer\Mapping
+   *
+   * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
   public function addGeoPoint($field, $alias = '') {
@@ -74,14 +85,15 @@ class Mapping {
    *
    * @param string $field
    *   Field Name.
-   * @param boolean $index
+   * @param bool $index
    *   Indicates whether the field should be indexed and analyzed or not:
    *   TRUE = indexed and analyzed, FALSE = not analyzed, NULL = not indexed.
-   * @param boolean $exact
+   * @param bool $exact
    *   Indicates if the string should have an exact not analyzed sufield.
    * @param string $alias
    *   Field index alias.
-   * @return RWAPIIndexer\Mapping
+   *
+   * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
   public function addString($field, $index = TRUE, $exact = FALSE, $alias = '') {
@@ -93,9 +105,9 @@ class Mapping {
     }
     elseif ($index) {
       $mapping['norms'] = FALSE;
-      // TODO: Disable shingle, disable stop words in analyzer settings.
-      // $mapping['index_prefixes'] = true;
-      // $mapping['index_phrases'] = true;
+      // @todo Disable shingle, disable stop words in analyzer settings.
+      // @todo $mapping['index_prefixes'] = true;
+      // @todo $mapping['index_phrases'] = true;
     }
     else {
       $mapping['type'] = 'keyword';
@@ -120,14 +132,15 @@ class Mapping {
    *   Date subfields.
    * @param string $alias
    *   Field index alias.
-   * @return RWAPIIndexer\Mapping
+   *
+   * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
-  public function addDates($field, $subfields = array(), $alias = '') {
+  public function addDates($field, array $subfields = array(), $alias = '') {
     $properties = array();
     // Add subfields.
     foreach ($subfields as $key => $subfield) {
-      $properties[$subfield] =  array('type' => 'date');
+      $properties[$subfield] = array('type' => 'date');
     }
     // Default when using base field.
     $properties[$subfields[0]]['copy_to'] = $this->getCommonField($field, 'date');
@@ -145,10 +158,11 @@ class Mapping {
    *   Taxonomy name subfields.
    * @param string $alias
    *   Field index alias.
-   * @return RWAPIIndexer\Mapping
+   *
+   * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
-  public function addTaxonomy($field, $subfields = array(), $alias = '') {
+  public function addTaxonomy($field, array $subfields = array(), $alias = '') {
     $properties = array(
       'id' => array('type' => 'integer'),
     );
@@ -170,7 +184,8 @@ class Mapping {
    *   Field Name.
    * @param string $alias
    *   Field index alias.
-   * @return RWAPIIndexer\Mapping
+   *
+   * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
   public function addImage($field, $alias = '') {
@@ -201,7 +216,8 @@ class Mapping {
    *   Field Name.
    * @param string $alias
    *   Field index alias.
-   * @return RWAPIIndexer\Mapping
+   *
+   * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
   public function addFile($field, $alias = '') {
@@ -245,15 +261,15 @@ class Mapping {
 
       // Mapping for the active links.
       $this->addString($base . '.title', NULL)
-              ->addString($base . '.active.url', NULL)
-              ->addString($base . '.active.title', NULL)
-              ->addString($base . '.active.' . $image_field, NULL);
+        ->addString($base . '.active.url', NULL)
+        ->addString($base . '.active.title', NULL)
+        ->addString($base . '.active.' . $image_field, NULL);
 
       // Add the mapping for the archived links.
       if (!empty($info['archives'])) {
         $this->addString($base . '.archive.url', NULL)
-                ->addString($base . '.archive.title', NULL)
-                ->addString($base . '.archive.' . $image_field, NULL);
+          ->addString($base . '.archive.title', NULL)
+          ->addString($base . '.archive.' . $image_field, NULL);
       }
     }
     return $this;
@@ -290,12 +306,13 @@ class Mapping {
   /**
    * Get common fields, creating their mappings if they don't exist.
    *
-   * @param  string $field
+   * @param string $field
    *   Base field.
-   * @param  string $type
+   * @param string $type
    *   Type of the common field.
-   * @param  boolean $exact
+   * @param bool $exact
    *   Indicates if an exact (not analyzed) field should also be created.
+   *
    * @return array
    *   Common fields.
    */
@@ -339,7 +356,7 @@ class Mapping {
    * @param string $alias
    *   Field index alias.
    */
-  private function addFieldMapping($field, $mapping, $alias = '') {
+  private function addFieldMapping($field, array $mapping, $alias = '') {
     $path = explode('.', $field);
     $field = array_shift($path);
 
@@ -356,10 +373,6 @@ class Mapping {
     }
 
     $parent += $mapping;
-
-    // Deprecated in ES 2.x.
-    /*if (!empty($alias)) {
-      $parent['index_name'] = $alias;
-    }*/
   }
+
 }

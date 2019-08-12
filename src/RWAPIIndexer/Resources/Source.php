@@ -2,12 +2,18 @@
 
 namespace RWAPIIndexer\Resources;
 
+use RWAPIIndexer\Resource;
+use RWAPIIndexer\Mapping;
+
 /**
  * Source resource handler.
  */
-class Source extends \RWAPIIndexer\Resource {
-  // Options used for building the query to get the items to index.
-  protected $query_options = array(
+class Source extends Resource {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $queryOptions = array(
     'fields' => array(
       'description' => 'description',
     ),
@@ -46,8 +52,10 @@ class Source extends \RWAPIIndexer\Resource {
     ),
   );
 
-  // Options used to process the entity items before indexing.
-  protected $processing_options = array(
+  /**
+   * {@inheritdoc}
+   */
+  protected $processingOptions = array(
     'conversion' => array(
       'description' => array('links', 'html'),
       'content_type' => array('multi_int'),
@@ -64,57 +72,55 @@ class Source extends \RWAPIIndexer\Resource {
     ),
   );
 
-  // Allowed content types for a source.
-  protected $content_types = array('job', 'report', 'training');
+  /**
+   * Allowed content types for a source.
+   *
+   * @var array
+   */
+  protected $contentTypes = array('job', 'report', 'training');
 
   /**
-   * Return the mapping for the current resource.
-   *
-   * @return array
-   *   Elasticsearch index type mapping.
+   * {@inheritdoc}
    */
   public function getMapping() {
-    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping = new Mapping();
     $mapping->addInteger('id')
-            ->addString('url', FALSE)
-            ->addString('url_alias', FALSE)
-            ->addString('status', FALSE)
-            ->addString('homepage', FALSE)
-            ->addString('content_type', FALSE)
-            // Names.
-            ->addString('name', TRUE, TRUE)
-            ->addString('shortname', TRUE, TRUE)
-            ->addString('longname', TRUE, TRUE)
-            ->addString('spanish_name', TRUE, TRUE)
-            // Description.
-            ->addString('description')
-            ->addString('description-html', NULL)
-            // Country.
-            ->addTaxonomy('country', array('shortname', 'iso3'))
-            ->addGeoPoint('country.location')
-            // Organization type.
-            ->addTaxonomy('type')
-            // FTS ID.
-            ->addInteger('fts_id')
-            // Logo.
-            ->addImage('logo')
-            // Disclaimer.
-            ->addString('disclaimer', FALSE);
+      ->addString('url', FALSE)
+      ->addString('url_alias', FALSE)
+      ->addString('status', FALSE)
+      ->addString('homepage', FALSE)
+      ->addString('content_type', FALSE)
+      // Names.
+      ->addString('name', TRUE, TRUE)
+      ->addString('shortname', TRUE, TRUE)
+      ->addString('longname', TRUE, TRUE)
+      ->addString('spanish_name', TRUE, TRUE)
+      // Description.
+      ->addString('description')
+      ->addString('description-html', NULL)
+      // Country.
+      ->addTaxonomy('country', array('shortname', 'iso3'))
+      ->addGeoPoint('country.location')
+      // Organization type.
+      ->addTaxonomy('type')
+      // FTS ID.
+      ->addInteger('fts_id')
+      // Logo.
+      ->addImage('logo')
+      // Disclaimer.
+      ->addString('disclaimer', FALSE);
 
     return $mapping->export();
   }
 
   /**
-   * Process an item, preparing for the indexing.
-   *
-   * @param array $item
-   *   Item to process.
+   * {@inheritdoc}
    */
   public function processItem(&$item) {
     // Content type.
     if (!empty($item['content_type'])) {
       foreach ($item['content_type'] as $key => $value) {
-        $item['content_type'][$key] = $this->content_types[(int) $value];
+        $item['content_type'][$key] = $this->contentTypes[(int) $value];
       }
     }
 
@@ -123,4 +129,5 @@ class Source extends \RWAPIIndexer\Resource {
       unset($item['logo']);
     }
   }
+
 }

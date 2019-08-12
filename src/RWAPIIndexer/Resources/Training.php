@@ -2,12 +2,18 @@
 
 namespace RWAPIIndexer\Resources;
 
+use RWAPIIndexer\Resource;
+use RWAPIIndexer\Mapping;
+
 /**
  * Training resource handler.
  */
-class Training extends \RWAPIIndexer\Resource {
-  // Options used for building the query to get the items to index.
-  protected $query_options = array(
+class Training extends Resource {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $queryOptions = array(
     'fields' => array(
       'title' => 'title',
       'date_created' => 'created',
@@ -55,8 +61,10 @@ class Training extends \RWAPIIndexer\Resource {
     ),
   );
 
-  // Options used to process the entity items before indexing.
-  protected $processing_options = array(
+  /**
+   * {@inheritdoc}
+   */
+  protected $processingOptions = array(
     'conversion' => array(
       'body' => array('links', 'html_strict'),
       'how_to_register' => array('links', 'html_strict'),
@@ -71,7 +79,15 @@ class Training extends \RWAPIIndexer\Resource {
         'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
       ),
       'source' => array(
-        'source' => array('id', 'name', 'shortname', 'longname', 'spanish_name', 'type', 'homepage'),
+        'source' => array(
+          'id',
+          'name',
+          'shortname',
+          'longname',
+          'spanish_name',
+          'type',
+          'homepage',
+        ),
       ),
       'language' => array(
         'language' => array('id', 'name', 'code'),
@@ -95,60 +111,60 @@ class Training extends \RWAPIIndexer\Resource {
   );
 
   /**
-   * Return the mapping for the current indexable.
-   *
-   * @return array
-   *   Elasticsearch index type mapping.
+   * {@inheritdoc}
    */
   public function getMapping() {
-    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping = new Mapping();
     $mapping->addInteger('id')
-            ->addString('url', FALSE)
-            ->addString('url_alias', FALSE)
-            ->addString('status', FALSE)
-            ->addString('title', TRUE, TRUE)
-            // Body.
-            ->addString('body')
-            ->addString('body-html', NULL)
-            // Fee information.
-            ->addString('fee_information')
-            // How to register.
-            ->addString('how_to_register')
-            ->addString('how_to_register-html', NULL)
-            // Dates.
-            ->addDates('date', array('created', 'changed', 'registration', 'start', 'end'))
-            // Cost.
-            ->addString('cost', FALSE)
-            // Language.
-            ->addTaxonomy('language')
-            ->addString('language.code', FALSE)
-            // Country.
-            ->addTaxonomy('country', array('shortname', 'iso3'))
-            ->addGeoPoint('country.location')
-            // Source.
-            ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
-            ->addString('source.homepage', NULL)
-            ->addTaxonomy('source.type')
-            // Other taxonomies.
-            ->addTaxonomy('city')
-            ->addTaxonomy('type')
-            ->addTaxonomy('format')
-            ->addTaxonomy('theme')
-            ->addTaxonomy('career_categories')
-            // Training language.
-            ->addTaxonomy('training_language')
-            ->addString('training_language.code', FALSE)
-            // File.
-            ->addFile('file');
+      ->addString('url', FALSE)
+      ->addString('url_alias', FALSE)
+      ->addString('status', FALSE)
+      ->addString('title', TRUE, TRUE)
+      // Body.
+      ->addString('body')
+      ->addString('body-html', NULL)
+      // Fee information.
+      ->addString('fee_information')
+      // How to register.
+      ->addString('how_to_register')
+      ->addString('how_to_register-html', NULL)
+      // Dates.
+      ->addDates('date', array(
+        'created',
+        'changed',
+        'registration',
+        'start',
+        'end',
+      ))
+      // Cost.
+      ->addString('cost', FALSE)
+      // Language.
+      ->addTaxonomy('language')
+      ->addString('language.code', FALSE)
+      // Country.
+      ->addTaxonomy('country', array('shortname', 'iso3'))
+      ->addGeoPoint('country.location')
+      // Source.
+      ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
+      ->addString('source.homepage', NULL)
+      ->addTaxonomy('source.type')
+      // Other taxonomies.
+      ->addTaxonomy('city')
+      ->addTaxonomy('type')
+      ->addTaxonomy('format')
+      ->addTaxonomy('theme')
+      ->addTaxonomy('career_categories')
+      // Training language.
+      ->addTaxonomy('training_language')
+      ->addString('training_language.code', FALSE)
+      // File.
+      ->addFile('file');
 
     return $mapping->export();
   }
 
   /**
-   * Process an item, preparing for the indexing.
-   *
-   * @param array $item
-   *   Item to process.
+   * {@inheritdoc}
    */
   public function processItem(&$item) {
     // Handle dates.
@@ -186,4 +202,5 @@ class Training extends \RWAPIIndexer\Resource {
       unset($item['fee_information']);
     }
   }
+
 }

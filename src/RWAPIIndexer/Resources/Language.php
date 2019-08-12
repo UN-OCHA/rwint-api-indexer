@@ -2,12 +2,17 @@
 
 namespace RWAPIIndexer\Resources;
 
+use RWAPIIndexer\Mapping;
+
 /**
  * Language resource handler.
  */
-class Language extends \RWAPIIndexer\Resources\TaxonomyDefault {
-  // Options used for building the query to get the items to index.
-  protected $query_options = array(
+class Language extends TaxonomyDefault {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $queryOptions = array(
     'fields' => array(
       'description' => 'description',
     ),
@@ -19,21 +24,19 @@ class Language extends \RWAPIIndexer\Resources\TaxonomyDefault {
   );
 
   /**
-   * Return the mapping for the current resource.
-   *
-   * @return array
-   *   Elasticsearch index type mapping.
+   * {@inheritdoc}
    */
   public function getMapping() {
-    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping = new Mapping();
     $mapping->addInteger('id')
-            // Names.
-            ->addString('name', TRUE, TRUE)
-            // Description.
-            ->addString('description')
-            // Code
-            ->addString('code', FALSE);
+      // Names.
+      ->addString('name', TRUE, TRUE)
+      // Description.
+      ->addString('description')
+      // Code.
+      ->addString('code', FALSE);
 
     return $mapping->export();
   }
+
 }

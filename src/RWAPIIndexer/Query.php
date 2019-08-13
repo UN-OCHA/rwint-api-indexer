@@ -2,49 +2,81 @@
 
 namespace RWAPIIndexer;
 
+use RWAPIIndexer\Database\DatabaseConnection;
+use RWAPIIndexer\Database\Query as DatabaseQuery;
+
 /**
  * Query handler class.
  */
 class Query {
-  // Database connection.
+
+  /**
+   * Database connection.
+   *
+   * @var \RWAPIIndexer\Database\DatabaseConnection
+   */
   protected $connection = NULL;
 
-  // Entity type and bundle.
-  protected $entity_type = '';
+  /**
+   * Entity type.
+   *
+   * @var string
+   */
+  protected $entityType = '';
+
+  /**
+   * Entity bundle.
+   *
+   * @var string
+   */
   protected $bundle = '';
 
-  // Base table and field for getting the items to index.
-  protected $base_table = '';
-  protected $base_field = '';
+  /**
+   * Base table.
+   *
+   * @var string
+   */
+  protected $baseTable = '';
 
-  // Query options for the current entity type/bundle.
+  /**
+   * Field for getting the items to index.
+   *
+   * @var string
+   */
+  protected $baseField = '';
+
+  /**
+   * Query options for the current entity type/bundle.
+   *
+   * @var array
+   */
   protected $options = array();
 
- /**
-  * Construct the query handler.
-  *
-  * @param \RWAPIIndexer\Database\Connection $connection
-  *   Database connection.
-  * @param string $entity_type
-  *   Type of the entity on which to perform the queries.
-  * @param string $bundle
-  *   Bundle of the entity on which to perform the queries.
-  * @param array $options
-  *   Query options.
-  */
-  public function __construct($connection, $entity_type, $bundle, array $options = array()) {
+  /**
+   * Construct the query handler.
+   *
+   * @param \RWAPIIndexer\Database\DatabaseConnection $connection
+   *   Database connection.
+   * @param string $entity_type
+   *   Type of the entity on which to perform the queries.
+   * @param string $bundle
+   *   Bundle of the entity on which to perform the queries.
+   * @param array $options
+   *   Query options.
+   */
+  public function __construct(DatabaseConnection $connection, $entity_type, $bundle, array $options = array()) {
     $this->connection = $connection;
-    $this->entity_type = $entity_type;
+    $this->entityType = $entity_type;
     $this->bundle = $bundle;
     $this->options = $options;
 
-    if ($this->entity_type === 'node') {
-      $this->base_table = 'node';
-      $this->base_field = 'nid';
+    if ($this->entityType === 'node') {
+      $this->baseTable = 'node';
+      $this->baseField = 'nid';
     }
     elseif ($entity_type === 'taxonomy_term') {
-      $this->base_table = 'taxonomy_term_data';
-      $this->base_field = 'tid';
+      $this->baseTable = 'taxonomy_term_data';
+      $this->baseField = 'tid';
     }
     else {
       throw new \Exception('RWAPIIndexer\Query: Unknow entity type');
@@ -58,7 +90,7 @@ class Query {
    *   Return a database query.
    */
   public function newQuery() {
-    return new \RWAPIIndexer\Database\Query($this->base_table, $this->base_table, $this->connection);
+    return new DatabaseQuery($this->baseTable, $this->baseTable, $this->connection);
   }
 
   /**
@@ -67,8 +99,8 @@ class Query {
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to which add the id field.
    */
-  public function addIdField($query) {
-    $query->addField($this->base_table, $this->base_field, 'id');
+  public function addIdField(DatabaseQuery $query) {
+    $query->addField($this->baseTable, $this->baseField, 'id');
   }
 
   /**
@@ -77,13 +109,13 @@ class Query {
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to which add the bundle condition.
    */
-  public function setBundle($query) {
-    if ($this->entity_type === 'node') {
-      $query->condition($this->base_table . '.type', $this->bundle);
+  public function setBundle(DatabaseQuery $query) {
+    if ($this->entityType === 'node') {
+      $query->condition($this->baseTable . '.type', $this->bundle);
     }
-    elseif ($this->entity_type === 'taxonomy_term') {
-      $query->addField($this->base_table, 'name', 'name');
-      $query->innerJoin('taxonomy_vocabulary', 'taxonomy_vocabulary', "taxonomy_vocabulary.vid = {$this->base_table}.vid");
+    elseif ($this->entityType === 'taxonomy_term') {
+      $query->addField($this->baseTable, 'name', 'name');
+      $query->innerJoin('taxonomy_vocabulary', 'taxonomy_vocabulary', "taxonomy_vocabulary.vid = {$this->baseTable}.vid");
       $query->condition('taxonomy_vocabulary.machine_name', $this->bundle, '=');
     }
   }
@@ -93,10 +125,12 @@ class Query {
    *
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to which add the offset condition.
+   * @param sting|int $offset
+   *   Entity id from which to start the indexing.
    */
-  public function setOffset($query, $offset = NULL) {
+  public function setOffset(DatabaseQuery $query, $offset = NULL) {
     if (!empty($offset)) {
-      $query->condition($this->base_table . '.' . $this->base_field, $offset, '<=');
+      $query->condition($this->baseTable . '.' . $this->baseField, $offset, '<=');
     }
   }
 
@@ -105,8 +139,10 @@ class Query {
    *
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to which set limit.
+   * @param int $limit
+   *   Maximum number of document to index.
    */
-  public function setLimit($query, $limit = NULL) {
+  public function setLimit(DatabaseQuery $query, $limit = NULL) {
     if (!empty($limit)) {
       $query->range(0, $limit);
     }
@@ -118,8 +154,8 @@ class Query {
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to which add the group by statement.
    */
-  public function setGroupBy($query) {
-    $query->groupBy($this->base_table . '.' . $this->base_field);
+  public function setGroupBy(DatabaseQuery $query) {
+    $query->groupBy($this->baseTable . '.' . $this->baseField);
   }
 
   /**
@@ -127,9 +163,11 @@ class Query {
    *
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to which add the order by statement.
+   * @param string $direction
+   *   Ordering direction, either DESC or ASC.
    */
-  public function setOrderBy($query, $direction = 'DESC') {
-    $query->orderBy($this->base_table . '.' . $this->base_field, $direction);
+  public function setOrderBy(DatabaseQuery $query, $direction = 'DESC') {
+    $query->orderBy($this->baseTable . '.' . $this->baseField, $direction);
   }
 
   /**
@@ -138,7 +176,7 @@ class Query {
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to modify.
    */
-  public function setCount($query) {
+  public function setCount(DatabaseQuery $query) {
     $query->count();
   }
 
@@ -150,9 +188,9 @@ class Query {
    * @param array $ids
    *   Entity Ids used to filter the query.
    */
-  public function setIds($query, $ids) {
+  public function setIds(DatabaseQuery $query, array $ids = NULL) {
     if (!empty($ids)) {
-      $query->condition($this->base_table . '.' . $this->base_field, $ids, 'IN');
+      $query->condition($this->baseTable . '.' . $this->baseField, $ids, 'IN');
     }
   }
 
@@ -164,13 +202,13 @@ class Query {
    * @param array $conditions
    *   Conditions used to filter the query.
    */
-  public function setFilters($query, $conditions) {
-    $entity_type = $this->entity_type;
-    $base_table = $this->base_table;
-    $base_field = $this->base_field;
+  public function setFilters(DatabaseQuery $query, array $conditions) {
+    $entity_type = $this->entityType;
+    $base_table = $this->baseTable;
+    $base_field = $this->baseField;
 
     foreach ($conditions as $category => $fields) {
-      foreach ($fields as $field =>  $values) {
+      foreach ($fields as $field => $values) {
         if ($category === 'fields') {
           $query->condition($base_table . '.' . $field, $valus, 'IN');
         }
@@ -189,12 +227,12 @@ class Query {
   /**
    * Get the maximum number of items to index.
    *
-   * @param integer $limit
+   * @param int $limit
    *   Maximum number of items to index.
-   * @param integer offset
+   * @param int $offset
    *   Id of the entity from which to start the indexing.
    *
-   * @return integer
+   * @return int
    *   Limit.
    */
   public function getLimit($limit = 0, $offset = 0) {
@@ -223,10 +261,10 @@ class Query {
   /**
    * Get the offset from which to start the indexing.
    *
-   * @param integer offset
+   * @param int $offset
    *   Id of the entity from which to start the indexing.
    *
-   * @return integer
+   * @return int
    *   Offset.
    */
   public function getOffset($offset = 0) {
@@ -251,17 +289,17 @@ class Query {
   /**
    * Get ids of the entities to index.
    *
-   * @param integer $limit
+   * @param int $limit
    *   Maximum number of items to index.
-   * @param integer offset
+   * @param int $offset
    *   Id of the entity from which to start the indexing.
-   * @param array ids
+   * @param array $ids
    *   Ids of the entities to index.
    *
    * @return ids
    *   array.
    */
-  public function getIds($limit = NULL, $offset = NULL, $ids = NULL) {
+  public function getIds($limit = NULL, $offset = NULL, array $ids = NULL) {
     if (!empty($ids)) {
       return $ids;
     }
@@ -289,18 +327,21 @@ class Query {
   /**
    * Process a query and return the resulting items.
    *
-   * @param integer $limit
+   * @param int $limit
    *   Maximum number of items to index.
-   * @param integer $offset
+   * @param int $offset
    *   Entity ID from which to start fetching the items.
-   * @return  array
+   * @param array $ids
+   *   Ids of the entities to index.
+   *
+   * @return array
    *   Items returned by the query.
    */
-  public function getItems($limit = NULL, $offset = NULL, $ids = NULL) {
-    $entity_type = $this->entity_type;
+  public function getItems($limit = NULL, $offset = NULL, array $ids = NULL) {
+    $entity_type = $this->entityType;
     $bundle = $this->bundle;
-    $base_table = $this->base_table;
-    $base_field = $this->base_field;
+    $base_table = $this->baseTable;
+    $base_field = $this->baseField;
 
     // Get the id of the entities to retrieve.
     $ids = $this->getIds($limit, $offset, $ids);
@@ -400,17 +441,17 @@ class Query {
    * @param array $items
    *   Items for which to load the references.
    */
-  public function loadReferences(&$items) {
+  public function loadReferences(array &$items) {
     if (!empty($this->options['references']) && !empty($items)) {
       $ids = array_keys($items);
       $queries = array();
-      foreach ($this->options['references'] AS $field_name => $alias) {
+      foreach ($this->options['references'] as $field_name => $alias) {
         $field_table = 'field_data_' . $field_name;
-        $query = new \RWAPIIndexer\Database\Query($field_table, $field_table, $this->connection);
+        $query = new DatabaseQuery($field_table, $field_table, $this->connection);
         $query->addField($field_table, 'entity_id', 'id');
         $query->addField($field_table, "{$field_name}_tid", 'value');
         $query->addExpression($this->connection->quote($alias), 'alias');
-        $query->condition("{$field_table}.entity_type", $this->entity_type, '=');
+        $query->condition("{$field_table}.entity_type", $this->entityType, '=');
         $query->condition("{$field_table}.entity_id", $ids, 'IN');
         $queries[] = $query->build();
       }
@@ -421,4 +462,5 @@ class Query {
       }
     }
   }
+
 }

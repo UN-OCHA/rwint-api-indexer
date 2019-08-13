@@ -6,7 +6,12 @@ namespace RWAPIIndexer;
  * References handler class.
  */
 class References {
-  // Associative array of references.
+
+  /**
+   * Associative array of references.
+   *
+   * @var array
+   */
   protected $references = array();
 
   /**
@@ -26,6 +31,7 @@ class References {
    *
    * @param string $bundle
    *   Bundle of the reference items to return.
+   *
    * @return array
    *   Reference items for the given bundle.
    */
@@ -38,7 +44,8 @@ class References {
    *
    * @param string $bundle
    *   Bundle to check.
-   * @return boolean
+   *
+   * @return bool
    *   Indicates if the entity bundle has reference items stored.
    */
   public function has($bundle) {
@@ -50,14 +57,15 @@ class References {
    *
    * @param string $bundle
    *   Bundle of the reference item.
-   * @param integer $id
+   * @param int $id
    *   ID of the reference item.
-   * @param array  $fields
+   * @param array $fields
    *   List of fields to return with the item.
+   *
    * @return array
    *   Reference item.
    */
-  public function getItem($bundle, $id, $fields = array()) {
+  public function getItem($bundle, $id, array $fields = array()) {
     if (isset($this->references[$bundle][$id])) {
       if (!empty($fields)) {
         return array_intersect_key($this->references[$bundle][$id], array_flip($fields));
@@ -75,7 +83,7 @@ class References {
    * @param array $items
    *   Reference items to add.
    */
-  public function setItems($bundle, $items) {
+  public function setItems($bundle, array $items) {
     foreach ($items as $id => $item) {
       if (!isset($this->references[$bundle][$id])) {
         $this->references[$bundle][$id] = $item;
@@ -90,13 +98,15 @@ class References {
    *   Bundle to which belong the references.
    * @param array $ids
    *   List of reference ids to check.
+   *
    * @return array
    *   Reference Ids to load.
    */
-  public function getNotLoaded($bundle, $ids) {
+  public function getNotLoaded($bundle, array $ids) {
     if (!empty($this->references[$bundle])) {
       return array_diff($ids, array_keys($this->references[$bundle]));
     }
     return $ids;
   }
+
 }

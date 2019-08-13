@@ -7,5 +7,4 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'RWAPIIndexer' => array($baseDir . '/src'),
-    'Michelf' => array($vendorDir . '/michelf/php-markdown'),
 );

@@ -6,6 +6,11 @@ namespace RWAPIIndexer;
  * Metrics handling class.
  */
 class Metrics {
+  /**
+   * Starting time.
+   *
+   * @var int
+   */
   protected $time = 0;
 
   /**
@@ -46,10 +51,11 @@ class Metrics {
   }
 
   /**
-   * Format memory to be more human readable.
+   * Format duration time to be more human readable.
    *
-   * @param integer $size
-   *   Memory size to format.
+   * @param int $time
+   *   Time to format.
+   *
    * @return string
    *   Formatted memory size.
    */
@@ -62,8 +68,9 @@ class Metrics {
   /**
    * Format memory to be more human readable.
    *
-   * @param integer $size
+   * @param int $size
    *   Memory size to format.
+   *
    * @return string
    *   Formatted memory size.
    */
@@ -72,4 +79,5 @@ class Metrics {
     $suffixes = array("", "k", "M", "G", "T");
     return pow(1024, $base - floor($base)) . $suffixes[floor($base)];
   }
+
 }

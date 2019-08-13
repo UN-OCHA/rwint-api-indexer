@@ -2,36 +2,82 @@
 
 namespace RWAPIIndexer;
 
+use RWAPIIndexer\Database\DatabaseConnection;
+use RWAPIIndexer\Database\Query as DatabaseQuery;
+
 /**
  * Base resource class.
  */
 abstract class Resource {
-  // Entity type and bundle.
-  protected $entity_type = '';
+
+  /**
+   * Entity type.
+   *
+   * @var string
+   */
+  protected $entityType = '';
+
+  /**
+   * Entity bundle.
+   *
+   * @var string
+   */
   protected $bundle = '';
 
-  // Index name for this resource.
+  /**
+   * Index name for this resource.
+   *
+   * @var string
+   */
   protected $index;
 
-  // Options used for building the query to get the items to index.
-  protected $query_options = array();
+  /**
+   * Options used for building the query to get the items to index.
+   *
+   * @var array
+   */
+  protected $queryOptions = array();
 
-  // Options used to process the entity items before indexing.
-  protected $processing_options = array();
+  /**
+   * Options used to process the entity items before indexing.
+   *
+   * @var array
+   */
+  protected $processingOptions = array();
 
-  // Elasticsearch handler.
+  /**
+   * Elasticsearch handler.
+   *
+   * @var \RWAPIIndexer\Elasticsearch
+   */
   protected $elasticsearch = NULL;
 
-  // Connection to the database.
+  /**
+   * Connection to the database.
+   *
+   * @var \RWAPIIndexer\Database\DatabaseConnection
+   */
   protected $connection = NULL;
 
-  // Field processor.
+  /**
+   * Field processor.
+   *
+   * @var \RWAPIIndexer\Processor
+   */
   protected $processor = NULL;
 
-  // References handler.
+  /**
+   * References handler.
+   *
+   * @var \RWAPIIndexer\References
+   */
   protected $references = NULL;
 
-  // Global options.
+  /**
+   * Global options.
+   *
+   * @var \RWAPIIndexer\Options
+   */
   protected $options = NULL;
 
   /**
@@ -45,14 +91,18 @@ abstract class Resource {
    *   Index name for this resource.
    * @param \RWAPIIndexer\Elasticsearch $elasticsearch
    *   Elasticsearch handler.
-   * @param \RWAPIIndexer\Database\Connection $connection
+   * @param \RWAPIIndexer\Database\DatabaseConnection $connection
    *   Database connection.
+   * @param \RWAPIIndexer\Processor $processor
+   *   Processor.
+   * @param \RWAPIIndexer\References $references
+   *   References handler.
    * @param \RWAPIIndexer\Options $options
    *   Indexing options.
    */
-  public function __construct($bundle, $entity_type, $index, $elasticsearch, $connection, $processor, $references, $options) {
+  public function __construct($bundle, $entity_type, $index, Elasticsearch $elasticsearch, DatabaseConnection $connection, Processor $processor, References $references, Options $options) {
     $this->bundle = $bundle;
-    $this->entity_type = $entity_type;
+    $this->entityType = $entity_type;
     $this->index = $index;
     $this->elasticsearch = $elasticsearch;
     $this->connection = $connection;
@@ -60,7 +110,7 @@ abstract class Resource {
     $this->references = $references;
     $this->options = $options;
 
-    $query_options = $this->query_options;
+    $query_options = $this->queryOptions;
 
     // Only apply filter to the resource being indexed (not to references).
     if ($this->bundle === $options->get('bundle')) {
@@ -68,15 +118,15 @@ abstract class Resource {
     }
 
     // Create a new Query object to get the items to index.
-    $this->query = new \RWAPIIndexer\Query($connection, $this->entity_type, $this->bundle, $query_options);
+    $this->query = new Query($connection, $this->entityType, $this->bundle, $query_options);
   }
 
   /**
-   * Parse argument filters and return an array of conditions
-   * to apply to the query.
+   * Parse argument filters and return conditions to apply to the query.
    *
    * @param string $filters
    *   Document filters.
+   *
    * @return array
    *   Query conditions.
    */
@@ -86,15 +136,15 @@ abstract class Resource {
       foreach (explode('+', $filters) as $filter) {
         list($field, $value) = explode(':', $filter, 2);
         $values = explode(',', $value);
-        if (isset($this->query_options['fields'][$field])) {
+        if (isset($this->queryOptions['fields'][$field])) {
           $conditions['fields'][$field] = $values;
         }
-        elseif (isset($this->query_options['field_joins']['field_' . $field])) {
-          if (reset($this->query_options['field_joins']['field_' . $field]) === 'value') {
+        elseif (isset($this->queryOptions['field_joins']['field_' . $field])) {
+          if (reset($this->queryOptions['field_joins']['field_' . $field]) === 'value') {
             $conditions['field_joins'][$field] = $values;
           }
         }
-        elseif (isset($this->query_options['references']['field_' . $field])) {
+        elseif (isset($this->queryOptions['references']['field_' . $field])) {
           $conditions['references'][$field] = $values;
         }
       }
@@ -110,8 +160,8 @@ abstract class Resource {
    */
   public function getReferences() {
     $references = array();
-    if (isset($this->processing_options['references'])) {
-      foreach ($this->processing_options['references'] as $reference) {
+    if (isset($this->processingOptions['references'])) {
+      foreach ($this->processingOptions['references'] as $reference) {
         $references[] = key($reference);
       }
     }
@@ -121,14 +171,17 @@ abstract class Resource {
   /**
    * Get entities to index.
    *
-   * @param integer $limit
+   * @param int $limit
    *   Maximum number of items.
-   * @param  integer $offset
+   * @param int $offset
    *   ID of the index from which to start getting items to index.
+   * @param array $ids
+   *   Ids of the the entities to index.
+   *
    * @return array
    *   Items to index.
    */
-  public function getItems($limit = NULL, $offset = NULL, $ids = NULL) {
+  public function getItems($limit = NULL, $offset = NULL, array $ids = NULL) {
     $items = $this->query->getItems($limit, $offset, $ids);
 
     // If entity ids are provided then we want to lazily load the references.
@@ -147,12 +200,12 @@ abstract class Resource {
    * @param array $items
    *   Entity items from which to extract the references to load.
    */
-  public function loadReferences(&$items) {
-    if (!empty($this->processing_options['references'])) {
+  public function loadReferences(array &$items) {
+    if (!empty($this->processingOptions['references'])) {
       $references = array();
 
       // Extract the reference ids from the given entity items.
-      foreach ($this->processing_options['references'] as $field => $info) {
+      foreach ($this->processingOptions['references'] as $field => $info) {
         $bundle = key($info);
 
         if (!isset($references[$bundle])) {
@@ -185,18 +238,18 @@ abstract class Resource {
    * Retrieve the URL aliases for the given entity ids.
    *
    * @param array $ids
-   *   Entity Ids
+   *   Entity Ids.
    *
    * @return array
    *   Associative array with entity ids as keys and url aliases as values.
    */
-  public function fetchUrlAliases($ids) {
-    $base = $this->entity_type === 'taxonomy_term' ? 'taxonomy/term/' : 'node/';
+  public function fetchUrlAliases(array $ids) {
+    $base = $this->entityType === 'taxonomy_term' ? 'taxonomy/term/' : 'node/';
     $map = array();
     foreach ($ids as $id) {
       $map[$id] = $base . $id;
     }
-    $query = new \RWAPIIndexer\Database\Query('url_alias', 'url_alias', $this->connection);
+    $query = new DatabaseQuery('url_alias', 'url_alias', $this->connection);
     $query->addField('url_alias', 'source', 'source');
     $query->addField('url_alias', 'alias', 'alias');
     $query->condition('url_alias.source', $map, 'IN');
@@ -218,11 +271,12 @@ abstract class Resource {
    *
    * @param string $bundle
    *   Bundle of the resource.
+   *
    * @return \RWAPIIndexer\Resource
    *   Resource handler for the given bundle.
    */
   public function getResourceHandler($bundle) {
-    return \RWAPIIndexer\Bundles::getResourceHandler($bundle, $this->elasticsearch, $this->connection, $this->processor, $this->references, $this->options);
+    return Bundles::getResourceHandler($bundle, $this->elasticsearch, $this->connection, $this->processor, $this->references, $this->options);
   }
 
   /**
@@ -231,14 +285,14 @@ abstract class Resource {
    * @param array $items
    *   Items to process.
    */
-  public function processItems(&$items) {
-    $options = $this->processing_options;
+  public function processItems(array &$items) {
+    $options = $this->processingOptions;
 
     $url_aliases = $this->fetchUrlAliases(array_keys($items));
 
     foreach ($items as $id => &$item) {
       // Add the entity link to the main website.
-      $this->processor->processEntityURL($this->entity_type, $item, $url_aliases[$id]);
+      $this->processor->processEntityUrl($this->entityType, $item, $url_aliases[$id]);
 
       // Convert ID to integer.
       $item['id'] = (int) $item['id'];
@@ -275,7 +329,7 @@ abstract class Resource {
    * @param array $item
    *   Item to process.
    */
-  public function processItem(&$item) {
+  public function processItem(array &$item) {
   }
 
   /**
@@ -335,7 +389,7 @@ abstract class Resource {
   /**
    * Index the entity with the given id.
    *
-   * @param integer $id
+   * @param int $id
    *   Id of the entity to index.
    */
   public function indexItem($id) {
@@ -351,7 +405,8 @@ abstract class Resource {
 
   /**
    * Remove the entity with the provided id.
-   * @param integer $id
+   *
+   * @param int $id
    *   Id of the entity to remove.
    */
   public function removeItem($id) {
@@ -370,7 +425,7 @@ abstract class Resource {
   /**
    * Set or remove the alias for the index.
    *
-   * @param boolean $remove
+   * @param bool $remove
    *   Remove or set alias.
    */
   public function setAlias($remove = FALSE) {
@@ -409,4 +464,5 @@ abstract class Resource {
       $callback($message);
     }
   }
+
 }

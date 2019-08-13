@@ -3,17 +3,39 @@
 namespace RWAPIIndexer\Database;
 
 /**
+ * Database statement.
+ *
  * Simple extension of PDOStatement with additional fetch functions.
  */
 class Statement extends \PDOStatement {
-  public $dbh;
 
-  protected function __construct($dbh) {
-    $this->dbh = $dbh;
+  /**
+   * Database connection.
+   *
+   * @var \RWAPIIndexer\Database\DatabaseConnection
+   */
+  public $connection;
+
+  /**
+   * Construct the statement.
+   *
+   * @param \RWAPIIndexer\Database\DatabaseConnection $connection
+   *   Database connection.
+   */
+  protected function __construct(DatabaseConnection $connection) {
+    $this->connection = $connection;
   }
 
   /**
    * Returns the result set as an associative array keyed by the given field.
+   *
+   * @param string $key
+   *   Field to use a key.
+   * @param int $fetch
+   *   Fetch mode.
+   *
+   * @return array
+   *   Associative array of field data keyed by the given key.
    */
   public function fetchAllAssoc($key, $fetch = NULL) {
     $return = array();
@@ -36,6 +58,14 @@ class Statement extends \PDOStatement {
 
   /**
    * Returns the entire result set as a single associative array.
+   *
+   * @param int $key_index
+   *   Index of the field to use as key.
+   * @param int $value_index
+   *   Index of the field to use as value.
+   *
+   * @return array
+   *   Associative array.
    */
   public function fetchAllKeyed($key_index = 0, $value_index = 1) {
     $return = array();
@@ -48,6 +78,12 @@ class Statement extends \PDOStatement {
 
   /**
    * Returns a single field from the next record of a result set.
+   *
+   * @param int $index
+   *   Index of the field to fetch.
+   *
+   * @return mixed
+   *   Field data.
    */
   public function fetchField($index = 0) {
     return $this->fetchColumn($index);
@@ -55,8 +91,15 @@ class Statement extends \PDOStatement {
 
   /**
    * Returns an entire single column of a result set as an indexed array.
+   *
+   * @param int $index
+   *   Index of the column to fetch.
+   *
+   * @return array
+   *   Field data.
    */
   public function fetchCol($index = 0) {
     return $this->fetchAll(\PDO::FETCH_COLUMN, $index);
   }
+
 }

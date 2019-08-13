@@ -2,26 +2,53 @@
 
 namespace RWAPIIndexer;
 
+use RWAPIIndexer\Database\DatabaseConnection;
+
 /**
  * Resource manager class.
  */
 class Manager {
-  // Metrics handler.
+
+  /**
+   * Metrics handler.
+   *
+   * @var \RWAPIIndexer\Metrics
+   */
   protected $metrics = NULL;
 
-  // Indexing options handler.
+  /**
+   * Indexing options handler.
+   *
+   * @var \RWAPIIndexer\Metrics
+   */
   protected $options = NULL;
 
-  // Database Connection.
+  /**
+   * Database Connection.
+   *
+   * @var \RWAPIIndexer\Database\DatabaseConnection
+   */
   protected $connection = NULL;
 
-  // References handler.
+  /**
+   * References handler.
+   *
+   * @var \RWAPIIndexer\References
+   */
   protected $references = NULL;
 
-  // Elasticsearch handler.
+  /**
+   * Elasticsearch handler.
+   *
+   * @var \RWAPIIndexer\Elasticsearch
+   */
   protected $elasticsearch = NULL;
 
-  // Field processor.
+  /**
+   * Field processor.
+   *
+   * @var \RWAPIIndexer\Processor
+   */
   protected $processor = NULL;
 
   /**
@@ -30,23 +57,23 @@ class Manager {
    * @param array $options
    *   Indexing options.
    */
-  public function __construct($options = array()) {
-    $this->metrics = new \RWAPIIndexer\Metrics();
+  public function __construct(array $options = array()) {
+    $this->metrics = new Metrics();
 
     // Indexing options.
-    $this->options = new \RWAPIIndexer\Options($options);
+    $this->options = new Options($options);
 
     // Create a new database connection.
     $this->createDatabaseConnection();
 
     // Create a new reference handler.
-    $this->references = new \RWAPIIndexer\References();
+    $this->references = new References();
 
     // Create a new elasticsearch handler.
-    $this->elasticsearch = new \RWAPIIndexer\Elasticsearch($this->options->get('elasticsearch'), $this->options->get('base-index-name'), $this->options->get('tag'));
+    $this->elasticsearch = new Elasticsearch($this->options->get('elasticsearch'), $this->options->get('base-index-name'), $this->options->get('tag'));
 
     // Create a new field processor object to prepare items before indexing.
-    $this->processor = new \RWAPIIndexer\Processor($this->options->get('website'), $this->references);
+    $this->processor = new Processor($this->options->get('website'), $this->references);
   }
 
   /**
@@ -60,7 +87,7 @@ class Manager {
     $user = $this->options->get('mysql-user');
     $password = $this->options->get('mysql-pass');
 
-    $this->connection = new \RWAPIIndexer\Database\DatabaseConnection($dsn, $user, $password);
+    $this->connection = new DatabaseConnection($dsn, $user, $password);
   }
 
   /**
@@ -123,7 +150,7 @@ class Manager {
    *
    * @param string $bundle
    *   Bundle of the entity item.
-   * @param integer $id
+   * @param int $id
    *   Id of the entity item.
    */
   public function indexItem($bundle, $id) {
@@ -139,7 +166,7 @@ class Manager {
    *
    * @param string $bundle
    *   Bundle of the entity item.
-   * @param integer $id
+   * @param int $id
    *   Id of the entity item.
    */
   public function removeItem($bundle, $id) {
@@ -169,7 +196,7 @@ class Manager {
    *
    * @param string $bundle
    *   Bundle of the entity item.
-   * @param boolean $remove
+   * @param bool $remove
    *   Remove or set the alias.
    */
   public function setAlias($bundle, $remove = FALSE) {
@@ -186,7 +213,7 @@ class Manager {
    * @param array $references
    *   List of the reference bundles.
    */
-  public function loadReferences($references) {
+  public function loadReferences(array $references) {
     foreach ($references as $bundle) {
       // If not already set, load the reference items for this bundle.
       if (!$this->references->has($bundle)) {
@@ -206,11 +233,12 @@ class Manager {
    *
    * @param string $bundle
    *   Bundle of the resource.
+   *
    * @return \RWAPIIndexer\Resource
    *   Resource handler for the given bundle.
    */
   public function getResourceHandler($bundle) {
-    return \RWAPIIndexer\Bundles::getResourceHandler($bundle, $this->elasticsearch, $this->connection, $this->processor, $this->references, $this->options);
+    return Bundles::getResourceHandler($bundle, $this->elasticsearch, $this->connection, $this->processor, $this->references, $this->options);
   }
 
   /**
@@ -238,4 +266,5 @@ class Manager {
       $callback($message);
     }
   }
+
 }

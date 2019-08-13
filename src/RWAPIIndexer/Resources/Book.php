@@ -2,12 +2,18 @@
 
 namespace RWAPIIndexer\Resources;
 
+use RWAPIIndexer\Resource;
+use RWAPIIndexer\Mapping;
+
 /**
  * Book resource handler.
  */
-class Book extends \RWAPIIndexer\Resource {
-  // Options used for building the query to get the items to index.
-  protected $query_options = array(
+class Book extends Resource {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $queryOptions = array(
     'fields' => array(
       'title' => 'title',
       'date_created' => 'created',
@@ -23,8 +29,10 @@ class Book extends \RWAPIIndexer\Resource {
     ),
   );
 
-  // Options used to process the entity items before indexing.
-  protected $processing_options = array(
+  /**
+   * {@inheritdoc}
+   */
+  protected $processingOptions = array(
     'conversion' => array(
       'body' => array('links', 'html_iframe'),
       'date_created' => array('time'),
@@ -33,32 +41,26 @@ class Book extends \RWAPIIndexer\Resource {
   );
 
   /**
-   * Return the mapping for the current indexable.
-   *
-   * @return array
-   *   Elasticsearch index type mapping.
+   * {@inheritdoc}
    */
   public function getMapping() {
-    $mapping = new \RWAPIIndexer\Mapping();
+    $mapping = new Mapping();
     $mapping->addInteger('id')
-            ->addString('url', FALSE)
-            ->addString('url_alias', FALSE)
-            ->addString('status', FALSE)
-            ->addString('title', TRUE, TRUE)
-            // Body.
-            ->addString('body')
-            ->addString('body-html', NULL)
-            // Dates.
-            ->addDates('date', array('created', 'changed'));
+      ->addString('url', FALSE)
+      ->addString('url_alias', FALSE)
+      ->addString('status', FALSE)
+      ->addString('title', TRUE, TRUE)
+      // Body.
+      ->addString('body')
+      ->addString('body-html', NULL)
+      // Dates.
+      ->addDates('date', array('created', 'changed'));
 
     return $mapping->export();
   }
 
   /**
-   * Process an item, preparing for the indexing.
-   *
-   * @param array $item
-   *   Item to process.
+   * {@inheritdoc}
    */
   public function processItem(&$item) {
     // Handle dates.
@@ -69,4 +71,5 @@ class Book extends \RWAPIIndexer\Resource {
     unset($item['date_created']);
     unset($item['date_changed']);
   }
+
 }

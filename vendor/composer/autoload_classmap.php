@@ -9,7 +9,6 @@ return array(
     'Michelf\\Markdown' => $vendorDir . '/michelf/php-markdown/Michelf/Markdown.php',
     'Michelf\\MarkdownExtra' => $vendorDir . '/michelf/php-markdown/Michelf/MarkdownExtra.php',
     'Michelf\\MarkdownInterface' => $vendorDir . '/michelf/php-markdown/Michelf/MarkdownInterface.php',
-    'Michelf\\_MarkdownExtra_TmpImpl' => $vendorDir . '/michelf/php-markdown/Michelf/Markdown.php',
     'RWAPIIndexer\\Bundles' => $baseDir . '/src/RWAPIIndexer/Bundles.php',
     'RWAPIIndexer\\Database\\DatabaseConnection' => $baseDir . '/src/RWAPIIndexer/Database/DatabaseConnection.php',
     'RWAPIIndexer\\Database\\Query' => $baseDir . '/src/RWAPIIndexer/Database/Query.php',

@@ -4,8 +4,22 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInited2f462c00d51ac618432735cb7806f0
+class ComposerStaticInitf61996a2c3fb7194a525af5a100b3926
 {
+    public static $prefixLengthsPsr4 = array (
+        'M' => 
+        array (
+            'Michelf\\' => 8,
+        ),
+    );
+
+    public static $prefixDirsPsr4 = array (
+        'Michelf\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/michelf/php-markdown/Michelf',
+        ),
+    );
+
     public static $prefixesPsr0 = array (
         'R' => 
         array (
@@ -14,20 +28,12 @@ class ComposerStaticInited2f462c00d51ac618432735cb7806f0
                 0 => __DIR__ . '/../..' . '/src',
             ),
         ),
-        'M' => 
-        array (
-            'Michelf' => 
-            array (
-                0 => __DIR__ . '/..' . '/michelf/php-markdown',
-            ),
-        ),
     );
 
     public static $classMap = array (
         'Michelf\\Markdown' => __DIR__ . '/..' . '/michelf/php-markdown/Michelf/Markdown.php',
         'Michelf\\MarkdownExtra' => __DIR__ . '/..' . '/michelf/php-markdown/Michelf/MarkdownExtra.php',
         'Michelf\\MarkdownInterface' => __DIR__ . '/..' . '/michelf/php-markdown/Michelf/MarkdownInterface.php',
-        'Michelf\\_MarkdownExtra_TmpImpl' => __DIR__ . '/..' . '/michelf/php-markdown/Michelf/Markdown.php',
         'RWAPIIndexer\\Bundles' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Bundles.php',
         'RWAPIIndexer\\Database\\DatabaseConnection' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Database/DatabaseConnection.php',
         'RWAPIIndexer\\Database\\Query' => __DIR__ . '/../..' . '/src/RWAPIIndexer/Database/Query.php',
@@ -58,8 +64,10 @@ class ComposerStaticInited2f462c00d51ac618432735cb7806f0
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixesPsr0 = ComposerStaticInited2f462c00d51ac618432735cb7806f0::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInited2f462c00d51ac618432735cb7806f0::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInitf61996a2c3fb7194a525af5a100b3926::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInitf61996a2c3fb7194a525af5a100b3926::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInitf61996a2c3fb7194a525af5a100b3926::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInitf61996a2c3fb7194a525af5a100b3926::$classMap;
 
         }, null, ClassLoader::class);
     }

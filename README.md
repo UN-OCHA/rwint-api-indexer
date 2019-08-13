@@ -70,4 +70,9 @@ $manager->execute();
 Markdown
 --------
 
-It's recommended to have php-sundown installed. If not, the indexer will default to Michel Fortin's Markdown library which is much slower.
+It's recommended to have php-hoedown installed. If not, the indexer will default to Michel Fortin's Markdown library which is much slower.
+
+Dependencies
+------------
+
+Ensure no dev dependencies are added when committed by running `composer install --no-dev -o`.

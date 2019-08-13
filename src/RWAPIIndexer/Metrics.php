@@ -6,6 +6,11 @@ namespace RWAPIIndexer;
  * Metrics handling class.
  */
 class Metrics {
+  /**
+   * Starting time.
+   *
+   * @var int
+   */
   protected $time = 0;
 
   /**

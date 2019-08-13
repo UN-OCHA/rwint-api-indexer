@@ -8,7 +8,7 @@ exclude=' '
 
 # The linter path is relative to the root of the repository.
 linter="vendor/bin/phpcs"
-options='--standard=Drupal'
+options='--standard=ruleset.xml'
 
 message='Linting staged PHP/CSS files...'
 

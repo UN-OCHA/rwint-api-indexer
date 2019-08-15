@@ -508,7 +508,7 @@ class Processor {
    * @return bool
    *   Processing success.
    */
-  public function processFile($field, $single = FALSE) {
+  public function processFile(&$field, $single = FALSE) {
     if (isset($field) && !empty($field)) {
       $items = array();
       foreach (explode('%%%', $field) as $item) {

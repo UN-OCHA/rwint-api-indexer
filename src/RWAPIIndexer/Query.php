@@ -79,7 +79,7 @@ class Query {
       $this->baseField = 'tid';
     }
     else {
-      throw new \Exception('RWAPIIndexer\Query: Unknow entity type');
+      throw new \Exception('RWAPIIndexer\Query: Unknown entity type');
     }
   }
 

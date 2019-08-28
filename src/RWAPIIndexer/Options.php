@@ -31,6 +31,7 @@ class Options {
     'remove' => FALSE,
     'alias' => FALSE,
     'alias-only' => FALSE,
+    'simulate' => FALSE,
     'log' => '',
   );
 
@@ -161,6 +162,11 @@ class Options {
         case '--alias-only':
         case '-A':
           $options['alias-only'] = TRUE;
+          break;
+
+        case '--simulate':
+        case '-s':
+          $options['simulate'] = TRUE;
           break;
 
         case '--help':
@@ -322,6 +328,10 @@ class Options {
         'filter' => FILTER_VALIDATE_BOOLEAN,
         'flags' => FILTER_NULL_ON_FAILURE,
       ),
+      'simulate' => array(
+        'filter' => FILTER_VALIDATE_BOOLEAN,
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ),
     ));
 
     foreach ($results as $key => $value) {
@@ -361,6 +371,7 @@ class Options {
           "     -r, --remove Removes an entity if 'id' is provided or the index for the given entity bundle \n" .
           "     -a, --alias Set up the alias for the index after the indexing, ignored if id is provided \n" .
           "     -A, --alias-only Set up the alias for the index without indexing, ignored if id is provided \n" .
+          "     -s, --simulate Return the number of indexable entities based on the provided limit and offset \n" .
           "\n";
     exit();
   }

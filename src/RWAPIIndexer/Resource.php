@@ -336,17 +336,23 @@ abstract class Resource {
    * Index entities.
    */
   public function index() {
-    $this->log("Indexing {$this->bundle} entities.\n");
-
-    // Create the index and set up the mapping for the entity bundle.
-    $this->elasticsearch->create($this->index, $this->getMapping());
-
     // Get the offset from which to start indexing.
     $offset = $this->query->getOffset($this->options->get('offset'));
     // Get the maximum number of items to index.
     $limit = $this->query->getLimit($this->options->get('limit'), $offset);
     // Number of items to process per batch run.
     $chunk_size = $this->options->get('chunk-size');
+
+    // If requested, only ouptut the number of items that could be indexed.
+    if ($this->options->get('simulate')) {
+      $this->log("Number of indexable entities: {$limit}.\n");
+      return;
+    }
+
+    $this->log("Indexing {$this->bundle} entities.\n");
+
+    // Create the index and set up the mapping for the entity bundle.
+    $this->elasticsearch->create($this->index, $this->getMapping());
 
     // Counter of indexed items.
     $count = 0;

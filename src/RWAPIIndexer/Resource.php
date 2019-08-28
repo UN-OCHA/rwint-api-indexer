@@ -382,7 +382,8 @@ abstract class Resource {
       // Clear the memory.
       unset($items);
 
-      $this->log("Indexed {$count}/{$limit} entities.                 \r");
+      $time = gmdate('c');
+      $this->log("[{$time}] Indexed {$count}/{$limit} entities.                 \n");
     }
 
     // Last indexed item.

@@ -398,10 +398,6 @@ class Elasticsearch {
           $headers[] = 'Content-Type: application/json';
         }
 
-        // Compress the data and tell ES that it's compressed.
-        $data = gzencode($data);
-        $headers[] = 'Content-Encoding: gzip';
-
         // Prevent curl from expecting a 100 Continue with data is large.
         $headers[] = 'Expect:';
 

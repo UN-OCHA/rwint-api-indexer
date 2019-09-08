@@ -327,20 +327,6 @@ class Elasticsearch {
   }
 
   /**
-   * Index an item.
-   *
-   * @param string $index
-   *   Index name.
-   * @param array $item
-   *   Item to index.
-   */
-  public function indexItem($index, array $item) {
-    $path = $this->getIndexPath($index) . '/' . $item['id'];
-    $data = json_encode($item);
-    $this->request('POST', $path, $data);
-  }
-
-  /**
    * Remove an item.
    *
    * @param string $index
@@ -349,7 +335,7 @@ class Elasticsearch {
    *   Id of the item to remove.
    */
   public function removeItem($index, $id) {
-    $path = $this->getIndexPath($index) . "/" . $id;
+    $path = $this->getIndexPath($index) . '/_doc/' . $id;
     $this->request('DELETE', $path);
   }
 

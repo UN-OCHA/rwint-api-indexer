@@ -93,8 +93,8 @@ class Country extends Resource {
       // Centroid Coordinates.
       ->addGeoPoint('location')
       // Names.
-      ->addString('name', TRUE, TRUE)
-      ->addString('shortname', TRUE, TRUE)
+      ->addString('name', TRUE, TRUE, '', TRUE)
+      ->addString('shortname', TRUE, TRUE, '', TRUE)
       ->addString('iso3', TRUE, TRUE)
       // Description -- legacy.
       ->addString('description')

@@ -91,10 +91,10 @@ class Source extends Resource {
       ->addString('homepage', FALSE)
       ->addString('content_type', FALSE)
       // Names.
-      ->addString('name', TRUE, TRUE)
-      ->addString('shortname', TRUE, TRUE)
-      ->addString('longname', TRUE, TRUE)
-      ->addString('spanish_name', TRUE, TRUE)
+      ->addString('name', TRUE, TRUE, '', TRUE)
+      ->addString('shortname', TRUE, TRUE, '', TRUE)
+      ->addString('longname', TRUE, TRUE, '', TRUE)
+      ->addString('spanish_name', TRUE, TRUE, '', TRUE)
       // Description.
       ->addString('description')
       ->addString('description-html', NULL)

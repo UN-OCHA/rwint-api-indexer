@@ -114,7 +114,7 @@ class Disaster extends Resource {
       ->addBoolean('featured')
       ->addBoolean('current')
       // Names.
-      ->addString('name', TRUE, TRUE)
+      ->addString('name', TRUE, TRUE, '', TRUE)
       ->addString('glide', TRUE, TRUE)
       ->addString('related_glide', TRUE, TRUE)
       // Description - legacy.

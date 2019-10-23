@@ -92,11 +92,13 @@ class Mapping {
    *   Indicates if the string should have an exact not analyzed sufield.
    * @param string $alias
    *   Field index alias.
+   * @param bool $suggest
+   *   Whether to also index the string as a suggestion for autocomplete or not.
    *
    * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
-  public function addString($field, $index = TRUE, $exact = FALSE, $alias = '') {
+  public function addString($field, $index = TRUE, $exact = FALSE, $alias = '', $suggest = FALSE) {
     $mapping = array(
       'type' => 'text',
     );
@@ -113,12 +115,17 @@ class Mapping {
       $mapping['type'] = 'keyword';
     }
     if ($exact) {
-      $mapping['fields'] = array(
-        'exact' => array(
-          'type' => 'keyword',
-        ),
+      $mapping['fields']['exact'] = array(
+        'type' => 'keyword',
       );
     }
+    if ($suggest) {
+      $mapping['fields']['suggest'] = array(
+        'type' => 'search_as_you_type',
+        'analyzer' => 'simple',
+      );
+    }
+
     $this->addFieldMapping($field, $mapping, $alias);
     return $this;
   }

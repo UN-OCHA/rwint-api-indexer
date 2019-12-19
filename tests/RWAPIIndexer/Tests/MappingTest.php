@@ -2,7 +2,6 @@
 
 namespace RWAPIIndexer\Tests;
 
-use ReflectionClass;
 use RWAPIIndexer\Mapping;
 use PHPUnit\Framework\TestCase;
 
@@ -12,22 +11,18 @@ use PHPUnit\Framework\TestCase;
 class MappingTest extends TestCase {
 
   /**
-   * Set up access to private 'mapping' property.
-   */
-  protected function setUp(): void {
-    $reflector = new ReflectionClass('RWAPIIndexer\Mapping');
-    $this->property = $reflector->getProperty('mapping');
-    $this->property->setAccessible(TRUE);
-  }
-
-  /**
    * Test taxonomy mapping.
    */
   public function testCanAddTaxonomyMapping() {
     $mapping = new Mapping();
-    $this->assertArrayNotHasKey('test', $this->property->getValue($mapping));
+    $before = $mapping->export();
+    $this->assertArrayHasKey('timestamp', $before);
+    $this->assertArrayNotHasKey('test', $before);
     $mapping->addTaxonomy('test');
-    $this->assertArrayHasKey('test', $this->property->getValue($mapping));
+    $after = $mapping->export();
+    $this->assertArrayHasKey('test', $after);
+    $this->assertArrayHasKey('common_test_exact', $after);
+    $this->assertEquals('integer', $after['test']['properties']['id']['type']);
   }
 
   /**
@@ -35,13 +30,12 @@ class MappingTest extends TestCase {
    */
   public function testCanAddImageMapping() {
     $mapping = new Mapping();
-    $this->assertArrayNotHasKey('test_image', $this->property->getValue($mapping));
     $mapping->addImage('test_image');
-    $mappingValue = $this->property->getValue($mapping);
-    $this->assertArrayHasKey('test_image', $mappingValue);
-    $this->assertArrayHasKey('properties', $mappingValue['test_image']);
-    $this->assertArrayHasKey('copyright', $mappingValue['test_image']['properties']);
-    $this->assertEquals('text', $mappingValue['test_image']['properties']['copyright']['type']);
+    $after = $mapping->export();
+    $this->assertArrayHasKey('test_image', $after);
+    $this->assertArrayHasKey('properties', $after['test_image']);
+    $this->assertArrayHasKey('copyright', $after['test_image']['properties']);
+    $this->assertEquals('text', $after['test_image']['properties']['copyright']['type']);
   }
 
   /**
@@ -49,13 +43,12 @@ class MappingTest extends TestCase {
    */
   public function testCanAddFileMapping() {
     $mapping = new Mapping();
-    $this->assertArrayNotHasKey('test_file', $this->property->getValue($mapping));
     $mapping->addFile('test_file');
-    $mappingValue = $this->property->getValue($mapping);
-    $this->assertArrayHasKey('test_file', $mappingValue);
-    $this->assertArrayHasKey('properties', $mappingValue['test_file']);
-    $this->assertArrayHasKey('filesize', $mappingValue['test_file']['properties']);
-    $this->assertEquals('integer', $mappingValue['test_file']['properties']['filesize']['type']);
+    $after = $mapping->export();
+    $this->assertArrayHasKey('test_file', $after);
+    $this->assertArrayHasKey('properties', $after['test_file']);
+    $this->assertArrayHasKey('filesize', $after['test_file']['properties']);
+    $this->assertEquals('integer', $after['test_file']['properties']['filesize']['type']);
   }
 
   /**
@@ -63,7 +56,6 @@ class MappingTest extends TestCase {
    */
   public function testCanAddProfileMapping() {
     $mapping = new Mapping();
-    $this->assertArrayNotHasKey('profile', $this->property->getValue($mapping));
     $sections = array(
       'test_section1' => array(
         'label' => 'First Section',
@@ -73,11 +65,11 @@ class MappingTest extends TestCase {
       ),
     );
     $mapping->addProfile($sections);
-    $mappingValue = $this->property->getValue($mapping);
-    $this->assertArrayHasKey('profile', $mappingValue);
-    $this->assertArrayHasKey('properties', $mappingValue['profile']);
-    $this->assertArrayHasKey('test_section1', $mappingValue['profile']['properties']);
-    $this->assertEquals('text', $mappingValue['profile']['properties']['overview']['type']);
+    $after = $mapping->export();
+    $this->assertArrayHasKey('profile', $after);
+    $this->assertArrayHasKey('properties', $after['profile']);
+    $this->assertArrayHasKey('test_section1', $after['profile']['properties']);
+    $this->assertEquals('text', $after['profile']['properties']['overview']['type']);
   }
 
   /**
@@ -86,12 +78,12 @@ class MappingTest extends TestCase {
   public function testCanCreateCommonFieldMapping() {
     $mapping = new Mapping();
     $mapping->addDates('test_date', array('test'));
-    $mappingValue = $this->property->getValue($mapping);
-    $this->assertArrayHasKey('test_date', $mappingValue);
-    $this->assertArrayHasKey('properties', $mappingValue['test_date']);
-    $this->assertArrayHasKey('test', $mappingValue['test_date']['properties']);
-    $this->assertArrayHasKey('copy_to', $mappingValue['test_date']['properties']['test']);
-    $this->assertEquals('common_test_date', $mappingValue['test_date']['properties']['test']['copy_to'][0]);
+    $after = $mapping->export();
+    $this->assertArrayHasKey('test_date', $after);
+    $this->assertArrayHasKey('properties', $after['test_date']);
+    $this->assertArrayHasKey('test', $after['test_date']['properties']);
+    $this->assertArrayHasKey('copy_to', $after['test_date']['properties']['test']);
+    $this->assertEquals('common_test_date', $after['test_date']['properties']['test']['copy_to'][0]);
   }
 
 }

@@ -2,9 +2,7 @@
 
 namespace RWAPIIndexer\Tests;
 
-use ReflectionClass;
 use RWAPIIndexer\Bundles;
-use RWAPIIndexer\Resources\Blog;
 use RWAPIIndexer\Elasticsearch;
 use RWAPIIndexer\Database\DatabaseConnection;
 use RWAPIIndexer\Processor;
@@ -20,7 +18,7 @@ class BundlesTest extends TestCase {
   /**
    * Test getResourceHandler().
    *
-   * Create a blog resource and check its 'index' property.
+   * Create a blog resource handler and check its type.
    */
   public function testCanCreateResourceHandler() {
     $esStub = $this->createMock(Elasticsearch::class);
@@ -28,14 +26,24 @@ class BundlesTest extends TestCase {
     $processorStub = $this->createMock(Processor::class);
     $referencesStub = $this->createMock(References::class);
     $optionsStub = $this->createMock(Options::class);
+
     $handler = Bundles::getResourceHandler('blog_post', $esStub, $dbcStub, $processorStub, $referencesStub, $optionsStub);
 
-    // Access protected 'index' property.
-    $reflector = new ReflectionClass('RWAPIIndexer\Resources\Blog');
-    $index = $reflector->getProperty('index');
-    $index->setAccessible(TRUE);
+    $this->assertInstanceOf('RWAPIIndexer\Resources\Blog', $handler);
+    $this->assertInstanceOf('RWAPIIndexer\Query', $handler->query);
+  }
 
-    $this->assertEquals('blog', $index->getValue($handler));
+  /**
+   * Test has().
+   *
+   * Create a blog resource and check it exists.
+   */
+  public function testBundlesAreSupported() {
+    $bundles = new Bundles;
+
+    $this->assertTrue($bundles->has('blog_post'));
+    $this->assertFalse($bundles->has('not_a_bundle'));
+    $this->assertTrue($bundles->has('disaster_type'));
   }
 
 }

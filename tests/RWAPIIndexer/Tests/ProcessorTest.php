@@ -4,7 +4,6 @@ namespace RWAPIIndexer\Tests;
 
 use RWAPIIndexer\Processor;
 use RWAPIIndexer\References;
-use Michelf\Markdown;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -20,23 +19,19 @@ class ProcessorTest extends TestCase {
       'string' => 'test',
     );
     Processor::processConversion(array('bool'), $item, 'string');
-    $this->assertTrue(
-      $item['string']
-    );
+    $this->assertTrue($item['string']);
+
     $item = array(
       'int' => 0,
     );
     Processor::processConversion(array('bool'), $item, 'int');
-    $this->assertFalse(
-      $item['int']
-    );
+    $this->assertFalse($item['int']);
+
     $item = array(
       'float' => 1.234,
     );
     Processor::processConversion(array('bool'), $item, 'float');
-    $this->assertIsBool(
-      $item['float']
-    );
+    $this->assertIsBool($item['float']);
   }
 
   /**
@@ -46,13 +41,10 @@ class ProcessorTest extends TestCase {
     $referenceStub = new References();
     $processor = new Processor('https://rw.test', $referenceStub);
     $item = array(
-      'links' => 'http://reliefweb.int/taxonomy/term/13',
+      'link' => 'http://reliefweb.int/taxonomy/term/13',
     );
-    $processor->processConversion(array('links'), $item, 'links');
-    $this->assertEquals(
-      'https://rw.test/taxonomy/term/13',
-      $item['links']
-    );
+    $processor->processConversion(array('links'), $item, 'link');
+    $this->assertEquals('https://rw.test/taxonomy/term/13', $item['link']);
   }
 
   /**
@@ -65,10 +57,7 @@ class ProcessorTest extends TestCase {
       'html' => '_Emphasis_',
     );
     $processor->processConversion(array('html'), $item, 'html');
-    $this->assertEquals(
-      "<p><em>Emphasis</em></p>\n",
-      $item['html-html']
-    );
+    $this->assertEquals("<p><em>Emphasis</em></p>\n", $item['html-html']);
   }
 
   /**
@@ -76,23 +65,33 @@ class ProcessorTest extends TestCase {
    */
   public function testCanFlagResourceAsPrimary() {
     $item = array(
-      'resource' => array('id' => 1),
-      'primary_resource' => array('id' => 2),
+      'resource' => array(
+        array(
+          'id' => 1,
+        ),
+        array(
+          'id' => 2,
+        ),
+      ),
+      'primary_resource' => array('id' => 3),
     );
+    $unprocessed = $item;
     Processor::processConversion(array('primary'), $item, 'resource');
-    $this->assertEquals(
-      $item,
-      $item
-    );
+    $this->assertEquals($item, $unprocessed);
+
     $item = array(
-      'resource' => array('id' => 2),
+      'resource' => array(
+        array(
+          'id' => 1,
+        ),
+        array(
+          'id' => 2,
+        ),
+      ),
       'primary_resource' => array('id' => 2),
     );
     Processor::processConversion(array('primary'), $item, 'resource');
-    $this->assertEquals(
-      TRUE,
-      $item['resource']['primary']
-    );
+    $this->assertTrue($item['resource'][1]['primary']);
   }
 
   /**

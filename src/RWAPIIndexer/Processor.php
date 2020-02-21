@@ -527,6 +527,7 @@ class Processor {
         if ($array['mimetype'] === 'application/pdf' && preg_match('/\|(\d+)\|(0|90|-90)$/', $parts[1]) === 1) {
           $directory = dirname($parts[2]) . '-pdf-previews';
           $filename = basename(urldecode($parts[3]), '.pdf');
+          $filename = str_replace('%', '', $filename);
           $filename = $directory . '/' . $parts[0] . '-' . $filename . '.png';
           $array['preview'] = array(
             'url' => $this->processFilePath($filename),

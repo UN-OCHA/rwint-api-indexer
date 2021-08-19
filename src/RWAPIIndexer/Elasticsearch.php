@@ -67,6 +67,15 @@ class Elasticsearch {
             'filter_shingle',
           ),
         ),
+        'search_as_you_type' => array(
+          'type' => 'custom',
+          'tokenizer' => 'standard',
+          'filter' => array(
+            'lowercase',
+            'asciifolding',
+            'elision',
+          ),
+        ),
       ),
       'filter' => array(
         'filter_stemmer_possessive' => array(

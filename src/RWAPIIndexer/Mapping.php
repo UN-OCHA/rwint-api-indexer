@@ -122,7 +122,8 @@ class Mapping {
     if ($suggest) {
       $mapping['fields']['suggest'] = array(
         'type' => 'search_as_you_type',
-        'analyzer' => 'simple',
+        'analyzer' => 'search_as_you_type',
+        'search_analyzer' => 'search_as_you_type',
       );
     }
 

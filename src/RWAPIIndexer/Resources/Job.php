@@ -13,33 +13,33 @@ class Job extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
+  protected $queryOptions = [
+    'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
-    ),
-    'field_joins' => array(
-      'field_status' => array(
+    ],
+    'field_joins' => [
+      'field_status' => [
         'status' => 'value',
-      ),
-      'field_job_closing_date' => array(
+      ],
+      'field_job_closing_date' => [
         'date_closing' => 'value',
-      ),
-      'body' => array(
+      ],
+      'body' => [
         'body' => 'value',
-      ),
-      'field_how_to_apply' => array(
+      ],
+      'field_how_to_apply' => [
         'how_to_apply' => 'value',
-      ),
-      'field_city' => array(
+      ],
+      'field_city' => [
         'city' => 'value',
-      ),
-      'field_file' => array(
+      ],
+      'field_file' => [
         'file' => 'file_reference',
-      ),
-    ),
-    'references' => array(
+      ],
+    ],
+    'references' => [
       'field_country' => 'country',
       'field_source' => 'source',
       'field_language' => 'language',
@@ -47,26 +47,26 @@ class Job extends Resource {
       'field_job_type' => 'type',
       'field_job_experience' => 'experience',
       'field_career_categories' => 'career_categories',
-    ),
-  );
+    ],
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = array(
-    'conversion' => array(
-      'body' => array('links', 'html_strict'),
-      'how_to_apply' => array('links', 'html_strict'),
-      'date_created' => array('time'),
-      'date_changed' => array('time'),
-      'date_closing' => array('time'),
-    ),
-    'references' => array(
-      'country' => array(
-        'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
-      ),
-      'source' => array(
-        'source' => array(
+  protected $processingOptions = [
+    'conversion' => [
+      'body' => ['links', 'html_strict'],
+      'how_to_apply' => ['links', 'html_strict'],
+      'date_created' => ['time'],
+      'date_changed' => ['time'],
+      'date_closing' => ['time'],
+    ],
+    'references' => [
+      'country' => [
+        'country' => ['id', 'name', 'shortname', 'iso3', 'location'],
+      ],
+      'source' => [
+        'source' => [
           'id',
           'name',
           'shortname',
@@ -74,25 +74,25 @@ class Job extends Resource {
           'spanish_name',
           'type',
           'homepage',
-        ),
-      ),
-      'language' => array(
-        'language' => array('id', 'name', 'code'),
-      ),
-      'theme' => array(
-        'theme' => array('id', 'name'),
-      ),
-      'type' => array(
-        'job_type' => array('id', 'name'),
-      ),
-      'experience' => array(
-        'job_experience' => array('id', 'name'),
-      ),
-      'career_categories' => array(
-        'career_categories' => array('id', 'name'),
-      ),
-    ),
-  );
+        ],
+      ],
+      'language' => [
+        'language' => ['id', 'name', 'code'],
+      ],
+      'theme' => [
+        'theme' => ['id', 'name'],
+      ],
+      'type' => [
+        'job_type' => ['id', 'name'],
+      ],
+      'experience' => [
+        'job_experience' => ['id', 'name'],
+      ],
+      'career_categories' => [
+        'career_categories' => ['id', 'name'],
+      ],
+    ],
+  ];
 
   /**
    * {@inheritdoc}
@@ -111,15 +111,15 @@ class Job extends Resource {
       ->addString('how_to_apply')
       ->addString('how_to_apply-html', NULL)
       // Dates.
-      ->addDates('date', array('created', 'changed', 'closing'))
+      ->addDates('date', ['created', 'changed', 'closing'])
       // Language.
       ->addTaxonomy('language')
       ->addString('language.code', FALSE)
       // Country.
-      ->addTaxonomy('country', array('shortname', 'iso3'))
+      ->addTaxonomy('country', ['shortname', 'iso3'])
       ->addGeoPoint('country.location')
       // Source.
-      ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
+      ->addTaxonomy('source', ['shortname', 'longname', 'spanish_name'])
       ->addString('source.homepage', NULL)
       ->addTaxonomy('source.type')
       // Other taxonomies.
@@ -139,10 +139,10 @@ class Job extends Resource {
    */
   public function processItem(&$item) {
     // Handle dates.
-    $item['date'] = array(
+    $item['date'] = [
       'created' => $item['date_created'],
       'changed' => $item['date_changed'],
-    );
+    ];
     if (isset($item['date_closing'])) {
       $item['date']['closing'] = $item['date_closing'];
     }
@@ -152,7 +152,7 @@ class Job extends Resource {
 
     // Handle city. Keep compatibility.
     if (isset($item['city'])) {
-      $item['city'] = array(array('name' => $item['city']));
+      $item['city'] = [['name' => $item['city']]];
     }
 
     // Handle File.

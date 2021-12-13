@@ -44,7 +44,7 @@ class Processor {
    *
    * @var array
    */
-  protected $mimeTypes = array(
+  protected $mimeTypes = [
     'txt' => 'text/plain',
     'htm' => 'text/html',
     'html' => 'text/html',
@@ -91,7 +91,7 @@ class Processor {
     // Open office.
     'odt' => 'application/vnd.oasis.opendocument.text',
     'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
-  );
+  ];
 
   /**
    * Check if the Markdown function is available.
@@ -187,7 +187,7 @@ class Processor {
 
         // Explode a concatenated mutli integer field.
         case 'multi_int':
-          $values = array();
+          $values = [];
           foreach (explode('%%%', $item[$key]) as $data) {
             $values[] = (int) $data;
           }
@@ -252,7 +252,7 @@ class Processor {
     if ($this->references->has($bundle)) {
       $fields = $definition[$bundle];
 
-      $array = array();
+      $array = [];
       foreach ($item[$key] as $id) {
         $term = $this->references->getItem($bundle, $id, $fields);
         if (isset($term)) {
@@ -308,13 +308,13 @@ class Processor {
         return $hoedown->parse($text);
 
       case 'sundown':
-        $sundown = new \Sundown($text, array(
+        $sundown = new \Sundown($text, [
           'tables' => TRUE,
           'no_intra_emphasis' => TRUE,
           'fenced_code_blocks' => TRUE,
           'autolink' => TRUE,
           'safe_links_only' => TRUE,
-        ));
+        ]);
         return $sundown->toHTML();
 
       case 'markdown':
@@ -359,7 +359,7 @@ class Processor {
    *   Cleaned-up HTML.
    */
   public function processHtml($html, $embedded = FALSE) {
-    $tags = array(
+    $tags = [
       'div',
       'span',
       'br',
@@ -393,11 +393,11 @@ class Processor {
       'tr',
       'sup',
       'sub',
-    );
+    ];
 
     // Add iframe and image tags to the list of allowed tags.
     if ($embedded) {
-      $tags = array_merge($tags, array('iframe', 'img'));
+      $tags = array_merge($tags, ['iframe', 'img']);
     }
 
     // Use Drupal filter_xss function if available.
@@ -456,11 +456,11 @@ class Processor {
    */
   public function processImage(&$field, $single = FALSE, $meta = TRUE, $styles = TRUE) {
     if (isset($field) && !empty($field)) {
-      $items = array();
+      $items = [];
       foreach (explode('%%%', $field) as $item) {
         $parts = explode('###', $item);
 
-        $array = array(
+        $array = [
           'id' => $parts[0],
           'width' => $parts[3],
           'height' => $parts[4],
@@ -468,7 +468,7 @@ class Processor {
           'filename' => $parts[6],
           'mimetype' => $this->getMimeType($parts[6]),
           'filesize' => $parts[7],
-        );
+        ];
 
         if (!empty($meta)) {
           $array['copyright'] = preg_replace('/^@+/', '', $parts[1]);
@@ -510,18 +510,18 @@ class Processor {
    */
   public function processFile(&$field, $single = FALSE) {
     if (isset($field) && !empty($field)) {
-      $items = array();
+      $items = [];
       foreach (explode('%%%', $field) as $item) {
         $parts = explode('###', $item);
 
-        $array = array(
+        $array = [
           'id' => $parts[0],
           'description' => preg_replace('/\|(\d+)\|(0|90|-90)$/', '', $parts[1]),
           'url' => $this->processFilePath($parts[2]),
           'filename' => $parts[3],
           'mimetype' => $this->getMimeType($parts[3]),
           'filesize' => $parts[4],
-        );
+        ];
 
         // PDF attachment.
         if ($array['mimetype'] === 'application/pdf' && preg_match('/\|(\d+)\|(0|90|-90)$/', $parts[1]) === 1) {
@@ -529,12 +529,12 @@ class Processor {
           $filename = basename(urldecode($parts[3]), '.pdf');
           $filename = str_replace('%', '', $filename);
           $filename = $directory . '/' . $parts[0] . '-' . $filename . '.png';
-          $array['preview'] = array(
+          $array['preview'] = [
             'url' => $this->processFilePath($filename),
             'url-large' => $this->processFilePath($filename, 'attachment-large'),
             'url-small' => $this->processFilePath($filename, 'attachment-small'),
             'url-thumb' => $this->processFilePath($filename, 'm'),
-          );
+          ];
         }
 
         foreach ($array as $key => $value) {
@@ -612,8 +612,8 @@ class Processor {
    *   Definition of the profile sections.
    */
   public function processProfile(DatabaseConnection $connection, array &$item, array $sections) {
-    $description = array();
-    $profile = array();
+    $description = [];
+    $profile = [];
 
     // The actual description comes first.
     if (!empty($item['description'])) {
@@ -630,8 +630,8 @@ class Processor {
       $use_image = !empty($info['image']);
       $image_field = !empty($info['internal']) ? 'cover' : 'logo';
 
-      $links = array();
-      $section = array();
+      $links = [];
+      $section = [];
       $table = 'field_data_field_' . $id;
 
       $query = new DatabaseQuery($table, $table, $connection);
@@ -722,7 +722,7 @@ class Processor {
 
         // Add the links to the profile.
         if (!empty($links)) {
-          $profile[$id] = array('title' => $label) + $links;
+          $profile[$id] = ['title' => $label] + $links;
         }
       }
     }
@@ -731,7 +731,7 @@ class Processor {
     if (!empty($description)) {
       $item['description'] = trim(implode("\n", $description));
       // Convert markdown.
-      $this->processConversion(array('html'), $item, 'description');
+      $this->processConversion(['html'], $item, 'description');
     }
     else {
       unset($item['description']);
@@ -742,7 +742,7 @@ class Processor {
       $item['profile'] = $profile;
       // Convert markdown.
       if (!empty($item['profile']['overview'])) {
-        $this->processConversion(array('html'), $item['profile'], 'overview');
+        $this->processConversion(['html'], $item['profile'], 'overview');
       }
     }
   }

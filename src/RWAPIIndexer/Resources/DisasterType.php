@@ -12,16 +12,16 @@ class DisasterType extends TaxonomyDefault {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
+  protected $queryOptions = [
+    'fields' => [
       'description' => 'description',
-    ),
-    'field_joins' => array(
-      'field_abbreviation' => array(
+    ],
+    'field_joins' => [
+      'field_abbreviation' => [
         'code' => 'value',
-      ),
-    ),
-  );
+      ],
+    ],
+  ];
 
   /**
    * {@inheritdoc}

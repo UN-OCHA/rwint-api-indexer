@@ -13,32 +13,32 @@ class Book extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
+  protected $queryOptions = [
+    'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
-    ),
-    'field_joins' => array(
-      'field_status' => array(
+    ],
+    'field_joins' => [
+      'field_status' => [
         'status' => 'value',
-      ),
-      'body' => array(
+      ],
+      'body' => [
         'body' => 'value',
-      ),
-    ),
-  );
+      ],
+    ],
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = array(
-    'conversion' => array(
-      'body' => array('links', 'html_iframe'),
-      'date_created' => array('time'),
-      'date_changed' => array('time'),
-    ),
-  );
+  protected $processingOptions = [
+    'conversion' => [
+      'body' => ['links', 'html_iframe'],
+      'date_created' => ['time'],
+      'date_changed' => ['time'],
+    ],
+  ];
 
   /**
    * {@inheritdoc}
@@ -54,7 +54,7 @@ class Book extends Resource {
       ->addString('body')
       ->addString('body-html', NULL)
       // Dates.
-      ->addDates('date', array('created', 'changed'));
+      ->addDates('date', ['created', 'changed']);
 
     return $mapping->export();
   }
@@ -64,10 +64,10 @@ class Book extends Resource {
    */
   public function processItem(&$item) {
     // Handle dates.
-    $item['date'] = array(
+    $item['date'] = [
       'created' => $item['date_created'],
       'changed' => $item['date_changed'],
-    );
+    ];
     unset($item['date_created']);
     unset($item['date_changed']);
   }

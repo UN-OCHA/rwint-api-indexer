@@ -13,11 +13,11 @@ class TaxonomyDefault extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
+  protected $queryOptions = [
+    'fields' => [
       'description' => 'description',
-    ),
-  );
+    ],
+  ];
 
   /**
    * {@inheritdoc}

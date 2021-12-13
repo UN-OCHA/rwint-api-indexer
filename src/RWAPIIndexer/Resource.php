@@ -36,14 +36,14 @@ abstract class Resource {
    *
    * @var array
    */
-  protected $queryOptions = array();
+  protected $queryOptions = [];
 
   /**
    * Options used to process the entity items before indexing.
    *
    * @var array
    */
-  protected $processingOptions = array();
+  protected $processingOptions = [];
 
   /**
    * Elasticsearch handler.
@@ -131,7 +131,7 @@ abstract class Resource {
    *   Query conditions.
    */
   public function parseFilters($filters) {
-    $conditions = array();
+    $conditions = [];
     if (!empty($filters)) {
       foreach (explode('+', $filters) as $filter) {
         list($field, $value) = explode(':', $filter, 2);
@@ -159,7 +159,7 @@ abstract class Resource {
    *   Bundles of the references for this entity type/bundle.
    */
   public function getReferences() {
-    $references = array();
+    $references = [];
     if (isset($this->processingOptions['references'])) {
       foreach ($this->processingOptions['references'] as $reference) {
         $references[] = key($reference);
@@ -202,14 +202,14 @@ abstract class Resource {
    */
   public function loadReferences(array &$items) {
     if (!empty($this->processingOptions['references'])) {
-      $references = array();
+      $references = [];
 
       // Extract the reference ids from the given entity items.
       foreach ($this->processingOptions['references'] as $field => $info) {
         $bundle = key($info);
 
         if (!isset($references[$bundle])) {
-          $references[$bundle] = array();
+          $references[$bundle] = [];
         }
 
         foreach ($items as &$item) {
@@ -245,7 +245,7 @@ abstract class Resource {
    */
   public function fetchUrlAliases(array $ids) {
     $base = $this->entityType === 'taxonomy_term' ? 'taxonomy/term/' : 'node/';
-    $map = array();
+    $map = [];
     foreach ($ids as $id) {
       $map[$id] = $base . $id;
     }
@@ -393,7 +393,7 @@ abstract class Resource {
    *   Id of the entity to index.
    */
   public function indexItem($id) {
-    $items = $this->getItems(1, 0, array($id));
+    $items = $this->getItems(1, 0, [$id]);
     if (!empty($items)) {
       $this->elasticsearch->indexItems($this->index, $items);
       $this->log("[OK] Successfully indexed the entity with the id {$id}.\n");
@@ -446,7 +446,7 @@ abstract class Resource {
    *   Elasticsearch index type mapping.
    */
   public function getMapping() {
-    return array();
+    return [];
   }
 
   /**

@@ -13,43 +13,43 @@ class Report extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
+  protected $queryOptions = [
+    'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
-    ),
-    'field_joins' => array(
-      'field_status' => array(
+    ],
+    'field_joins' => [
+      'field_status' => [
         'status' => 'value',
-      ),
-      'field_report_date' => array(
+      ],
+      'field_report_date' => [
         'date_original' => 'value',
-      ),
-      'body' => array(
+      ],
+      'body' => [
         'body' => 'value',
         'headline_summary' => 'summary',
-      ),
-      'field_headline' => array(
+      ],
+      'field_headline' => [
         'headline' => 'value',
-      ),
-      'field_headline_title' => array(
+      ],
+      'field_headline_title' => [
         'headline_title' => 'value',
-      ),
-      'field_headline_image' => array(
+      ],
+      'field_headline_image' => [
         'headline_image' => 'image_reference',
-      ),
-      'field_image' => array(
+      ],
+      'field_image' => [
         'image' => 'image_reference',
-      ),
-      'field_file' => array(
+      ],
+      'field_file' => [
         'file' => 'file_reference',
-      ),
-      'field_origin_notes' => array(
+      ],
+      'field_origin_notes' => [
         'origin' => 'value',
-      ),
-    ),
-    'references' => array(
+      ],
+    ],
+    'references' => [
       'field_primary_country' => 'primary_country',
       'field_country' => 'country',
       'field_source' => 'source',
@@ -61,31 +61,31 @@ class Report extends Resource {
       'field_disaster_type' => 'disaster_type',
       'field_vulnerable_groups' => 'vulnerable_groups',
       'field_feature' => 'feature',
-    ),
-  );
+    ],
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = array(
-    'conversion' => array(
-      'body' => array('links', 'html'),
-      'date_created' => array('time'),
-      'date_changed' => array('time'),
-      'date_original' => array('time'),
-      'headline' => array('bool'),
-      'country' => array('primary'),
-      'primary_country' => array('single'),
-    ),
-    'references' => array(
-      'primary_country' => array(
-        'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
-      ),
-      'country' => array(
-        'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
-      ),
-      'source' => array(
-        'source' => array(
+  protected $processingOptions = [
+    'conversion' => [
+      'body' => ['links', 'html'],
+      'date_created' => ['time'],
+      'date_changed' => ['time'],
+      'date_original' => ['time'],
+      'headline' => ['bool'],
+      'country' => ['primary'],
+      'primary_country' => ['single'],
+    ],
+    'references' => [
+      'primary_country' => [
+        'country' => ['id', 'name', 'shortname', 'iso3', 'location'],
+      ],
+      'country' => [
+        'country' => ['id', 'name', 'shortname', 'iso3', 'location'],
+      ],
+      'source' => [
+        'source' => [
           'id',
           'name',
           'shortname',
@@ -94,34 +94,34 @@ class Report extends Resource {
           'type',
           'homepage',
           'disclaimer',
-        ),
-      ),
-      'language' => array(
-        'language' => array('id', 'name', 'code'),
-      ),
-      'theme' => array(
-        'theme' => array('id', 'name'),
-      ),
-      'format' => array(
-        'content_format' => array('id', 'name'),
-      ),
-      'ocha_product' => array(
-        'ocha_product' => array('id', 'name'),
-      ),
-      'disaster' => array(
-        'disaster' => array('id', 'name', 'glide', 'type', 'status'),
-      ),
-      'disaster_type' => array(
-        'disaster_type' => array('id', 'name', 'code'),
-      ),
-      'vulnerable_groups' => array(
-        'vulnerable_groups' => array('id', 'name'),
-      ),
-      'feature' => array(
-        'feature' => array('id', 'name'),
-      ),
-    ),
-  );
+        ],
+      ],
+      'language' => [
+        'language' => ['id', 'name', 'code'],
+      ],
+      'theme' => [
+        'theme' => ['id', 'name'],
+      ],
+      'format' => [
+        'content_format' => ['id', 'name'],
+      ],
+      'ocha_product' => [
+        'ocha_product' => ['id', 'name'],
+      ],
+      'disaster' => [
+        'disaster' => ['id', 'name', 'glide', 'type', 'status'],
+      ],
+      'disaster_type' => [
+        'disaster_type' => ['id', 'name', 'code'],
+      ],
+      'vulnerable_groups' => [
+        'vulnerable_groups' => ['id', 'name'],
+      ],
+      'feature' => [
+        'feature' => ['id', 'name'],
+      ],
+    ],
+  ];
 
   /**
    * {@inheritdoc}
@@ -138,7 +138,7 @@ class Report extends Resource {
       ->addString('body')
       ->addString('body-html', NULL)
       // Dates.
-      ->addDates('date', array('created', 'changed', 'original'))
+      ->addDates('date', ['created', 'changed', 'original'])
       // Headline.
       ->addString('headline.title', TRUE, TRUE)
       ->addString('headline.summary')
@@ -147,19 +147,19 @@ class Report extends Resource {
       ->addTaxonomy('language')
       ->addString('language.code', FALSE)
       // Primary country.
-      ->addTaxonomy('primary_country', array('shortname', 'iso3'))
+      ->addTaxonomy('primary_country', ['shortname', 'iso3'])
       ->addGeoPoint('primary_country.location')
       // Country.
-      ->addTaxonomy('country', array('shortname', 'iso3'))
+      ->addTaxonomy('country', ['shortname', 'iso3'])
       ->addGeoPoint('country.location')
       ->addBoolean('country.primary')
       // Source.
-      ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
+      ->addTaxonomy('source', ['shortname', 'longname', 'spanish_name'])
       ->addString('source.homepage', NULL)
       ->addString('source.disclaimer', NULL)
       ->addTaxonomy('source.type')
       // Disaster.
-      ->addTaxonomy('disaster', array('glide'))
+      ->addTaxonomy('disaster', ['glide'])
       ->addTaxonomy('disaster.type')
       ->addString('disaster.type.code', FALSE)
       ->addBoolean('disaster.type.primary')
@@ -184,11 +184,11 @@ class Report extends Resource {
    */
   public function processItem(&$item) {
     // Handle dates.
-    $item['date'] = array(
+    $item['date'] = [
       'created' => $item['date_created'],
       'changed' => $item['date_changed'],
       'original' => !empty($item['date_original']) ? $item['date_original'] : $item['date_created'],
-    );
+    ];
     unset($item['date_created']);
     unset($item['date_changed']);
     unset($item['date_original']);
@@ -196,7 +196,7 @@ class Report extends Resource {
     // Handle headline.
     if (!empty($item['headline'])) {
       if (!empty($item['headline_title'])) {
-        $headline = array();
+        $headline = [];
         $headline['title'] = $item['headline_title'];
         // Get the summary.
         if (!empty($item['headline_summary'])) {

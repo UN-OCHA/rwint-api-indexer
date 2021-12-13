@@ -12,16 +12,16 @@ class Language extends TaxonomyDefault {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
+  protected $queryOptions = [
+    'fields' => [
       'description' => 'description',
-    ),
-    'field_joins' => array(
-      'field_language_code' => array(
+    ],
+    'field_joins' => [
+      'field_language_code' => [
         'code' => 'value',
-      ),
-    ),
-  );
+      ],
+    ],
+  ];
 
   /**
    * {@inheritdoc}

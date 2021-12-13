@@ -34,10 +34,10 @@ class Metrics {
    *   Time and memory metrics.
    */
   public function get() {
-    return array(
+    return [
       'time' => static::formatTime(microtime(TRUE) - $this->time),
       'memory usage' => static::formatMemory(memory_get_peak_usage(TRUE)),
-    );
+    ];
   }
 
   /**
@@ -76,7 +76,7 @@ class Metrics {
    */
   public static function formatMemory($size) {
     $base = log($size) / log(1024);
-    $suffixes = array("", "k", "M", "G", "T");
+    $suffixes = ["", "k", "M", "G", "T"];
     return pow(1024, $base - floor($base)) . $suffixes[floor($base)];
   }
 

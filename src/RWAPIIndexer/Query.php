@@ -50,7 +50,7 @@ class Query {
    *
    * @var array
    */
-  protected $options = array();
+  protected $options = [];
 
   /**
    * Construct the query handler.
@@ -64,7 +64,7 @@ class Query {
    * @param array $options
    *   Query options.
    */
-  public function __construct(DatabaseConnection $connection, $entity_type, $bundle, array $options = array()) {
+  public function __construct(DatabaseConnection $connection, $entity_type, $bundle, array $options = []) {
     $this->connection = $connection;
     $this->entityType = $entity_type;
     $this->bundle = $bundle;
@@ -321,7 +321,7 @@ class Query {
 
     // Fetch the ids.
     $result = $query->execute();
-    return !empty($result) ? $result->fetchCol() : array();
+    return !empty($result) ? $result->fetchCol() : [];
   }
 
   /**
@@ -339,14 +339,13 @@ class Query {
    */
   public function getItems($limit = NULL, $offset = NULL, array $ids = NULL) {
     $entity_type = $this->entityType;
-    $bundle = $this->bundle;
     $base_table = $this->baseTable;
     $base_field = $this->baseField;
 
     // Get the id of the entities to retrieve.
     $ids = $this->getIds($limit, $offset, $ids);
     if (empty($ids)) {
-      return array();
+      return [];
     }
 
     // Base query.
@@ -422,7 +421,7 @@ class Query {
     // Fetch the items.
     $result = $query->execute();
     if (empty($result)) {
-      return array();
+      return [];
     }
     $items = $result->fetchAllAssoc('id', \PDO::FETCH_ASSOC);
 
@@ -444,7 +443,7 @@ class Query {
   public function loadReferences(array &$items) {
     if (!empty($this->options['references']) && !empty($items)) {
       $ids = array_keys($items);
-      $queries = array();
+      $queries = [];
       foreach ($this->options['references'] as $field_name => $alias) {
         $field_table = 'field_data_' . $field_name;
         $query = new DatabaseQuery($field_table, $field_table, $this->connection);

@@ -40,11 +40,6 @@ class Bundles {
       'type' => 'node',
       'index' => 'book',
     ],
-    'faq' => [
-      'class' => '\RWAPIIndexer\Resources\Faq',
-      'type' => 'node',
-      'index' => 'faq',
-    ],
     'country' => [
       'class' => '\RWAPIIndexer\Resources\Country',
       'type' => 'taxonomy_term',
@@ -77,11 +72,6 @@ class Bundles {
       'type' => 'taxonomy_term',
       'index' => 'disaster_types',
     ],
-    'faq_category' => [
-      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-      'type' => 'taxonomy_term',
-      'index' => 'faq_category',
-    ],
     'feature' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
@@ -107,11 +97,6 @@ class Bundles {
       'type' => 'taxonomy_term',
       'index' => 'organization_types',
     ],
-    /*'region' => array(
-      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-      'type' => 'taxonomy_term',
-      'index' => 'regions',
-    ),*/
     'tags' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',

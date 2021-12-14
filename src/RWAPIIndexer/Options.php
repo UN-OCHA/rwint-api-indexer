@@ -41,7 +41,7 @@ class Options {
    *   Indexing options.
    */
   public function __construct(array $options = []) {
-    // Called from ommand line.
+    // Called from command line.
     if (php_sapi_name() == 'cli') {
       $this->options['log'] = 'echo';
 

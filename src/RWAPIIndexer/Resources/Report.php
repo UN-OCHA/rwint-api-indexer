@@ -14,27 +14,27 @@ class Report extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
+    'status' => 'status',
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
     ],
     'field_joins' => [
-      'field_status' => [
-        'status' => 'value',
-      ],
-      'field_report_date' => [
+      'field_original_publication_date' => [
         'date_original' => 'value',
       ],
       'body' => [
         'body' => 'value',
-        'headline_summary' => 'summary',
       ],
       'field_headline' => [
         'headline' => 'value',
       ],
       'field_headline_title' => [
         'headline_title' => 'value',
+      ],
+      'field_headline_summary' => [
+        'headline_summary' => 'value',
       ],
       'field_headline_image' => [
         'headline_image' => 'image_reference',
@@ -131,7 +131,7 @@ class Report extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
+      ->addStatus()
       ->addString('title', TRUE, TRUE)
       ->addString('origin', FALSE)
       // Body.

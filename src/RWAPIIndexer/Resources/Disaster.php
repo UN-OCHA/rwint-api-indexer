@@ -14,13 +14,11 @@ class Disaster extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
+    'status' => 'status',
     'fields' => [
       'description' => 'description',
     ],
     'field_joins' => [
-      'field_status' => [
-        'status' => 'value',
-      ],
       'field_disaster_date' => [
         'date' => 'value',
       ],
@@ -109,7 +107,7 @@ class Disaster extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
+      ->addStatus()
       ->addDates('date', ['created'])
       ->addBoolean('featured')
       ->addBoolean('current')
@@ -144,8 +142,11 @@ class Disaster extends Resource {
    * {@inheritdoc}
    */
   public function processItem(&$item) {
-    // Current.
-    $item['current'] = !empty($item['status']) && $item['status'] === 'current';
+    // Legacy "current" status.
+    if (!empty($item['status']) && $item['status'] === 'current') {
+      $item['current'] = TRUE;
+      $item['status'] = 'ongoing';
+    }
 
     // Only keep the description if the profile is checked.
     if (empty($item['show_profile'])) {

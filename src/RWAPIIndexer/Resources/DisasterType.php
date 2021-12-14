@@ -17,7 +17,7 @@ class DisasterType extends TaxonomyDefault {
       'description' => 'description',
     ],
     'field_joins' => [
-      'field_abbreviation' => [
+      'field_disaster_type_code' => [
         'code' => 'value',
       ],
     ],

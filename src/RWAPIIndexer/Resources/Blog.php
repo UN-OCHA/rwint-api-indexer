@@ -14,15 +14,13 @@ class Blog extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
+    'status' => 'status',
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
     ],
     'field_joins' => [
-      'field_status' => [
-        'status' => 'value',
-      ],
       'body' => [
         'body' => 'value',
       ],
@@ -65,7 +63,7 @@ class Blog extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
+      ->addStatus()
       ->addString('title', TRUE, TRUE)
       ->addString('author', TRUE, TRUE)
       // Body.

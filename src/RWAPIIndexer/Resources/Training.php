@@ -14,15 +14,13 @@ class Training extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
+    'status' => 'status',
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
     ],
     'field_joins' => [
-      'field_status' => [
-        'status' => 'value',
-      ],
       'field_cost' => [
         'cost' => 'value',
       ],
@@ -31,22 +29,22 @@ class Training extends Resource {
       ],
       'field_training_date' => [
         'date_start' => 'value',
-        'date_end' => 'value2',
+        'date_end' => 'end_value',
       ],
       'body' => [
         'body' => 'value',
       ],
+      'field_link' => [
+        'event_url' => 'uri',
+      ],
       'field_fee_information' => [
         'fee_information' => 'value',
       ],
-      'field_how_to_apply' => [
+      'field_how_to_register' => [
         'how_to_register' => 'value',
       ],
       'field_city' => [
         'city' => 'value',
-      ],
-      'field_file' => [
-        'file' => 'file_reference',
       ],
     ],
     'references' => [
@@ -118,11 +116,13 @@ class Training extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
+      ->addStatus()
       ->addString('title', TRUE, TRUE)
       // Body.
       ->addString('body')
       ->addString('body-html', NULL)
+      // Event URL.
+      ->addString('event_url', FALSE)
       // Fee information.
       ->addString('fee_information')
       // How to register.
@@ -187,14 +187,14 @@ class Training extends Resource {
     unset($item['date_start']);
     unset($item['date_end']);
 
+    // Handle event URL.
+    if (empty($item['event_url'])) {
+      unset($item['event_url']);
+    }
+
     // Handle city. Keep compatibility.
     if (isset($item['city'])) {
       $item['city'] = [['name' => $item['city']]];
-    }
-
-    // Handle File.
-    if ($this->processor->processFile($item['file']) !== TRUE) {
-      unset($item['file']);
     }
 
     // Handle fee information. Remove if cost is free.

@@ -14,15 +14,13 @@ class Book extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
+    'status' => 'status',
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
     ],
     'field_joins' => [
-      'field_status' => [
-        'status' => 'value',
-      ],
       'body' => [
         'body' => 'value',
       ],
@@ -48,13 +46,15 @@ class Book extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
+      ->addStatus()
       ->addString('title', TRUE, TRUE)
       // Body.
       ->addString('body')
       ->addString('body-html', NULL)
       // Dates.
-      ->addDates('date', ['created', 'changed']);
+      ->addDates('date', ['created', 'changed'])
+      // Images.
+      ->addImage('attached_image');
 
     return $mapping->export();
   }
@@ -70,6 +70,14 @@ class Book extends Resource {
     ];
     unset($item['date_created']);
     unset($item['date_changed']);
+
+    // Handle images.
+    if ($this->processor->processImage($item['attached_image']) !== TRUE) {
+      unset($item['attached_image']);
+    }
+    if ($this->processor->processImage($item['image'], TRUE) !== TRUE) {
+      unset($item['image']);
+    }
   }
 
 }

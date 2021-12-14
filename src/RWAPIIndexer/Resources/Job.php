@@ -14,15 +14,13 @@ class Job extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
+    'status' => 'status',
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
     ],
     'field_joins' => [
-      'field_status' => [
-        'status' => 'value',
-      ],
       'field_job_closing_date' => [
         'date_closing' => 'value',
       ],
@@ -34,9 +32,6 @@ class Job extends Resource {
       ],
       'field_city' => [
         'city' => 'value',
-      ],
-      'field_file' => [
-        'file' => 'file_reference',
       ],
     ],
     'references' => [
@@ -102,7 +97,7 @@ class Job extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
+      ->addStatus()
       ->addString('title', TRUE, TRUE)
       // Body.
       ->addString('body')
@@ -153,11 +148,6 @@ class Job extends Resource {
     // Handle city. Keep compatibility.
     if (isset($item['city'])) {
       $item['city'] = [['name' => $item['city']]];
-    }
-
-    // Handle File.
-    if ($this->processor->processFile($item['file']) !== TRUE) {
-      unset($item['file']);
     }
   }
 

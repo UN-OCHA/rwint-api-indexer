@@ -14,13 +14,11 @@ class Source extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
+    'status' => 'status',
     'fields' => [
       'description' => 'description',
     ],
     'field_joins' => [
-      'field_status' => [
-        'status' => 'value',
-      ],
       'field_shortname' => [
         'shortname' => 'value',
       ],
@@ -39,7 +37,7 @@ class Source extends Resource {
       'field_fts_id' => [
         'fts_id' => 'value',
       ],
-      'field_term_image' => [
+      'field_logo' => [
         'logo' => 'image_reference',
       ],
       'field_disclaimer' => [
@@ -87,7 +85,7 @@ class Source extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
+      ->addStatus()
       ->addString('homepage', FALSE)
       ->addString('content_type', FALSE)
       // Names.

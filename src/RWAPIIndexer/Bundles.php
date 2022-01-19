@@ -57,7 +57,7 @@ class Bundles {
     ],
 
     // References.
-    'career_categories' => [
+    'career_category' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'career_categories',
@@ -97,7 +97,7 @@ class Bundles {
       'type' => 'taxonomy_term',
       'index' => 'organization_types',
     ],
-    'tags' => [
+    'tag' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'tags',
@@ -117,7 +117,7 @@ class Bundles {
       'type' => 'taxonomy_term',
       'index' => 'training_types',
     ],
-    'vulnerable_groups' => [
+    'vulnerable_group' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'vulnerable_groups',

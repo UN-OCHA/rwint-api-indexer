@@ -14,11 +14,11 @@ class Training extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
-    'status' => 'status',
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
+      'status' => 'moderation_status',
     ],
     'field_joins' => [
       'field_cost' => [
@@ -55,7 +55,7 @@ class Training extends Resource {
       'field_training_type' => 'type',
       'field_training_format' => 'format',
       'field_training_language' => 'training_language',
-      'field_career_categories' => 'career_categories',
+      'field_career_categories' => 'career_category',
     ],
   ];
 
@@ -103,7 +103,7 @@ class Training extends Resource {
         'language' => ['id', 'name', 'code'],
       ],
       'career_categories' => [
-        'career_categories' => ['id', 'name'],
+        'career_category' => ['id', 'name'],
       ],
     ],
   ];

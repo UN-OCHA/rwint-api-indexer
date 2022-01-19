@@ -244,6 +244,9 @@ abstract class Resource {
    *   Associative array with entity ids as keys and url aliases as values.
    */
   public function fetchUrlAliases(array $ids) {
+    if (empty($ids)) {
+      return [];
+    }
     $base = $this->entityType === 'taxonomy_term' ? '/taxonomy/term/' : '/node/';
     $map = [];
     foreach ($ids as $id) {
@@ -253,8 +256,7 @@ abstract class Resource {
     $query->addField('path_alias', 'path', 'path');
     $query->addField('path_alias', 'alias', 'alias');
     $query->condition('path_alias.path', $map, 'IN');
-    $query->orderBy('path_alias.revision_id', 'ASC');
-    $result = $aliases = $query->execute();
+    $result = $query->execute();
     if (!empty($result)) {
       $aliases = $result->fetchAllKeyed();
       foreach ($map as $id => $path) {

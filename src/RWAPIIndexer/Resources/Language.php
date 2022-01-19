@@ -14,7 +14,8 @@ class Language extends TaxonomyDefault {
    */
   protected $queryOptions = [
     'fields' => [
-      'description' => 'description',
+      'name' => 'name',
+      'description' => 'description__value',
     ],
     'field_joins' => [
       'field_language_code' => [

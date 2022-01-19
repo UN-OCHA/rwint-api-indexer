@@ -14,11 +14,11 @@ class Job extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
-    'status' => 'status',
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
+      'status' => 'moderation_status',
     ],
     'field_joins' => [
       'field_job_closing_date' => [
@@ -41,7 +41,7 @@ class Job extends Resource {
       'field_theme' => 'theme',
       'field_job_type' => 'type',
       'field_job_experience' => 'experience',
-      'field_career_categories' => 'career_categories',
+      'field_career_categories' => 'career_category',
     ],
   ];
 
@@ -84,7 +84,7 @@ class Job extends Resource {
         'job_experience' => ['id', 'name'],
       ],
       'career_categories' => [
-        'career_categories' => ['id', 'name'],
+        'career_category' => ['id', 'name'],
       ],
     ],
   ];

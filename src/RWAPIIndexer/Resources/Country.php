@@ -14,9 +14,10 @@ class Country extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
-    'status' => 'status',
     'fields' => [
-      'description' => 'description',
+      'name' => 'name',
+      'description' => 'description__value',
+      'status' => 'moderation_status',
     ],
     'field_joins' => [
       'field_shortname' => [
@@ -27,9 +28,6 @@ class Country extends Resource {
       ],
       'field_profile' => [
         'show_profile' => 'value',
-      ],
-      'field_featured' => [
-        'featured' => 'value',
       ],
       'field_location' => [
         'latitude' => 'lat',
@@ -108,7 +106,7 @@ class Country extends Resource {
    */
   public function processItem(&$item) {
     // Legacy "current" status.
-    if (!empty($item['status']) && $item['status'] === 'current') {
+    if (!empty($item['status']) && ($item['status'] === 'current' || $item['status'] === 'ongoing')) {
       $item['current'] = TRUE;
       $item['status'] = 'ongoing';
     }

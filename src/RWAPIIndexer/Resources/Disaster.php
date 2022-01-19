@@ -14,9 +14,10 @@ class Disaster extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
-    'status' => 'status',
     'fields' => [
-      'description' => 'description',
+      'name' => 'name',
+      'description' => 'description__value',
+      'status' => 'moderation_status',
     ],
     'field_joins' => [
       'field_disaster_date' => [
@@ -30,9 +31,6 @@ class Disaster extends Resource {
       ],
       'field_profile' => [
         'show_profile' => 'value',
-      ],
-      'field_featured' => [
-        'featured' => 'value',
       ],
     ],
     'references' => [
@@ -143,7 +141,7 @@ class Disaster extends Resource {
    */
   public function processItem(&$item) {
     // Legacy "current" status.
-    if (!empty($item['status']) && $item['status'] === 'current') {
+    if (!empty($item['status']) && ($item['status'] === 'current' || $item['status'] === 'ongoing')) {
       $item['current'] = TRUE;
       $item['status'] = 'ongoing';
     }

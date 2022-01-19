@@ -76,12 +76,15 @@ class Elasticsearch {
             'elision',
           ],
         ],
+      ],
+      'normalizer' => [
         'status' => [
           'type' => 'custom',
-          'tokenizer' => 'whitespace',
+          'char_filter' => [
+            'status_synonyms',
+          ],
           'filter' => [
             'lowercase',
-            'filter_status_synonyms',
           ],
         ],
       ],
@@ -109,15 +112,17 @@ class Elasticsearch {
           'type' => 'stop',
           'stopwords' => ['_english_'],
         ],
-        'filter_status_synonyms' => [
-          'type' => 'synonym',
-          'synonyms' => [
-            'current' => 'ongoing',
-            'on_hold' => 'on-hold',
-            'to_review' => 'to-review',
-            'alert_archive' => 'alert-archive',
-            'draft_archive' => 'draft-archive',
-            'external_archive' => 'external-archive',
+      ],
+      'char_filter' => [
+        'status_synonyms' => [
+          'type' => 'mapping',
+          'mappings' => [
+            'current => ongoing',
+            'on_hold => on-hold',
+            'to_review => to-review',
+            'alert_archive => alert-archive',
+            'draft_archive => draft-archive',
+            'external_archive => external-archive',
           ],
         ],
       ],

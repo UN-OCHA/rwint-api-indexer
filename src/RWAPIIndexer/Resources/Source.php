@@ -14,9 +14,10 @@ class Source extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
-    'status' => 'status',
     'fields' => [
-      'description' => 'description',
+      'name' => 'name',
+      'description' => 'description__value',
+      'status' => 'moderation_status',
     ],
     'field_joins' => [
       'field_shortname' => [
@@ -29,7 +30,7 @@ class Source extends Resource {
         'spanish_name' => 'value',
       ],
       'field_homepage' => [
-        'homepage' => 'url',
+        'homepage' => 'uri',
       ],
       'field_allowed_content_types' => [
         'content_type' => 'multi_value',

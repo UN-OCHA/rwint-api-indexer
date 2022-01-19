@@ -420,16 +420,17 @@ class Query {
               // Join the file managed table.
               $file_managed_table = 'file_managed';
               $file_managed_alias = $file_managed_table . '_' . $field_name;
-              $query->leftJoin($file_managed_table, $file_managed_alias, "{$file_managed_table}.uuid = {$field_table}.{$field_name}_file_uuid");
+              $query->leftJoin($file_managed_table, $file_managed_alias, "{$file_managed_alias}.uuid = {$field_table}.{$field_name}_file_uuid");
 
-              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_fid, CONCAT_WS('###',
+              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_file_uuid, CONCAT_WS('###',
                   {$field_table}.{$field_name}_revision_id,
                   IFNULL({$field_table}.{$field_name}_description, ''),
                   IFNULL({$field_table}.{$field_name}_language, ''),
                   IFNULL({$field_table}.{$field_name}_preview_page, ''),
-                  IFNULL({$file_managed_table}.uri, ''),
-                  IFNULL({$file_managed_table}.filename, ''),
-                  IFNULL({$file_managed_table}.filesize, '')
+                  IFNULL({$file_managed_alias}.uri, ''),
+                  IFNULL({$file_managed_alias}.filename, ''),
+                  IFNULL({$file_managed_alias}.filemime, ''),
+                  IFNULL({$file_managed_alias}.filesize, '')
                 ), NULL) SEPARATOR '%%%')";
               $query->addExpression($expression, $alias);
               break;
@@ -439,14 +440,6 @@ class Query {
           }
         }
       }
-    }
-
-    // Add the status field.
-    if (isset($this->options['status'])) {
-      $moderation_table = 'content_moderation_state_field_data';
-      $query->innerJoin($moderation_table, $moderation_table, '{$moderation_table}.content_entity_id = {$base_table}.{$base_field}');
-      $query->condition($moderation_table . '.content_entity_type_id', $this->entityType, '=');
-      $query->addField($moderation_table . '.moderation_state', 'status');
     }
 
     // Fetch the items.

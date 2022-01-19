@@ -14,11 +14,11 @@ class Report extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
-    'status' => 'status',
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
+      'status' => 'moderation_status',
     ],
     'field_joins' => [
       'field_original_publication_date' => [
@@ -59,7 +59,7 @@ class Report extends Resource {
       'field_ocha_product' => 'ocha_product',
       'field_disaster' => 'disaster',
       'field_disaster_type' => 'disaster_type',
-      'field_vulnerable_groups' => 'vulnerable_groups',
+      'field_vulnerable_groups' => 'vulnerable_group',
       'field_feature' => 'feature',
     ],
   ];
@@ -115,7 +115,7 @@ class Report extends Resource {
         'disaster_type' => ['id', 'name', 'code'],
       ],
       'vulnerable_groups' => [
-        'vulnerable_groups' => ['id', 'name'],
+        'vulnerable_group' => ['id', 'name'],
       ],
       'feature' => [
         'feature' => ['id', 'name'],

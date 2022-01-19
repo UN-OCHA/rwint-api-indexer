@@ -15,7 +15,8 @@ class TaxonomyDefault extends Resource {
    */
   protected $queryOptions = [
     'fields' => [
-      'description' => 'description',
+      'name' => 'name',
+      'description' => 'description__value',
     ],
   ];
 

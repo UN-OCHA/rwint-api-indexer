@@ -83,17 +83,13 @@ class Mapping {
   /**
    * Add the status field definition to the mapping.
    *
-   * @param string $field
-   *   Field Name.
-   *
    * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
-  public function addStatus($field) {
+  public function addStatus() {
     $this->addFieldMapping('status', [
       'type' => 'keyword',
-      'analyzer' => 'status',
-      'search_analyzer' => 'status',
+      'normalizer' => 'status',
     ]);
     return $this;
   }

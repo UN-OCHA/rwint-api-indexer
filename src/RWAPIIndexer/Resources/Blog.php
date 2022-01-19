@@ -14,11 +14,11 @@ class Blog extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
-    'status' => 'status',
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
+      'status' => 'moderation_status',
     ],
     'field_joins' => [
       'body' => [
@@ -35,7 +35,7 @@ class Blog extends Resource {
       ],
     ],
     'references' => [
-      'field_tags' => 'tags',
+      'field_tags' => 'tag',
     ],
   ];
 
@@ -50,7 +50,7 @@ class Blog extends Resource {
     ],
     'references' => [
       'tags' => [
-        'tags' => ['id', 'name'],
+        'tag' => ['id', 'name'],
       ],
     ],
   ];

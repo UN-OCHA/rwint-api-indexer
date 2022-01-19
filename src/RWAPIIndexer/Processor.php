@@ -157,7 +157,13 @@ class Processor {
 
         // Convert time in seconds to milliseconds.
         case 'time':
-          $item[$key] = $item[$key] * 1000;
+          if (is_numeric($item[$key])) {
+            $item[$key] = $item[$key] * 1000;
+          }
+          else {
+            $date = new \DateTime($item[$key], new \DateTimeZone('UTC'));
+            $item[$key] = $date->getTimestamp() * 1000;
+          }
           break;
 
         // Convert links to absolute links.
@@ -595,15 +601,15 @@ class Processor {
           $id,
           $description,
           $langcode,
+          $preview_page,
           $uri,
           $filename,
           $mimetype,
-          $filesize,
-          $preview_page
+          $filesize
         ) = explode('###', $item);
 
         // Skip private files.
-        if (strpos($path, 'private://') === 0) {
+        if (strpos($uri, 'private://') === 0) {
           continue;
         }
 
@@ -646,6 +652,7 @@ class Processor {
         // PDF attachment.
         if ($array['mimetype'] === 'application/pdf' && !empty($preview_page)) {
           $preview_uri = str_replace('/attachments/', '/previews/', $uri);
+          $preview_uri = preg_replace('#\.pdf$#i', '.png', $preview_uri);
           $array['preview'] = [
             'url' => $this->processFilePath($preview_uri),
             'url-large' => $this->processFilePath($preview_uri, 'large'),
@@ -697,7 +704,7 @@ class Processor {
    */
   public function processFilePath($path, $style = '') {
     if (strpos($path, '/attachments/') !== FALSE) {
-      $base = $this->website;
+      $base = $this->website . '/';
     }
     else {
       $base = $this->publicSchemeUrl;

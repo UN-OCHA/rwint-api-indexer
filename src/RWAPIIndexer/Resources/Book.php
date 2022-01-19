@@ -14,11 +14,11 @@ class Book extends Resource {
    * {@inheritdoc}
    */
   protected $queryOptions = [
-    'status' => 'status',
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
+      'status' => 'moderation_status',
     ],
     'field_joins' => [
       'body' => [

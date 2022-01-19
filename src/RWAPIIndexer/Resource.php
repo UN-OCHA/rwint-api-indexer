@@ -36,14 +36,14 @@ abstract class Resource {
    *
    * @var array
    */
-  protected $queryOptions = array();
+  protected $queryOptions = [];
 
   /**
    * Options used to process the entity items before indexing.
    *
    * @var array
    */
-  protected $processingOptions = array();
+  protected $processingOptions = [];
 
   /**
    * Elasticsearch handler.
@@ -131,7 +131,7 @@ abstract class Resource {
    *   Query conditions.
    */
   public function parseFilters($filters) {
-    $conditions = array();
+    $conditions = [];
     if (!empty($filters)) {
       foreach (explode('+', $filters) as $filter) {
         list($field, $value) = explode(':', $filter, 2);
@@ -159,7 +159,7 @@ abstract class Resource {
    *   Bundles of the references for this entity type/bundle.
    */
   public function getReferences() {
-    $references = array();
+    $references = [];
     if (isset($this->processingOptions['references'])) {
       foreach ($this->processingOptions['references'] as $reference) {
         $references[] = key($reference);
@@ -202,14 +202,14 @@ abstract class Resource {
    */
   public function loadReferences(array &$items) {
     if (!empty($this->processingOptions['references'])) {
-      $references = array();
+      $references = [];
 
       // Extract the reference ids from the given entity items.
       foreach ($this->processingOptions['references'] as $field => $info) {
         $bundle = key($info);
 
         if (!isset($references[$bundle])) {
-          $references[$bundle] = array();
+          $references[$bundle] = [];
         }
 
         foreach ($items as &$item) {
@@ -244,22 +244,24 @@ abstract class Resource {
    *   Associative array with entity ids as keys and url aliases as values.
    */
   public function fetchUrlAliases(array $ids) {
-    $base = $this->entityType === 'taxonomy_term' ? 'taxonomy/term/' : 'node/';
-    $map = array();
+    if (empty($ids)) {
+      return [];
+    }
+    $base = $this->entityType === 'taxonomy_term' ? '/taxonomy/term/' : '/node/';
+    $map = [];
     foreach ($ids as $id) {
       $map[$id] = $base . $id;
     }
-    $query = new DatabaseQuery('url_alias', 'url_alias', $this->connection);
-    $query->addField('url_alias', 'source', 'source');
-    $query->addField('url_alias', 'alias', 'alias');
-    $query->condition('url_alias.source', $map, 'IN');
-    $query->orderBy('url_alias.pid', 'ASC');
-    $result = $aliases = $query->execute();
+    $query = new DatabaseQuery('path_alias', 'path_alias', $this->connection);
+    $query->addField('path_alias', 'path', 'path');
+    $query->addField('path_alias', 'alias', 'alias');
+    $query->condition('path_alias.path', $map, 'IN');
+    $result = $query->execute();
     if (!empty($result)) {
       $aliases = $result->fetchAllKeyed();
-      foreach ($map as $id => $source) {
-        if (isset($aliases[$source])) {
-          $map[$id] = $aliases[$source];
+      foreach ($map as $id => $path) {
+        if (isset($aliases[$path])) {
+          $map[$id] = $aliases[$path];
         }
       }
     }
@@ -290,6 +292,15 @@ abstract class Resource {
 
     $url_aliases = $this->fetchUrlAliases(array_keys($items));
 
+    $statuses = [
+      'current' => 'ongoing',
+      'on_hold' => 'on-hold',
+      'to_review' => 'to-review',
+      'alert_archive' => 'alert-archive',
+      'draft_archive' => 'draft-archive',
+      'external_archive' => 'external-archive',
+    ];
+
     foreach ($items as $id => &$item) {
       // Add the entity link to the main website.
       $this->processor->processEntityUrl($this->entityType, $item, $url_aliases[$id]);
@@ -300,6 +311,11 @@ abstract class Resource {
       // Add timestamp.
       $date = new \DateTime('now', new \DateTimeZone('UTC'));
       $item['timestamp'] = $date->format(\DateTime::ATOM);
+
+      // Convert status.
+      if (isset($item['status'], $statuses[$item['status']])) {
+        $item['status'] = $statuses[$item['status']];
+      }
 
       // Generic conversion and reference handling.
       foreach ($item as $key => $value) {
@@ -393,7 +409,7 @@ abstract class Resource {
    *   Id of the entity to index.
    */
   public function indexItem($id) {
-    $items = $this->getItems(1, 0, array($id));
+    $items = $this->getItems(1, 0, [$id]);
     if (!empty($items)) {
       $this->elasticsearch->indexItems($this->index, $items);
       $this->log("[OK] Successfully indexed the entity with the id {$id}.\n");
@@ -446,7 +462,7 @@ abstract class Resource {
    *   Elasticsearch index type mapping.
    */
   public function getMapping() {
-    return array();
+    return [];
   }
 
   /**

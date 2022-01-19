@@ -31,15 +31,17 @@ Usage: php PATH/TO/Indexer.php [options] <entity-bundle>
 Library
 -------
 
-Basically, you'll want to include the autoloader:
+Add the library with composer:
 
 ```php
-require_once "PATH/TO/LIBRARY/vendor/autoload.php";
+composer require "reliefweb/api-indexer"
 ```
 
 And then create a new Manager, providing an options array (see above for the options using their fullname):
 
 ```php
+use RWAPIIndexer\Manager;
+
 // Indexing options to index all reports.
 $options = array(
   'bundle' => 'report',
@@ -70,9 +72,4 @@ $manager->execute();
 Markdown
 --------
 
-It's recommended to have php-hoedown installed. If not, the indexer will default to Michel Fortin's Markdown library which is much slower.
-
-Dependencies
-------------
-
-Ensure no dev dependencies are added when committed by running `composer install --no-dev -o`.
+It's recommended to have php-hoedown installed. If not, the indexer will default to the PHP League CommonMark library which is slower.

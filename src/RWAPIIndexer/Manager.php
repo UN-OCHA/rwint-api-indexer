@@ -57,7 +57,7 @@ class Manager {
    * @param array $options
    *   Indexing options.
    */
-  public function __construct(array $options = array()) {
+  public function __construct(array $options = []) {
     $this->metrics = new Metrics();
 
     // Indexing options.

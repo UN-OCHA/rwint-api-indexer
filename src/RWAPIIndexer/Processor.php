@@ -2,9 +2,14 @@
 
 namespace RWAPIIndexer;
 
+use League\CommonMark\Environment;
+use League\CommonMark\Extension\Attributes\AttributesExtension;
+use League\CommonMark\Extension\Autolink\AutolinkExtension;
+use League\CommonMark\Extension\ExternalLink\ExternalLinkExtension;
+use League\CommonMark\Extension\Table\TableExtension;
+use League\CommonMark\MarkdownConverter;
 use RWAPIIndexer\Database\DatabaseConnection;
 use RWAPIIndexer\Database\Query as DatabaseQuery;
-use Michelf\Markdown;
 
 /**
  * Entity field processor class.
@@ -19,6 +24,13 @@ class Processor {
   protected $website = '';
 
   /**
+   * Host name of the website URL.
+   *
+   * @var string
+   */
+  protected $hostname = '';
+
+  /**
    * References handler.
    *
    * @var \RWAPIIndexer\References
@@ -30,7 +42,7 @@ class Processor {
    *
    * @var string
    */
-  protected $markdown = 'markdown';
+  protected $markdown = '';
 
   /**
    * Base public scheme for URLs.
@@ -44,7 +56,7 @@ class Processor {
    *
    * @var array
    */
-  protected $mimeTypes = array(
+  protected $mimeTypes = [
     'txt' => 'text/plain',
     'htm' => 'text/html',
     'html' => 'text/html',
@@ -91,7 +103,7 @@ class Processor {
     // Open office.
     'odt' => 'application/vnd.oasis.opendocument.text',
     'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
-  );
+  ];
 
   /**
    * Check if the Markdown function is available.
@@ -103,17 +115,15 @@ class Processor {
    */
   public function __construct($website, References $references) {
     $this->website = $website;
+    $this->hostname = preg_replace('#^https?://#', '', $this->website);
     $this->references = $references;
     $this->publicSchemeUrl = $website . '/sites/reliefweb.int/files/';
     // Markdown library.
     if (class_exists('\Hoedown')) {
       $this->markdown = 'hoedown';
     }
-    elseif (class_exists('\Sundown')) {
-      $this->markdown = 'sundown';
-    }
-    else {
-      $this->markdown = 'markdown';
+    elseif (class_exists('\League\CommonMark\MarkdownConverter')) {
+      $this->markdown = 'commonmark';
     }
   }
 
@@ -147,7 +157,13 @@ class Processor {
 
         // Convert time in seconds to milliseconds.
         case 'time':
-          $item[$key] = $item[$key] * 1000;
+          if (is_numeric($item[$key])) {
+            $item[$key] = $item[$key] * 1000;
+          }
+          else {
+            $date = new \DateTime($item[$key], new \DateTimeZone('UTC'));
+            $item[$key] = $date->getTimestamp() * 1000;
+          }
           break;
 
         // Convert links to absolute links.
@@ -187,7 +203,7 @@ class Processor {
 
         // Explode a concatenated mutli integer field.
         case 'multi_int':
-          $values = array();
+          $values = [];
           foreach (explode('%%%', $item[$key]) as $data) {
             $values[] = (int) $data;
           }
@@ -252,7 +268,7 @@ class Processor {
     if ($this->references->has($bundle)) {
       $fields = $definition[$bundle];
 
-      $array = array();
+      $array = [];
       foreach ($item[$key] as $id) {
         $term = $this->references->getItem($bundle, $id, $fields);
         if (isset($term)) {
@@ -307,18 +323,45 @@ class Processor {
         }
         return $hoedown->parse($text);
 
-      case 'sundown':
-        $sundown = new \Sundown($text, array(
-          'tables' => TRUE,
-          'no_intra_emphasis' => TRUE,
-          'fenced_code_blocks' => TRUE,
-          'autolink' => TRUE,
-          'safe_links_only' => TRUE,
-        ));
-        return $sundown->toHTML();
+      case 'commonmark':
+        // Add a space before the heading '#' which is fine as ReliefWeb doesn't
+        // use hash tags.
+        // @see https://talk.commonmark.org/t/heading-not-working/819/42
+        $text = preg_replace('/^(#+)([^# ])/m', '$1 $2', $text);
 
-      case 'markdown':
-        return Markdown::defaultTransform($text);
+        // Obtain a pre-configured Environment with all the CommonMark
+        // parsers/renderers ready-to-go.
+        $environment = Environment::createCommonMarkEnvironment();
+
+        // Configuration to add attributes to external links.
+        $external_link_config = [
+          'external_link' => [
+            'internal_hosts' => [
+              $this->hostname,
+              'reliefweb.int',
+            ],
+            'open_in_new_window' => TRUE,
+          ],
+        ];
+        $environment->mergeConfig($external_link_config);
+
+        // Add the extension to convert external links.
+        $environment->addExtension(new ExternalLinkExtension());
+
+        // Add the extension to convert ID attributes.
+        $environment->addExtension(new AttributesExtension());
+
+        // Add the extension to convert links.
+        $environment->addExtension(new AutolinkExtension());
+
+        // Add the extension to convert the tables.
+        $environment->addExtension(new TableExtension());
+
+        // Create the converter with the extension(s).
+        $converter = new MarkdownConverter($environment);
+
+        // Convert to HTML.
+        return $converter->convertToHtml($text);
     }
     return '';
   }
@@ -335,10 +378,14 @@ class Processor {
    *   Processed text.
    */
   public function processIframes($text) {
-    return preg_replace_callback("/\[iframe(?:[:](\d+))?(?:[:](\d+))?\]\(([^\)]+)\)/", static function ($data) {
-      $width = !empty($data[1]) ? $data[1] : "1000";
-      $height = !empty($data[2]) ? $data[2] : "400";
-      return '<iframe width="' . $width . '" height="' . $height . '" src="' . $data[3] . '" frameborder="0" allowfullscreen></iframe>';
+    $pattern = "/\[iframe(?:[:](?<width>\d+))?(?:[:x](?<height>\d+))?(?:[ ]+\"?(?<title>[^\"\]]+)\"?)?\](\((?<url>[^\)]+)\))?/";
+    return preg_replace_callback($pattern, static function ($data) {
+      $width = !empty($data['width']) ? $data['width'] : '1000';
+      $height = !empty($data['height']) ? $data['height'] : '400';
+      $title = !empty($data['title']) ? $data['title'] : 'iframe';
+      $url = $data['url'];
+
+      return '<iframe width="' . $width . '" height="' . $height . '" src="' . $data['url'] . '" frameborder="0" allowfullscreen></iframe>';
     }, $text);
   }
 
@@ -359,7 +406,7 @@ class Processor {
    *   Cleaned-up HTML.
    */
   public function processHtml($html, $embedded = FALSE) {
-    $tags = array(
+    $tags = [
       'div',
       'span',
       'br',
@@ -393,16 +440,38 @@ class Processor {
       'tr',
       'sup',
       'sub',
-    );
+    ];
 
     // Add iframe and image tags to the list of allowed tags.
     if ($embedded) {
-      $tags = array_merge($tags, array('iframe', 'img'));
+      $tags = array_merge($tags, ['iframe', 'img']);
+    }
+
+    return static::filterXss($html, $tags);
+  }
+
+  /**
+   * Filters HTML to prevent cross-site-scripting (XSS) vulnerabilities.
+   *
+   * @param string $html
+   *   HTML text.
+   * @param array $tags
+   *   Allowed HTML tags.
+   *
+   * @return string
+   *   Filtered HTML.
+   */
+  protected static function filterXss($html, array $tags) {
+    static $drupal_filter_xss;
+
+    if (!isset($drupal_filter_xss)) {
+      $drupal_filter_xss = method_exists('\Drupal\Component\Utility\Xss', 'filter');
     }
 
     // Use Drupal filter_xss function if available.
-    if (function_exists('filter_xss')) {
-      return filter_xss($html, $tags);
+    if ($drupal_filter_xss) {
+      // phpcs:ignore
+      return \Drupal\Component\Utility\Xss::filter($html, $tags);
     }
     else {
       return strip_tags($html, '<' . implode('><', $tags) . '>');
@@ -422,7 +491,7 @@ class Processor {
   public function processEntityUrl($entity_type, array &$item, $alias) {
     $item['url'] = $this->website . '/' . str_replace('_', '/', $entity_type) . '/' . $item['id'];
     if (!empty($alias)) {
-      $item['url_alias'] = $this->website . '/' . $this->encodePath($alias);
+      $item['url_alias'] = $this->website . '/' . ltrim($this->encodePath($alias), '/');
     }
   }
 
@@ -435,8 +504,8 @@ class Processor {
    * @return string
    *   Absolute URL.
    */
-  public function processEnprocessRelativeUrl($url) {
-    return $this->website . $this->encodePath($url);
+  public function processEntityRelativeUrl($url) {
+    return $this->website . '/' . ltrim($this->encodePath($url), '/');
   }
 
   /**
@@ -456,29 +525,45 @@ class Processor {
    */
   public function processImage(&$field, $single = FALSE, $meta = TRUE, $styles = TRUE) {
     if (isset($field) && !empty($field)) {
-      $items = array();
+      $items = [];
       foreach (explode('%%%', $field) as $item) {
-        $parts = explode('###', $item);
+        list(
+          $id,
+          $width,
+          $height,
+          $uri,
+          $filename,
+          $mimetype,
+          $filesize,
+          $copyright,
+          $caption
+        ) = explode('###', $item);
 
-        $array = array(
-          'id' => $parts[0],
-          'width' => $parts[3],
-          'height' => $parts[4],
-          'url' => $this->processFilePath($parts[5]),
-          'filename' => $parts[6],
-          'mimetype' => $this->getMimeType($parts[6]),
-          'filesize' => $parts[7],
-        );
+        // Update the mime type if necessary. Some old content have the wrong
+        // one.
+        if (empty($mimetype) || $mimetype === 'application/octet-stream') {
+          $mimetype = $this->getMimeType($filename);
+        }
+
+        $array = [
+          'id' => $id,
+          'width' => $width,
+          'height' => $height,
+          'url' => $this->processFilePath($uri),
+          'filename' => $filename,
+          'mimetype' => $mimetype,
+          'filesize' => $filesize,
+        ];
 
         if (!empty($meta)) {
-          $array['copyright'] = preg_replace('/^@+/', '', $parts[1]);
-          $array['caption'] = $parts[2];
+          $array['copyright'] = preg_replace('/^@+/', '', $copyright);
+          $array['caption'] = $caption;
         }
 
         if (!empty($styles)) {
-          $array['url-large'] = $this->processFilePath($parts[5], 'attachment-large');
-          $array['url-small'] = $this->processFilePath($parts[5], 'attachment-small');
-          $array['url-thumb'] = $this->processFilePath($parts[5], 'm');
+          $array['url-large'] = $this->processFilePath($uri, 'large');
+          $array['url-small'] = $this->processFilePath($uri, 'small');
+          $array['url-thumb'] = $this->processFilePath($uri, 'thumbnail');
         }
 
         foreach ($array as $key => $value) {
@@ -510,31 +595,70 @@ class Processor {
    */
   public function processFile(&$field, $single = FALSE) {
     if (isset($field) && !empty($field)) {
-      $items = array();
+      $items = [];
       foreach (explode('%%%', $field) as $item) {
-        $parts = explode('###', $item);
+        list(
+          $id,
+          $description,
+          $langcode,
+          $preview_page,
+          $uri,
+          $filename,
+          $mimetype,
+          $filesize
+        ) = explode('###', $item);
 
-        $array = array(
-          'id' => $parts[0],
-          'description' => preg_replace('/\|(\d+)\|(0|90|-90)$/', '', $parts[1]),
-          'url' => $this->processFilePath($parts[2]),
-          'filename' => $parts[3],
-          'mimetype' => $this->getMimeType($parts[3]),
-          'filesize' => $parts[4],
-        );
+        // Skip private files.
+        if (strpos($uri, 'private://') === 0) {
+          continue;
+        }
+
+        $description = trim($description);
+
+        // Add the language version to the description for backward
+        // compatibility.
+        $language_versions = [
+          'ar' => 'Arabic version',
+          'en' => 'English version',
+          'es' => 'Spanish version',
+          'fr' => 'French version',
+          'ot' => 'Other version',
+          'ru' => 'Russian version',
+        ];
+        if (isset($language_versions[$langcode])) {
+          if (!empty($description)) {
+            $description .= ' - ' . $language_versions[$langcode];
+          }
+          else {
+            $description = $language_versions[$langcode];
+          }
+        }
+
+        // Update the mime type if necessary. Some old content have the wrong
+        // one.
+        if (empty($mimetype) || $mimetype === 'application/octet-stream') {
+          $mimetype = $this->getMimeType($filename);
+        }
+
+        $array = [
+          'id' => $id,
+          'description' => $description,
+          'url' => $this->processFilePath($uri),
+          'filename' => $filename,
+          'mimetype' => $mimetype,
+          'filesize' => $filesize,
+        ];
 
         // PDF attachment.
-        if ($array['mimetype'] === 'application/pdf' && preg_match('/\|(\d+)\|(0|90|-90)$/', $parts[1]) === 1) {
-          $directory = dirname($parts[2]) . '-pdf-previews';
-          $filename = basename(urldecode($parts[3]), '.pdf');
-          $filename = str_replace('%', '', $filename);
-          $filename = $directory . '/' . $parts[0] . '-' . $filename . '.png';
-          $array['preview'] = array(
-            'url' => $this->processFilePath($filename),
-            'url-large' => $this->processFilePath($filename, 'attachment-large'),
-            'url-small' => $this->processFilePath($filename, 'attachment-small'),
-            'url-thumb' => $this->processFilePath($filename, 'm'),
-          );
+        if ($array['mimetype'] === 'application/pdf' && !empty($preview_page)) {
+          $preview_uri = str_replace('/attachments/', '/previews/', $uri);
+          $preview_uri = preg_replace('#\.pdf$#i', '.png', $preview_uri);
+          $array['preview'] = [
+            'url' => $this->processFilePath($preview_uri),
+            'url-large' => $this->processFilePath($preview_uri, 'large'),
+            'url-small' => $this->processFilePath($preview_uri, 'small'),
+            'url-thumb' => $this->processFilePath($preview_uri, 'thumbnail'),
+          ];
         }
 
         foreach ($array as $key => $value) {
@@ -563,9 +687,7 @@ class Processor {
    *   Mime type.
    */
   public function getMimeType($filename) {
-    $extension = explode('.', $filename);
-    $extension = array_pop($extension);
-    $extension = strtolower($extension);
+    $extension = strtolower(pathinfo($filename, \PATHINFO_EXTENSION));
     return isset($this->mimeTypes[$extension]) ? $this->mimeTypes[$extension] : 'application/octet-stream';
   }
 
@@ -581,7 +703,12 @@ class Processor {
    *   File URL.
    */
   public function processFilePath($path, $style = '') {
-    $base = $this->publicSchemeUrl;
+    if (strpos($path, '/attachments/') !== FALSE) {
+      $base = $this->website . '/';
+    }
+    else {
+      $base = $this->publicSchemeUrl;
+    }
     if (!empty($style)) {
       $base .= 'styles/' . $style . '/public/';
     }
@@ -612,8 +739,8 @@ class Processor {
    *   Definition of the profile sections.
    */
   public function processProfile(DatabaseConnection $connection, array &$item, array $sections) {
-    $description = array();
-    $profile = array();
+    $description = [];
+    $profile = [];
 
     // The actual description comes first.
     if (!empty($item['description'])) {
@@ -630,16 +757,15 @@ class Processor {
       $use_image = !empty($info['image']);
       $image_field = !empty($info['internal']) ? 'cover' : 'logo';
 
-      $links = array();
-      $section = array();
-      $table = 'field_data_field_' . $id;
+      $links = [];
+      $section = [];
+      $table = $entity_type . '__field_' . $id;
 
       $query = new DatabaseQuery($table, $table, $connection);
       $query->addField($table, 'field_' . $id . '_url', 'url');
       $query->addField($table, 'field_' . $id . '_title', 'title');
       $query->addField($table, 'field_' . $id . '_image', $image_field);
       $query->addField($table, 'field_' . $id . '_active', 'active');
-      $query->condition($table . '.entity_type', $entity_type);
       $query->condition($table . '.entity_id', $item['id']);
       // Reverse order so that newer links (higher delta) are first.
       $query->orderBy($table . '.delta', 'DESC');
@@ -666,7 +792,7 @@ class Processor {
 
           // Transform internal urls to absolute urls.
           if (strpos($link['url'], '/node') === 0) {
-            $link['url'] = $this->processEnprocessRelativeUrl($link['url']);
+            $link['url'] = $this->processEntityRelativeUrl($link['url']);
             $internal = TRUE;
           }
 
@@ -676,7 +802,7 @@ class Processor {
           }
           // Expand internal images.
           elseif ($internal) {
-            $link[$image_field] = $this->processFilePath($link[$image_field], 'attachment-small');
+            $link[$image_field] = $this->processFilePath($link[$image_field], 'small');
           }
 
           // Set the title or remove it.
@@ -722,7 +848,7 @@ class Processor {
 
         // Add the links to the profile.
         if (!empty($links)) {
-          $profile[$id] = array('title' => $label) + $links;
+          $profile[$id] = ['title' => $label] + $links;
         }
       }
     }
@@ -731,7 +857,7 @@ class Processor {
     if (!empty($description)) {
       $item['description'] = trim(implode("\n", $description));
       // Convert markdown.
-      $this->processConversion(array('html'), $item, 'description');
+      $this->processConversion(['html'], $item, 'description');
     }
     else {
       unset($item['description']);
@@ -742,7 +868,7 @@ class Processor {
       $item['profile'] = $profile;
       // Convert markdown.
       if (!empty($item['profile']['overview'])) {
-        $this->processConversion(array('html'), $item['profile'], 'overview');
+        $this->processConversion(['html'], $item['profile'], 'overview');
       }
     }
   }

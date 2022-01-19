@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="ReliefWeb">
+  <description>ReliefWeb - Drupal coding standard.</description>
+
+  <file>.</file>
+  <arg name="extensions" value="php"/>
+
+  <rule ref="Drupal" />
+  <rule ref="DrupalPractice" />
+</ruleset>

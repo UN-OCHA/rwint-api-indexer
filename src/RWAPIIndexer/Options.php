@@ -12,7 +12,7 @@ class Options {
    *
    * @var array
    */
-  protected $options = array(
+  protected $options = [
     'bundle' => '',
     'elasticsearch' => 'http://127.0.0.1:9200',
     'mysql-host' => 'localhost',
@@ -32,7 +32,7 @@ class Options {
     'alias' => FALSE,
     'alias-only' => FALSE,
     'log' => '',
-  );
+  ];
 
   /**
    * Construct the Options handler.
@@ -40,8 +40,8 @@ class Options {
    * @param array $options
    *   Indexing options.
    */
-  public function __construct(array $options = array()) {
-    // Called from ommand line.
+  public function __construct(array $options = []) {
+    // Called from command line.
     if (php_sapi_name() == 'cli') {
       $this->options['log'] = 'echo';
 
@@ -238,91 +238,91 @@ class Options {
    *   Options to validate.
    */
   public function validateOptions(array $options) {
-    $results = filter_var_array($options, array(
-      'bundle' => array(
+    $results = filter_var_array($options, [
+      'bundle' => [
         'filter' => FILTER_CALLBACK,
-        'options' => array($this, 'validateBundle'),
+        'options' => [$this, 'validateBundle'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'elasticsearch' => array(
+      ],
+      'elasticsearch' => [
         'filter' => FILTER_VALIDATE_URL,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'mysql-host' => array(
+      ],
+      'mysql-host' => [
         'filter' => FILTER_CALLBACK,
-        'options' => array($this, 'validateMysqlHost'),
+        'options' => [$this, 'validateMysqlHost'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'mysql-port' => array(
+      ],
+      'mysql-port' => [
         'filter'    => FILTER_VALIDATE_INT,
-        'options'   => array('min_range' => 1, 'max_range' => 65535),
+        'options'   => ['min_range' => 1, 'max_range' => 65535],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'mysql-user' => array(
+      ],
+      'mysql-user' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^\S+$/'),
+        'options' => ['regexp' => '/^\S+$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'mysql-pass' => array(
+      ],
+      'mysql-pass' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^\S*$/'),
+        'options' => ['regexp' => '/^\S*$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'database' => array(
+      ],
+      'database' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^[a-zA-Z0-9_-]*$/'),
+        'options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'base-index-name' => array(
+      ],
+      'base-index-name' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^[a-zA-Z0-9_-]*$/'),
+        'options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'tag' => array(
+      ],
+      'tag' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^[a-zA-Z0-9_-]*$/'),
+        'options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'website' => array(
+      ],
+      'website' => [
         'filter' => FILTER_VALIDATE_URL,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'limit' => array(
+      ],
+      'limit' => [
         'filter' => FILTER_VALIDATE_INT,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'offset' => array(
+      ],
+      'offset' => [
         'filter' => FILTER_VALIDATE_INT,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'filter' => array(
+      ],
+      'filter' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^(([a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+)*)([+][a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+)*)*)*$/'),
+        'options' => ['regexp' => '/^(([a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+)*)([+][a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+)*)*)*$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'chunk-size' => array(
+      ],
+      'chunk-size' => [
         'filter'    => FILTER_VALIDATE_INT,
-        'options'   => array('min_range' => 1, 'max_range' => 1000),
+        'options'   => ['min_range' => 1, 'max_range' => 1000],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'id' => array(
+      ],
+      'id' => [
         'filter'    => FILTER_VALIDATE_INT,
-        'options'   => array('min_range' => 0),
+        'options'   => ['min_range' => 0],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'remove' => array(
+      ],
+      'remove' => [
         'filter' => FILTER_VALIDATE_BOOLEAN,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'alias' => array(
+      ],
+      'alias' => [
         'filter' => FILTER_VALIDATE_BOOLEAN,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'alias-only' => array(
+      ],
+      'alias-only' => [
         'filter' => FILTER_VALIDATE_BOOLEAN,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-    ));
+      ],
+    ]);
 
     foreach ($results as $key => $value) {
       if (is_null($value)) {

@@ -36,7 +36,7 @@ class Query {
    *
    * @var array
    */
-  private $parts = array();
+  private $parts = [];
 
   /**
    * Construct a query object.
@@ -158,7 +158,7 @@ class Query {
   public function condition($field, $value, $operator = '=') {
     switch ($operator) {
       case 'IN':
-        $values = array();
+        $values = [];
         foreach ((array) $value as $data) {
           $values[] = $this->connection->quote($data);
         }
@@ -237,7 +237,7 @@ class Query {
    */
   public function build() {
     // Select.
-    $query = array('SELECT');
+    $query = ['SELECT'];
 
     // Fields.
     if (!empty($this->parts['count'])) {

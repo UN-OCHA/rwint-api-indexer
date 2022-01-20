@@ -403,12 +403,11 @@ class Query {
 
               $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_target_id, CONCAT_WS('###',
                   {$field_table}.{$field_name}_target_id,
-                  IFNULL({$media_image_alias}.{$media_image_field}_alt, ''),
-                  IFNULL({$media_image_alias}.{$media_image_field}_title, ''),
                   IFNULL({$media_image_alias}.{$media_image_field}_width, ''),
                   IFNULL({$media_image_alias}.{$media_image_field}_height, ''),
                   IFNULL({$file_managed_alias}.uri, ''),
                   IFNULL({$file_managed_alias}.filename, ''),
+                  IFNULL({$file_managed_alias}.filemime, ''),
                   IFNULL({$file_managed_alias}.filesize, ''),
                   IFNULL({$media_copyright_alias}.{$media_copyright_field}_value, ''),
                   IFNULL({$media_description_alias}.{$media_description_field}_value, '')

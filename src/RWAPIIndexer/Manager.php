@@ -70,7 +70,12 @@ class Manager {
     $this->references = new References();
 
     // Create a new elasticsearch handler.
-    $this->elasticsearch = new Elasticsearch($this->options->get('elasticsearch'), $this->options->get('base-index-name'), $this->options->get('tag'));
+    $this->elasticsearch = new Elasticsearch(
+      $this->options->get('elasticsearch'),
+      $this->options->get('base-index-name'),
+      $this->options->get('tag'),
+      $this->options->get('no-replica'),
+    );
 
     // Create a new field processor object to prepare items before indexing.
     $this->processor = new Processor($this->options->get('website'), $this->references);

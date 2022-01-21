@@ -31,6 +31,8 @@ class Options {
     'remove' => FALSE,
     'alias' => FALSE,
     'alias-only' => FALSE,
+    'simulate' => FALSE,
+    'no-replica' => FALSE,
     'log' => '',
   ];
 
@@ -135,7 +137,7 @@ class Options {
 
         case '--filter':
         case '-f':
-          $options['filter'] = (int) array_shift($argv);
+          $options['filter'] = array_shift($argv);
           break;
 
         case '--chunk-size':
@@ -161,6 +163,16 @@ class Options {
         case '--alias-only':
         case '-A':
           $options['alias-only'] = TRUE;
+          break;
+
+        case '--simulate':
+        case '-s':
+          $options['simulate'] = TRUE;
+          break;
+
+        case '--no-replica':
+        case '-n':
+          $options['no-replica'] = TRUE;
           break;
 
         case '--help':
@@ -254,8 +266,8 @@ class Options {
         'flags' => FILTER_NULL_ON_FAILURE,
       ],
       'mysql-port' => [
-        'filter'    => FILTER_VALIDATE_INT,
-        'options'   => ['min_range' => 1, 'max_range' => 65535],
+        'filter' => FILTER_VALIDATE_INT,
+        'options' => ['min_range' => 1, 'max_range' => 65535],
         'flags' => FILTER_NULL_ON_FAILURE,
       ],
       'mysql-user' => [
@@ -297,17 +309,17 @@ class Options {
       ],
       'filter' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => ['regexp' => '/^(([a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+)*)([+][a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+)*)*)*$/'],
+        'options' => ['regexp' => '/^(([a-zA-Z0-9_-]+:[a-zA-Z0-9_*-]+(,[a-zA-Z0-9_*-]+)*)([+][a-zA-Z0-9_-]+:[a-zA-Z0-9_*-]+(,[a-zA-Z0-9_*-]+)*)*)*$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
       ],
       'chunk-size' => [
-        'filter'    => FILTER_VALIDATE_INT,
-        'options'   => ['min_range' => 1, 'max_range' => 1000],
+        'filter' => FILTER_VALIDATE_INT,
+        'options' => ['min_range' => 1, 'max_range' => 1000],
         'flags' => FILTER_NULL_ON_FAILURE,
       ],
       'id' => [
-        'filter'    => FILTER_VALIDATE_INT,
-        'options'   => ['min_range' => 0],
+        'filter' => FILTER_VALIDATE_INT,
+        'options' => ['min_range' => 0],
         'flags' => FILTER_NULL_ON_FAILURE,
       ],
       'remove' => [
@@ -319,6 +331,14 @@ class Options {
         'flags' => FILTER_NULL_ON_FAILURE,
       ],
       'alias-only' => [
+        'filter' => FILTER_VALIDATE_BOOLEAN,
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ],
+      'simulate' => [
+        'filter' => FILTER_VALIDATE_BOOLEAN,
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ],
+      'no-replica' => [
         'filter' => FILTER_VALIDATE_BOOLEAN,
         'flags' => FILTER_NULL_ON_FAILURE,
       ],
@@ -361,7 +381,8 @@ class Options {
           "     -r, --remove Removes an entity if 'id' is provided or the index for the given entity bundle \n" .
           "     -a, --alias Set up the alias for the index after the indexing, ignored if id is provided \n" .
           "     -A, --alias-only Set up the alias for the index without indexing, ignored if id is provided \n" .
-          "\n";
+          "     -s, --simulate Return the number of indexable entities based on the provided limit and offset \n" .
+          "     -n, --no-replica Create an index without a replica \n\n";
     exit();
   }
 

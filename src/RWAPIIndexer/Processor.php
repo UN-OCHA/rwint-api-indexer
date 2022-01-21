@@ -117,7 +117,7 @@ class Processor {
     $this->website = $website;
     $this->hostname = preg_replace('#^https?://#', '', $this->website);
     $this->references = $references;
-    $this->publicSchemeUrl = $website . '/sites/reliefweb.int/files/';
+    $this->publicSchemeUrl = $website . '/sites/default/files/';
     // Markdown library.
     if (class_exists('\Hoedown')) {
       $this->markdown = 'hoedown';

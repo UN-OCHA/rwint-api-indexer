@@ -28,6 +28,13 @@ class Elasticsearch {
   protected $tag = '';
 
   /**
+   * Use a replica or not.
+   *
+   * @var bool
+   */
+  protected $replica = TRUE;
+
+  /**
    * Default index settings.
    *
    * @var array
@@ -138,11 +145,14 @@ class Elasticsearch {
    *   Base index name.
    * @param string $tag
    *   Index tag.
+   * @param bool $no_replica
+   *   TRUE to disable the replica for the index.
    */
-  public function __construct($server, $base, $tag = '') {
+  public function __construct($server, $base, $tag = '', $no_replica = FALSE) {
     $this->server = $server;
     $this->base = $base . '_';
     $this->tag = !empty($tag) ? '_' . $tag : '';
+    $this->replica = empty($no_replica);
   }
 
   /**
@@ -218,8 +228,11 @@ class Elasticsearch {
   public function createIndex($index, array $mapping) {
     $path = $this->getIndexPath($index);
 
+    $settings = $this->defaultSettings;
+    $settings['number_of_replicas'] = !empty($this->replica) ? 1 : 0;
+
     $this->request('PUT', $path, [
-      'settings' => $this->defaultSettings,
+      'settings' => $settings,
       'mappings' => [
         'properties' => $mapping,
       ],

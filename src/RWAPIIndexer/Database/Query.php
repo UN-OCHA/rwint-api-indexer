@@ -165,6 +165,10 @@ class Query {
         $this->parts['where'][] = "{$field} IN (" . implode(",", $values) . ")";
         break;
 
+      case 'IS NOT NULL':
+        $this->parts['where'][] = "{$field} {$operator}";
+        break;
+
       default:
         $value = $this->connection->quote($value);
         $this->parts['where'][] = "{$field} {$operator} {$value}";

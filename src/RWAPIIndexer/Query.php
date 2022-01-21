@@ -208,15 +208,24 @@ class Query {
     foreach ($conditions as $category => $fields) {
       foreach ($fields as $field => $values) {
         if ($category === 'fields') {
-          $query->condition($base_table . '.' . $field, $valus, 'IN');
+          if ($values !== '*') {
+            $query->condition($base_table . '.' . $field, $values, 'IN');
+          }
+          else {
+            $query->condition($base_table . '.' . $field, NULL, 'IS NOT NULL');
+          }
         }
         else {
           $table = $entity_type . '__field_' . $field;
           $alias = $table . '_filter';
-          $column = $category === 'references' ? 'target_id' : 'value';
           $condition = "{$alias}.entity_id = {$base_table}.{$base_field}";
           $query->innerJoin($table, $alias, $condition);
-          $query->condition($alias . '.field_' . $field . '_' . $column, $values, 'IN');
+          // `*` is to check for the existence of the field which is already
+          // implied with the innerJoin().
+          if ($values !== '*') {
+            $column = $category === 'references' ? 'target_id' : 'value';
+            $query->condition($alias . '.field_' . $field . '_' . $column, $values, 'IN');
+          }
         }
       }
     }

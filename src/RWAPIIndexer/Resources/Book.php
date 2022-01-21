@@ -13,32 +13,30 @@ class Book extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
+  protected $queryOptions = [
+    'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
-    ),
-    'field_joins' => array(
-      'field_status' => array(
-        'status' => 'value',
-      ),
-      'body' => array(
+      'status' => 'moderation_status',
+    ],
+    'field_joins' => [
+      'body' => [
         'body' => 'value',
-      ),
-    ),
-  );
+      ],
+    ],
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = array(
-    'conversion' => array(
-      'body' => array('links', 'html_iframe'),
-      'date_created' => array('time'),
-      'date_changed' => array('time'),
-    ),
-  );
+  protected $processingOptions = [
+    'conversion' => [
+      'body' => ['links', 'html_iframe'],
+      'date_created' => ['time'],
+      'date_changed' => ['time'],
+    ],
+  ];
 
   /**
    * {@inheritdoc}
@@ -48,13 +46,15 @@ class Book extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
+      ->addStatus()
       ->addString('title', TRUE, TRUE)
       // Body.
       ->addString('body')
       ->addString('body-html', NULL)
       // Dates.
-      ->addDates('date', array('created', 'changed'));
+      ->addDates('date', ['created', 'changed'])
+      // Images.
+      ->addImage('attached_image');
 
     return $mapping->export();
   }
@@ -64,12 +64,20 @@ class Book extends Resource {
    */
   public function processItem(&$item) {
     // Handle dates.
-    $item['date'] = array(
+    $item['date'] = [
       'created' => $item['date_created'],
       'changed' => $item['date_changed'],
-    );
+    ];
     unset($item['date_created']);
     unset($item['date_changed']);
+
+    // Handle images.
+    if ($this->processor->processImage($item['attached_image']) !== TRUE) {
+      unset($item['attached_image']);
+    }
+    if ($this->processor->processImage($item['image'], TRUE) !== TRUE) {
+      unset($item['image']);
+    }
   }
 
 }

@@ -13,93 +13,89 @@ class Disaster extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
-      'description' => 'description',
-    ),
-    'field_joins' => array(
-      'field_status' => array(
-        'status' => 'value',
-      ),
-      'field_disaster_date' => array(
+  protected $queryOptions = [
+    'fields' => [
+      'name' => 'name',
+      'description' => 'description__value',
+      'status' => 'moderation_status',
+    ],
+    'field_joins' => [
+      'field_disaster_date' => [
         'date' => 'value',
-      ),
-      'field_glide' => array(
+      ],
+      'field_glide' => [
         'glide' => 'value',
-      ),
-      'field_glide_related' => array(
+      ],
+      'field_glide_related' => [
         'related_glide' => 'value',
-      ),
-      'field_profile' => array(
+      ],
+      'field_profile' => [
         'show_profile' => 'value',
-      ),
-      'field_featured' => array(
-        'featured' => 'value',
-      ),
-    ),
-    'references' => array(
+      ],
+    ],
+    'references' => [
       'field_primary_country' => 'primary_country',
       'field_primary_disaster_type' => 'primary_type',
       'field_country' => 'country',
       'field_disaster_type' => 'type',
-    ),
-  );
+    ],
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = array(
-    'conversion' => array(
-      'description' => array('links'),
-      'date' => array('time'),
-      'featured' => array('bool'),
-      'country' => array('primary'),
-      'type' => array('primary'),
-      'primary_country' => array('single'),
-      'primary_type' => array('single'),
-      'related_glide' => array('multi_string'),
-    ),
-    'references' => array(
-      'primary_country' => array(
-        'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
-      ),
-      'primary_type' => array(
-        'disaster_type' => array('id', 'name', 'code'),
-      ),
-      'country' => array(
-        'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
-      ),
-      'type' => array(
-        'disaster_type' => array('id', 'name', 'code'),
-      ),
-    ),
-  );
+  protected $processingOptions = [
+    'conversion' => [
+      'description' => ['links'],
+      'date' => ['time'],
+      'featured' => ['bool'],
+      'country' => ['primary'],
+      'type' => ['primary'],
+      'primary_country' => ['single'],
+      'primary_type' => ['single'],
+      'related_glide' => ['multi_string'],
+    ],
+    'references' => [
+      'primary_country' => [
+        'country' => ['id', 'name', 'shortname', 'iso3', 'location'],
+      ],
+      'primary_type' => [
+        'disaster_type' => ['id', 'name', 'code'],
+      ],
+      'country' => [
+        'country' => ['id', 'name', 'shortname', 'iso3', 'location'],
+      ],
+      'type' => [
+        'disaster_type' => ['id', 'name', 'code'],
+      ],
+    ],
+  ];
 
   /**
    * Profile sections (id => label).
    *
    * @var array
    */
-  private $profileSections = array(
-    'key_content' => array(
+  private $profileSections = [
+    'key_content' => [
       'label' => 'Key Content',
       'internal' => TRUE,
       'archives' => TRUE,
       'image' => TRUE,
-    ),
-    'appeals_response_plans' => array(
+    ],
+    'appeals_response_plans' => [
       'label' => 'Appeals & Response Plans',
       'internal' => TRUE,
       'archives' => TRUE,
       'image' => TRUE,
-    ),
-    'useful_links' => array(
+    ],
+    'useful_links' => [
       'label' => 'Useful Links',
       'internal' => FALSE,
       'archives' => FALSE,
       'image' => TRUE,
-    ),
-  );
+    ],
+  ];
 
   /**
    * {@inheritdoc}
@@ -109,12 +105,12 @@ class Disaster extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
-      ->addDates('date', array('created'))
+      ->addStatus()
+      ->addDates('date', ['created'])
       ->addBoolean('featured')
       ->addBoolean('current')
       // Names.
-      ->addString('name', TRUE, TRUE)
+      ->addString('name', TRUE, TRUE, '', TRUE)
       ->addString('glide', TRUE, TRUE)
       ->addString('related_glide', TRUE, TRUE)
       // Description - legacy.
@@ -123,10 +119,10 @@ class Disaster extends Resource {
       // Profile.
       ->addProfile($this->profileSections)
       // Primary country.
-      ->addTaxonomy('primary_country', array('shortname', 'iso3'))
+      ->addTaxonomy('primary_country', ['shortname', 'iso3'])
       ->addGeoPoint('primary_country.location')
       // Country.
-      ->addTaxonomy('country', array('shortname', 'iso3'))
+      ->addTaxonomy('country', ['shortname', 'iso3'])
       ->addGeoPoint('country.location')
       ->addBoolean('country.primary')
       // Primary disaster type.
@@ -144,8 +140,11 @@ class Disaster extends Resource {
    * {@inheritdoc}
    */
   public function processItem(&$item) {
-    // Current.
-    $item['current'] = !empty($item['status']) && $item['status'] === 'current';
+    // Legacy "current" status.
+    if (!empty($item['status']) && ($item['status'] === 'current' || $item['status'] === 'ongoing')) {
+      $item['current'] = TRUE;
+      $item['status'] = 'ongoing';
+    }
 
     // Only keep the description if the profile is checked.
     if (empty($item['show_profile'])) {
@@ -157,7 +156,7 @@ class Disaster extends Resource {
     unset($item['show_profile']);
 
     // Handle date.
-    $item['date'] = array('created' => $item['date']);
+    $item['date'] = ['created' => $item['date']];
   }
 
 }

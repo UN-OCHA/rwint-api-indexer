@@ -13,43 +13,41 @@ class Training extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
+  protected $queryOptions = [
+    'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
-    ),
-    'field_joins' => array(
-      'field_status' => array(
-        'status' => 'value',
-      ),
-      'field_cost' => array(
+      'status' => 'moderation_status',
+    ],
+    'field_joins' => [
+      'field_cost' => [
         'cost' => 'value',
-      ),
-      'field_registration_deadline' => array(
+      ],
+      'field_registration_deadline' => [
         'date_registration' => 'value',
-      ),
-      'field_training_date' => array(
+      ],
+      'field_training_date' => [
         'date_start' => 'value',
-        'date_end' => 'value2',
-      ),
-      'body' => array(
+        'date_end' => 'end_value',
+      ],
+      'body' => [
         'body' => 'value',
-      ),
-      'field_fee_information' => array(
+      ],
+      'field_link' => [
+        'event_url' => 'uri',
+      ],
+      'field_fee_information' => [
         'fee_information' => 'value',
-      ),
-      'field_how_to_apply' => array(
+      ],
+      'field_how_to_register' => [
         'how_to_register' => 'value',
-      ),
-      'field_city' => array(
+      ],
+      'field_city' => [
         'city' => 'value',
-      ),
-      'field_file' => array(
-        'file' => 'file_reference',
-      ),
-    ),
-    'references' => array(
+      ],
+    ],
+    'references' => [
       'field_country' => 'country',
       'field_source' => 'source',
       'field_language' => 'language',
@@ -57,29 +55,29 @@ class Training extends Resource {
       'field_training_type' => 'type',
       'field_training_format' => 'format',
       'field_training_language' => 'training_language',
-      'field_career_categories' => 'career_categories',
-    ),
-  );
+      'field_career_categories' => 'career_category',
+    ],
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = array(
-    'conversion' => array(
-      'body' => array('links', 'html_strict'),
-      'how_to_register' => array('links', 'html_strict'),
-      'date_created' => array('time'),
-      'date_changed' => array('time'),
-      'date_registration' => array('time'),
-      'date_start' => array('time'),
-      'date_end' => array('time'),
-    ),
-    'references' => array(
-      'country' => array(
-        'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
-      ),
-      'source' => array(
-        'source' => array(
+  protected $processingOptions = [
+    'conversion' => [
+      'body' => ['links', 'html_strict'],
+      'how_to_register' => ['links', 'html_strict'],
+      'date_created' => ['time'],
+      'date_changed' => ['time'],
+      'date_registration' => ['time'],
+      'date_start' => ['time'],
+      'date_end' => ['time'],
+    ],
+    'references' => [
+      'country' => [
+        'country' => ['id', 'name', 'shortname', 'iso3', 'location'],
+      ],
+      'source' => [
+        'source' => [
           'id',
           'name',
           'shortname',
@@ -87,28 +85,28 @@ class Training extends Resource {
           'spanish_name',
           'type',
           'homepage',
-        ),
-      ),
-      'language' => array(
-        'language' => array('id', 'name', 'code'),
-      ),
-      'theme' => array(
-        'theme' => array('id', 'name'),
-      ),
-      'type' => array(
-        'training_type' => array('id', 'name'),
-      ),
-      'format' => array(
-        'training_format' => array('id', 'name'),
-      ),
-      'training_language' => array(
-        'language' => array('id', 'name', 'code'),
-      ),
-      'career_categories' => array(
-        'career_categories' => array('id', 'name'),
-      ),
-    ),
-  );
+        ],
+      ],
+      'language' => [
+        'language' => ['id', 'name', 'code'],
+      ],
+      'theme' => [
+        'theme' => ['id', 'name'],
+      ],
+      'type' => [
+        'training_type' => ['id', 'name'],
+      ],
+      'format' => [
+        'training_format' => ['id', 'name'],
+      ],
+      'training_language' => [
+        'language' => ['id', 'name', 'code'],
+      ],
+      'career_categories' => [
+        'career_category' => ['id', 'name'],
+      ],
+    ],
+  ];
 
   /**
    * {@inheritdoc}
@@ -118,34 +116,36 @@ class Training extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
+      ->addStatus()
       ->addString('title', TRUE, TRUE)
       // Body.
       ->addString('body')
       ->addString('body-html', NULL)
+      // Event URL.
+      ->addString('event_url', FALSE)
       // Fee information.
       ->addString('fee_information')
       // How to register.
       ->addString('how_to_register')
       ->addString('how_to_register-html', NULL)
       // Dates.
-      ->addDates('date', array(
+      ->addDates('date', [
         'created',
         'changed',
         'registration',
         'start',
         'end',
-      ))
+      ])
       // Cost.
       ->addString('cost', FALSE)
       // Language.
       ->addTaxonomy('language')
       ->addString('language.code', FALSE)
       // Country.
-      ->addTaxonomy('country', array('shortname', 'iso3'))
+      ->addTaxonomy('country', ['shortname', 'iso3'])
       ->addGeoPoint('country.location')
       // Source.
-      ->addTaxonomy('source', array('shortname', 'longname', 'spanish_name'))
+      ->addTaxonomy('source', ['shortname', 'longname', 'spanish_name'])
       ->addString('source.homepage', NULL)
       ->addTaxonomy('source.type')
       // Other taxonomies.
@@ -168,10 +168,10 @@ class Training extends Resource {
    */
   public function processItem(&$item) {
     // Handle dates.
-    $item['date'] = array(
+    $item['date'] = [
       'created' => $item['date_created'],
       'changed' => $item['date_changed'],
-    );
+    ];
     if (isset($item['date_registration'])) {
       $item['date']['registration'] = $item['date_registration'];
     }
@@ -187,14 +187,14 @@ class Training extends Resource {
     unset($item['date_start']);
     unset($item['date_end']);
 
-    // Handle city. Keep compatibility.
-    if (isset($item['city'])) {
-      $item['city'] = array(array('name' => $item['city']));
+    // Handle event URL.
+    if (empty($item['event_url'])) {
+      unset($item['event_url']);
     }
 
-    // Handle File.
-    if ($this->processor->processFile($item['file']) !== TRUE) {
-      unset($item['file']);
+    // Handle city. Keep compatibility.
+    if (isset($item['city'])) {
+      $item['city'] = [['name' => $item['city']]];
     }
 
     // Handle fee information. Remove if cost is free.

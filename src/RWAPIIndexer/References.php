@@ -12,7 +12,7 @@ class References {
    *
    * @var array
    */
-  protected $references = array();
+  protected $references = [];
 
   /**
    * Set the reference items for the given entity bundle.
@@ -36,7 +36,7 @@ class References {
    *   Reference items for the given bundle.
    */
   public function get($bundle) {
-    return $this->has($bundle) ? $this->references[$bundle] : array();
+    return $this->has($bundle) ? $this->references[$bundle] : [];
   }
 
   /**
@@ -65,7 +65,7 @@ class References {
    * @return array
    *   Reference item.
    */
-  public function getItem($bundle, $id, array $fields = array()) {
+  public function getItem($bundle, $id, array $fields = []) {
     if (isset($this->references[$bundle][$id])) {
       if (!empty($fields)) {
         return array_intersect_key($this->references[$bundle][$id], array_flip($fields));

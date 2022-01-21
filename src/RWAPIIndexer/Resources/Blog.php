@@ -13,49 +13,47 @@ class Blog extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
+  protected $queryOptions = [
+    'fields' => [
       'title' => 'title',
       'date_created' => 'created',
       'date_changed' => 'changed',
-    ),
-    'field_joins' => array(
-      'field_status' => array(
-        'status' => 'value',
-      ),
-      'body' => array(
+      'status' => 'moderation_status',
+    ],
+    'field_joins' => [
+      'body' => [
         'body' => 'value',
-      ),
-      'field_author' => array(
+      ],
+      'field_author' => [
         'author' => 'value',
-      ),
-      'field_image' => array(
+      ],
+      'field_image' => [
         'image' => 'image_reference',
-      ),
-      'field_attached_images' => array(
+      ],
+      'field_attached_images' => [
         'attached_image' => 'image_reference',
-      ),
-    ),
-    'references' => array(
-      'field_tags' => 'tags',
-    ),
-  );
+      ],
+    ],
+    'references' => [
+      'field_tags' => 'tag',
+    ],
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = array(
-    'conversion' => array(
-      'body' => array('links', 'html_iframe'),
-      'date_created' => array('time'),
-      'date_changed' => array('time'),
-    ),
-    'references' => array(
-      'tags' => array(
-        'tags' => array('id', 'name'),
-      ),
-    ),
-  );
+  protected $processingOptions = [
+    'conversion' => [
+      'body' => ['links', 'html_iframe'],
+      'date_created' => ['time'],
+      'date_changed' => ['time'],
+    ],
+    'references' => [
+      'tags' => [
+        'tag' => ['id', 'name'],
+      ],
+    ],
+  ];
 
   /**
    * {@inheritdoc}
@@ -65,14 +63,14 @@ class Blog extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
+      ->addStatus()
       ->addString('title', TRUE, TRUE)
       ->addString('author', TRUE, TRUE)
       // Body.
       ->addString('body')
       ->addString('body-html', NULL)
       // Dates.
-      ->addDates('date', array('created', 'changed'))
+      ->addDates('date', ['created', 'changed'])
       // Tags.
       ->addTaxonomy('tags')
       // Images.
@@ -87,10 +85,10 @@ class Blog extends Resource {
    */
   public function processItem(&$item) {
     // Handle dates.
-    $item['date'] = array(
+    $item['date'] = [
       'created' => $item['date_created'],
       'changed' => $item['date_changed'],
-    );
+    ];
     unset($item['date_created']);
     unset($item['date_changed']);
 

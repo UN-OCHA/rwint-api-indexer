@@ -14,135 +14,120 @@ class Bundles {
    *
    * @var array
    */
-  public static $bundles = array(
-    'report' => array(
+  public static $bundles = [
+    'report' => [
       'class' => '\RWAPIIndexer\Resources\Report',
       'type' => 'node',
       'index' => 'reports',
-    ),
-    'job' => array(
+    ],
+    'job' => [
       'class' => '\RWAPIIndexer\Resources\Job',
       'type' => 'node',
       'index' => 'jobs',
-    ),
-    'training' => array(
+    ],
+    'training' => [
       'class' => '\RWAPIIndexer\Resources\Training',
       'type' => 'node',
       'index' => 'training',
-    ),
-    'blog_post' => array(
+    ],
+    'blog_post' => [
       'class' => '\RWAPIIndexer\Resources\Blog',
       'type' => 'node',
       'index' => 'blog',
-    ),
-    'book' => array(
+    ],
+    'book' => [
       'class' => '\RWAPIIndexer\Resources\Book',
       'type' => 'node',
       'index' => 'book',
-    ),
-    'faq' => array(
-      'class' => '\RWAPIIndexer\Resources\Faq',
-      'type' => 'node',
-      'index' => 'faq',
-    ),
-    'country' => array(
+    ],
+    'country' => [
       'class' => '\RWAPIIndexer\Resources\Country',
       'type' => 'taxonomy_term',
       'index' => 'countries',
-    ),
-    'disaster' => array(
+    ],
+    'disaster' => [
       'class' => '\RWAPIIndexer\Resources\Disaster',
       'type' => 'taxonomy_term',
       'index' => 'disasters',
-    ),
-    'source' => array(
+    ],
+    'source' => [
       'class' => '\RWAPIIndexer\Resources\Source',
       'type' => 'taxonomy_term',
       'index' => 'sources',
-    ),
+    ],
 
     // References.
-    'career_categories' => array(
+    'career_category' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'career_categories',
-    ),
-    'content_format' => array(
+    ],
+    'content_format' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'content_formats',
-    ),
-    'disaster_type' => array(
+    ],
+    'disaster_type' => [
       'class' => '\RWAPIIndexer\Resources\DisasterType',
       'type' => 'taxonomy_term',
       'index' => 'disaster_types',
-    ),
-    'faq_category' => array(
-      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-      'type' => 'taxonomy_term',
-      'index' => 'faq_category',
-    ),
-    'feature' => array(
+    ],
+    'feature' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'features',
-    ),
-    'job_type' => array(
+    ],
+    'job_type' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'job_types',
-    ),
-    'language' => array(
+    ],
+    'language' => [
       'class' => '\RWAPIIndexer\Resources\Language',
       'type' => 'taxonomy_term',
       'index' => 'languages',
-    ),
-    'ocha_product' => array(
+    ],
+    'ocha_product' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'ocha_products',
-    ),
-    'organization_type' => array(
+    ],
+    'organization_type' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'organization_types',
-    ),
-    /*'region' => array(
-      'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
-      'type' => 'taxonomy_term',
-      'index' => 'regions',
-    ),*/
-    'tags' => array(
+    ],
+    'tag' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'tags',
-    ),
-    'theme' => array(
+    ],
+    'theme' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'themes',
-    ),
-    'training_format' => array(
+    ],
+    'training_format' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'training_formats',
-    ),
-    'training_type' => array(
+    ],
+    'training_type' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'training_types',
-    ),
-    'vulnerable_groups' => array(
+    ],
+    'vulnerable_group' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'vulnerable_groups',
-    ),
-    'job_experience' => array(
+    ],
+    'job_experience' => [
       'class' => '\RWAPIIndexer\Resources\TaxonomyDefault',
       'type' => 'taxonomy_term',
       'index' => 'job_experiences',
-    ),
-  );
+    ],
+  ];
 
   /**
    * Get the resource handler for the given entity bundle.

@@ -13,11 +13,12 @@ class TaxonomyDefault extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
-      'description' => 'description',
-    ),
-  );
+  protected $queryOptions = [
+    'fields' => [
+      'name' => 'name',
+      'description' => 'description__value',
+    ],
+  ];
 
   /**
    * {@inheritdoc}
@@ -26,7 +27,7 @@ class TaxonomyDefault extends Resource {
     $mapping = new Mapping();
     $mapping->addInteger('id')
       // Names.
-      ->addString('name', TRUE, TRUE)
+      ->addString('name', TRUE, TRUE, '', TRUE)
       // Description.
       ->addString('description');
 

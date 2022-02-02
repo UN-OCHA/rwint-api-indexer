@@ -28,13 +28,6 @@ class Elasticsearch {
   protected $tag = '';
 
   /**
-   * Maintain replicas.
-   *
-   * @var int
-   */
-  protected $replicas = 1;
-
-  /**
    * Default index settings.
    *
    * @var array
@@ -145,14 +138,11 @@ class Elasticsearch {
    *   Base index name.
    * @param string $tag
    *   Index tag.
-   * @param replicas $replicas
-   *   The number of replicas for each index.
    */
-  public function __construct($server, $base, $tag = '', $replicas = 1) {
+  public function __construct($server, $base, $tag = '') {
     $this->server = $server;
     $this->base = $base . '_';
     $this->tag = !empty($tag) ? '_' . $tag : '';
-    $this->replicas = $replicas;
   }
 
   /**
@@ -190,10 +180,12 @@ class Elasticsearch {
    *   Index mapping.
    * @param int $shards
    *   The number of shards for this index.
+   * @param int $replicas
+   *   The number of replicas for this index.
    */
-  public function create($index, array $mapping, int $shards = 1) {
+  public function create($index, array $mapping, int $shards, int $replicas) {
     if (!$this->indexExists($index)) {
-      $this->createIndex($index, $mapping, $shards);
+      $this->createIndex($index, $mapping, $shards, $replicas);
     }
   }
 
@@ -228,13 +220,15 @@ class Elasticsearch {
    *   Index mapping.
    * @param int $shards
    *   The number of shards for this index.
+   * @param int $replicas
+   *   The number of replicas for this index.
    */
-  public function createIndex($index, array $mapping, int $shards = 1) {
+  public function createIndex($index, array $mapping, int $shards, int $replicas) {
     $path = $this->getIndexPath($index);
 
     $settings = $this->defaultSettings;
     $settings['number_of_shards'] = $shards;
-    $settings['number_of_replicas'] = $this->replicas;
+    $settings['number_of_replicas'] = $eplicas;
 
     $this->request('PUT', $path, [
       'settings' => $settings,

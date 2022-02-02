@@ -376,8 +376,11 @@ abstract class Resource {
     // Set the number of shards for the index to be created.
     $shards = $this->options->get('shards') ?? 1;
 
+    // Set the number of replicas for the index to be created.
+    $replicas = $this->options->get('replicas') ?? 1;
+
     // Create the index and set up the mapping for the entity bundle.
-    $this->elasticsearch->create($this->index, $this->getMapping(), $shards);
+    $this->elasticsearch->create($this->index, $this->getMapping(), $shards, $replicas);
 
     // Counter of indexed items.
     $count = 0;

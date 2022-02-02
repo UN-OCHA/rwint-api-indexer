@@ -32,7 +32,8 @@ class Options {
     'alias' => FALSE,
     'alias-only' => FALSE,
     'simulate' => FALSE,
-    'no-replica' => FALSE,
+    'replicas' => 1,
+    'shards' => 1,
     'log' => '',
   ];
 
@@ -170,9 +171,14 @@ class Options {
           $options['simulate'] = TRUE;
           break;
 
-        case '--no-replica':
-        case '-n':
-          $options['no-replica'] = TRUE;
+        case '--replicas':
+        case '-R':
+          $options['replicas'] = (int) array_shift($argv);
+          break;
+
+        case '--shards':
+        case '-S':
+          $options['shards'] = (int) array_shift($argv);
           break;
 
         case '--help':
@@ -338,8 +344,14 @@ class Options {
         'filter' => FILTER_VALIDATE_BOOLEAN,
         'flags' => FILTER_NULL_ON_FAILURE,
       ],
-      'no-replica' => [
-        'filter' => FILTER_VALIDATE_BOOLEAN,
+      'replicas' => [
+        'filter' => FILTER_VALIDATE_INT,
+        'options' => ['min_range' => 0],
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ],
+      'shards' => [
+        'filter' => FILTER_VALIDATE_INT,
+        'options' => ['min_range' => 1, 'max_range' => 8],
         'flags' => FILTER_NULL_ON_FAILURE,
       ],
     ]);
@@ -382,7 +394,8 @@ class Options {
           "     -a, --alias Set up the alias for the index after the indexing, ignored if id is provided \n" .
           "     -A, --alias-only Set up the alias for the index without indexing, ignored if id is provided \n" .
           "     -s, --simulate Return the number of indexable entities based on the provided limit and offset \n" .
-          "     -n, --no-replica Create an index without a replica \n\n";
+          "     -R, --replicas Create indices with this number of replicas, defaults to 1. Allowed: 0 or more \n\n";
+          "     -S, --shards Create indices with this number of shards, defaults to 1. Allowed: 1-8) \n\n";
     exit();
   }
 

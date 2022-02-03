@@ -394,7 +394,7 @@ class Options {
           "     -a, --alias Set up the alias for the index after the indexing, ignored if id is provided \n" .
           "     -A, --alias-only Set up the alias for the index without indexing, ignored if id is provided \n" .
           "     -s, --simulate Return the number of indexable entities based on the provided limit and offset \n" .
-          "     -R, --replicas Create indices with this number of replicas, defaults to 1. Allowed: 0 or more \n";
+          "     -R, --replicas Create indices with this number of replicas, defaults to 1. Allowed: 0 or more \n" .
           "     -S, --shards Create indices with this number of shards, defaults to 1. Allowed: 1-8) \n\n";
     exit();
   }

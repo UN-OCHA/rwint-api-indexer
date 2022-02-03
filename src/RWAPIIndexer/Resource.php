@@ -134,7 +134,7 @@ abstract class Resource {
     $conditions = [];
     if (!empty($filters)) {
       foreach (explode('+', $filters) as $filter) {
-        list($field, $value) = explode(':', $filter, 2);
+        [$field, $value] = explode(':', $filter, 2);
         // This is to check the existence of a field.
         if ($value === '*') {
           $values = '*';

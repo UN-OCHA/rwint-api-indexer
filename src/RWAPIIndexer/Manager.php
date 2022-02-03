@@ -74,7 +74,6 @@ class Manager {
       $this->options->get('elasticsearch'),
       $this->options->get('base-index-name'),
       $this->options->get('tag'),
-      $this->options->get('replicas'),
     );
 
     // Create a new field processor object to prepare items before indexing.

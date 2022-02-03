@@ -228,7 +228,7 @@ class Elasticsearch {
 
     $settings = $this->defaultSettings;
     $settings['number_of_shards'] = $shards;
-    $settings['number_of_replicas'] = $eplicas;
+    $settings['number_of_replicas'] = $replicas;
 
     $this->request('PUT', $path, [
       'settings' => $settings,

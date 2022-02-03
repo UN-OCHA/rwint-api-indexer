@@ -134,7 +134,7 @@ abstract class Resource {
     $conditions = [];
     if (!empty($filters)) {
       foreach (explode('+', $filters) as $filter) {
-        list($field, $value) = explode(':', $filter, 2);
+        [$field, $value] = explode(':', $filter, 2);
         // This is to check the existence of a field.
         if ($value === '*') {
           $values = '*';
@@ -373,8 +373,14 @@ abstract class Resource {
 
     $this->log("Indexing {$this->bundle} entities.\n");
 
+    // Set the number of shards for the index to be created.
+    $shards = $this->options->get('shards') ?? 1;
+
+    // Set the number of replicas for the index to be created.
+    $replicas = $this->options->get('replicas') ?? 1;
+
     // Create the index and set up the mapping for the entity bundle.
-    $this->elasticsearch->create($this->index, $this->getMapping());
+    $this->elasticsearch->create($this->index, $this->getMapping(), $shards, $replicas);
 
     // Counter of indexed items.
     $count = 0;

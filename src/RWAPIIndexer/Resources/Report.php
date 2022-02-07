@@ -59,7 +59,7 @@ class Report extends Resource {
       'field_ocha_product' => 'ocha_product',
       'field_disaster' => 'disaster',
       'field_disaster_type' => 'disaster_type',
-      'field_vulnerable_groups' => 'vulnerable_group',
+      'field_vulnerable_groups' => 'vulnerable_groups',
       'field_feature' => 'feature',
     ],
   ];

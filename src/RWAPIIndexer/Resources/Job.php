@@ -41,7 +41,7 @@ class Job extends Resource {
       'field_theme' => 'theme',
       'field_job_type' => 'type',
       'field_job_experience' => 'experience',
-      'field_career_categories' => 'career_category',
+      'field_career_categories' => 'career_categories',
     ],
   ];
 

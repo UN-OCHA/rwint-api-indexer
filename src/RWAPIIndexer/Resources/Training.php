@@ -55,7 +55,7 @@ class Training extends Resource {
       'field_training_type' => 'type',
       'field_training_format' => 'format',
       'field_training_language' => 'training_language',
-      'field_career_categories' => 'career_category',
+      'field_career_categories' => 'career_categories',
     ],
   ];
 

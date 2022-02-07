@@ -35,7 +35,7 @@ class Blog extends Resource {
       ],
     ],
     'references' => [
-      'field_tags' => 'tag',
+      'field_tags' => 'tags',
     ],
   ];
 

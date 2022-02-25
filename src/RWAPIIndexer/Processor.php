@@ -2,7 +2,7 @@
 
 namespace RWAPIIndexer;
 
-use League\CommonMark\Environment;
+use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\Attributes\AttributesExtension;
 use League\CommonMark\Extension\Autolink\AutolinkExtension;
 use League\CommonMark\Extension\ExternalLink\ExternalLinkExtension;
@@ -103,6 +103,82 @@ class Processor {
     // Open office.
     'odt' => 'application/vnd.oasis.opendocument.text',
     'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
+  ];
+
+  /**
+   * List of HTML block level elements.
+   *
+   * @var array
+   */
+  public static $htmlBlockElements = [
+    "address",
+    "article",
+    "aside",
+    "base",
+    "basefont",
+    "blockquote",
+    "body",
+    "caption",
+    "center",
+    "col",
+    "colgroup",
+    "dd",
+    "details",
+    "dialog",
+    "dir",
+    "div",
+    "dl",
+    "dt",
+    "fieldset",
+    "figcaption",
+    "figure",
+    "footer",
+    "form",
+    "frame",
+    "frameset",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "head",
+    "header",
+    "hr",
+    "html",
+    "iframe",
+    "legend",
+    "li",
+    "link",
+    "main",
+    "menu",
+    "menuitem",
+    "nav",
+    "noframes",
+    "ol",
+    "optgroup",
+    "option",
+    "p",
+    "param",
+    "section",
+    "source",
+    "summary",
+    "table",
+    "tbody",
+    "td",
+    "tfoot",
+    "th",
+    "thead",
+    "title",
+    "tr",
+    "track",
+    "ul",
+    // Extra elements that need to be followed by a blank line for the following
+    // text to be converted to markdown.
+    "pre",
+    "script",
+    "style",
+    "textarea",
   ];
 
   /**
@@ -324,46 +400,75 @@ class Processor {
         return $hoedown->parse($text);
 
       case 'commonmark':
-        // Add a space before the heading '#' which is fine as ReliefWeb doesn't
-        // use hash tags.
-        // @see https://talk.commonmark.org/t/heading-not-working/819/42
-        $text = preg_replace('/^(#+)([^# ])/m', '$1 $2', $text);
-
-        // Obtain a pre-configured Environment with all the CommonMark
-        // parsers/renderers ready-to-go.
-        $environment = Environment::createCommonMarkEnvironment();
-
-        // Configuration to add attributes to external links.
-        $external_link_config = [
-          'external_link' => [
-            'internal_hosts' => [
-              $this->hostname,
-              'reliefweb.int',
-            ],
-            'open_in_new_window' => TRUE,
-          ],
-        ];
-        $environment->mergeConfig($external_link_config);
-
-        // Add the extension to convert external links.
-        $environment->addExtension(new ExternalLinkExtension());
-
-        // Add the extension to convert ID attributes.
-        $environment->addExtension(new AttributesExtension());
-
-        // Add the extension to convert links.
-        $environment->addExtension(new AutolinkExtension());
-
-        // Add the extension to convert the tables.
-        $environment->addExtension(new TableExtension());
-
-        // Create the converter with the extension(s).
-        $converter = new MarkdownConverter($environment);
-
-        // Convert to HTML.
-        return $converter->convertToHtml($text);
+        return static::convertToHtml($text, [$this->hostname, 'reliefweb.int']);
     }
     return '';
+  }
+
+  /**
+   * Convert a markdown text to HTML.
+   *
+   * @param string $text
+   *   Markdown text to convert.
+   * @param array $internal_hosts
+   *   List of internal hosts to determine if a link is external or not.
+   *
+   * @return string
+   *   HTML.
+   */
+  public static function convertToHtml($text, array $internal_hosts = ['reliefweb.int']) {
+    static $pattern;
+
+    // CommonMark specs consider text following an HTML block element without
+    // a blank line to seperate them, as part of the HTML block. This is a
+    // breaking change compared to what Michel Fortin's PHP markdown or
+    // hoedown libraries were doing so use the following regex to ensure there
+    // is a blank line.
+    // @see https://spec.commonmark.org/0.30/#html-blocks
+    // @see https://talk.commonmark.org/t/beyond-markdown/2787/4
+    if (!isset($pattern)) {
+      $pattern = '#(</' . implode('>|</', static::$htmlBlockElements) . '>)\s*#m';
+    }
+    $text = preg_replace($pattern, "$1\n\n", $text);
+
+    // Add a space before the heading '#' which is fine as ReliefWeb doesn't use
+    // hash tags.
+    // @see https://talk.commonmark.org/t/heading-not-working/819/42
+    $text = preg_replace('/^(#+)([^# ])/m', '$1 $2', $text);
+
+    // No need for extra blanks.
+    $text = trim($text);
+
+    // Obtain a pre-configured Environment with all the CommonMark
+    // parsers/renderers ready-to-go.
+    $environment = Environment::createCommonMarkEnvironment();
+
+    // Configuration to add attributes to external links.
+    $external_link_config = [
+      'external_link' => [
+        'internal_hosts' => $internal_hosts,
+        'open_in_new_window' => TRUE,
+      ],
+    ];
+    $environment->mergeConfig($external_link_config);
+
+    // Add the extension to convert external links.
+    $environment->addExtension(new ExternalLinkExtension());
+
+    // Add the extension to convert ID attributes.
+    $environment->addExtension(new AttributesExtension());
+
+    // Add the extension to convert links.
+    $environment->addExtension(new AutolinkExtension());
+
+    // Add the extension to convert the tables.
+    $environment->addExtension(new TableExtension());
+
+    // Create the converter with the extension(s).
+    $converter = new MarkdownConverter($environment);
+
+    // Convert to HTML.
+    return $converter->convertToHtml($text);
   }
 
   /**
@@ -527,7 +632,7 @@ class Processor {
     if (isset($field) && !empty($field)) {
       $items = [];
       foreach (explode('%%%', $field) as $item) {
-        list(
+        [
           $id,
           $width,
           $height,
@@ -536,8 +641,8 @@ class Processor {
           $mimetype,
           $filesize,
           $copyright,
-          $caption
-        ) = explode('###', $item);
+          $caption,
+        ] = explode('###', $item);
 
         // Update the mime type if necessary. Some old content have the wrong
         // one.
@@ -597,7 +702,7 @@ class Processor {
     if (isset($field) && !empty($field)) {
       $items = [];
       foreach (explode('%%%', $field) as $item) {
-        list(
+        [
           $id,
           $description,
           $langcode,
@@ -605,8 +710,8 @@ class Processor {
           $uri,
           $filename,
           $mimetype,
-          $filesize
-        ) = explode('###', $item);
+          $filesize,
+        ] = explode('###', $item);
 
         // Skip private files.
         if (strpos($uri, 'private://') === 0) {
@@ -688,7 +793,7 @@ class Processor {
    */
   public function getMimeType($filename) {
     $extension = strtolower(pathinfo($filename, \PATHINFO_EXTENSION));
-    return isset($this->mimeTypes[$extension]) ? $this->mimeTypes[$extension] : 'application/octet-stream';
+    return $this->mimeTypes[$extension] ?? 'application/octet-stream';
   }
 
   /**

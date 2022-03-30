@@ -410,7 +410,7 @@ class Query {
               $file_managed_alias = $file_managed_table . '_' . $field_name;
               $query->leftJoin($file_managed_table, $file_managed_alias, "{$file_managed_alias}.fid = {$media_image_alias}.{$media_image_field}_target_id");
 
-              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_target_id, CONCAT_WS('###',
+              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_target_id IS NOT NULL, CONCAT_WS('###',
                   {$field_table}.{$field_name}_target_id,
                   IFNULL({$media_image_alias}.{$media_image_field}_width, ''),
                   IFNULL({$media_image_alias}.{$media_image_field}_height, ''),
@@ -430,13 +430,14 @@ class Query {
               $file_managed_alias = $file_managed_table . '_' . $field_name;
               $query->leftJoin($file_managed_table, $file_managed_alias, "{$file_managed_alias}.uuid = {$field_table}.{$field_name}_file_uuid");
 
-              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_file_uuid, CONCAT_WS('###',
-                  {$field_table}.{$field_name}_revision_id,
+              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_file_uuid IS NOT NULL, CONCAT_WS('###',
+                  IFNULL({$field_table}.{$field_name}_revision_id, ''),
+                  IFNULL({$field_table}.{$field_name}_uuid, ''),
+                  IFNULL({$field_table}.{$field_name}_file_name, ''),
                   IFNULL({$field_table}.{$field_name}_description, ''),
                   IFNULL({$field_table}.{$field_name}_language, ''),
                   IFNULL({$field_table}.{$field_name}_preview_page, ''),
                   IFNULL({$file_managed_alias}.uri, ''),
-                  IFNULL({$file_managed_alias}.filename, ''),
                   IFNULL({$file_managed_alias}.filemime, ''),
                   IFNULL({$file_managed_alias}.filesize, '')
                 ), NULL) SEPARATOR '%%%')";

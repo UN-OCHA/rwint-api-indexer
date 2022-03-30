@@ -704,11 +704,12 @@ class Processor {
       foreach (explode('%%%', $field) as $item) {
         [
           $id,
+          $uuid,
+          $filename,
           $description,
           $langcode,
           $preview_page,
           $uri,
-          $filename,
           $mimetype,
           $filesize,
         ] = explode('###', $item);
@@ -745,10 +746,13 @@ class Processor {
           $mimetype = $this->getMimeType($filename);
         }
 
+        // We need to expose the permanent URI not the system one.
+        $permanent_uri = 'public://attachments/' . $uuid . '/' . $filename;
+
         $array = [
           'id' => $id,
           'description' => $description,
-          'url' => $this->processFilePath($uri),
+          'url' => $this->processFilePath($permanent_uri),
           'filename' => $filename,
           'mimetype' => $mimetype,
           'filesize' => $filesize,

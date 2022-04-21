@@ -247,7 +247,7 @@ class Report extends Resource {
     if (!empty($item['disaster'])) {
       foreach ($item['disaster'] as $index => $disaster) {
         $status = $disaster['status'] ?? '';
-        if ($status !== 'alert' && $status !== 'current' && $status !== 'past') {
+        if ($status !== 'alert' && $status !== 'current' && $status !== 'ongoing' && $status !== 'past') {
           unset($item['disaster'][$index]);
         }
       }

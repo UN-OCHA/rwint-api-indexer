@@ -257,6 +257,7 @@ class Mapping {
             'url-large' => ['type' => 'text', 'index' => FALSE],
             'url-small' => ['type' => 'text', 'index' => FALSE],
             'url-thumb' => ['type' => 'text', 'index' => FALSE],
+            'version' => ['type' => 'keyword'],
           ],
         ],
       ],

@@ -709,6 +709,7 @@ class Processor {
           $description,
           $langcode,
           $preview_page,
+          $preview_rotation,
           $uri,
           $mimetype,
           $filesize,
@@ -767,6 +768,11 @@ class Processor {
             'url-large' => $this->processFilePath($preview_uri, 'large'),
             'url-small' => $this->processFilePath($preview_uri, 'small'),
             'url-thumb' => $this->processFilePath($preview_uri, 'thumbnail'),
+            'version' => implode('-', [
+              $id,
+              $preview_page,
+              $preview_rotation,
+            ]),
           ];
         }
 

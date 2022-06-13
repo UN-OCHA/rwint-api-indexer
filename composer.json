@@ -1,42 +1,35 @@
 {
   "name": "reliefweb/api-indexer",
-  "description": "Standalone application to index the RW database into the API elasticsearch indexes.",
+  "description": "Standalone library to index the RW database into the API elasticsearch indexes.",
   "keywords": [
     "reliefweb",
     "api",
     "elasticsearch"
   ],
-  "type": "application",
-  "repositories": [
-    {
-      "type": "composer",
-      "url": "https://packagist.org"
-    },
-    {
-      "packagist": false
-    }
-  ],
+  "type": "library",
   "require": {
-    "php": ">=5.3.3",
-    "michelf/php-markdown": "1.8.*"
+    "php": ">=8.0",
+    "league/commonmark": "^2.2"
   },
   "require-dev": {
-    "phpunit/phpunit": "8.3.*",
-    "drupal/coder": "8.3.*"
+    "phpunit/phpunit": "^9.5",
+    "drupal/coder": "^8.3"
   },
   "autoload": {
-    "psr-0": {
-      "RWAPIIndexer": "src/"
+    "psr-4": {
+      "RWAPIIndexer\\": "src/RWAPIIndexer"
     }
   },
   "scripts": {
     "post-install-cmd": [
-      "./composer-phpcs-install.sh",
-      "git config core.hooksPath git-hooks"
+      "@phpcs-install",
+      "@git-hooks"
     ],
     "post-update-cmd": [
-      "./composer-phpcs-install.sh",
-      "git config core.hooksPath git-hooks"
-    ]
+      "@phpcs-install",
+      "@git-hooks"
+    ],
+    "phpcs-install": "./composer-phpcs-install.sh || exit 0",
+    "git-hooks": "test -d .git && git config core.hooksPath git-hooks || exit 0"
   }
 }

@@ -13,71 +13,70 @@ class Source extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = array(
-    'fields' => array(
-      'description' => 'description',
-    ),
-    'field_joins' => array(
-      'field_status' => array(
-        'status' => 'value',
-      ),
-      'field_shortname' => array(
+  protected $queryOptions = [
+    'fields' => [
+      'name' => 'name',
+      'description' => 'description__value',
+      'status' => 'moderation_status',
+    ],
+    'field_joins' => [
+      'field_shortname' => [
         'shortname' => 'value',
-      ),
-      'field_longname' => array(
+      ],
+      'field_longname' => [
         'longname' => 'value',
-      ),
-      'field_spanish_name' => array(
+      ],
+      'field_spanish_name' => [
         'spanish_name' => 'value',
-      ),
-      'field_homepage' => array(
-        'homepage' => 'url',
-      ),
-      'field_allowed_content_types' => array(
+      ],
+      'field_homepage' => [
+        'homepage' => 'uri',
+      ],
+      'field_allowed_content_types' => [
         'content_type' => 'multi_value',
-      ),
-      'field_fts_id' => array(
+      ],
+      'field_fts_id' => [
         'fts_id' => 'value',
-      ),
-      'field_term_image' => array(
+      ],
+      'field_logo' => [
         'logo' => 'image_reference',
-      ),
-      'field_disclaimer' => array(
+      ],
+      'field_disclaimer' => [
         'disclaimer' => 'value',
-      ),
-    ),
-    'references' => array(
+      ],
+    ],
+    'references' => [
       'field_organization_type' => 'type',
       'field_country' => 'country',
-    ),
-  );
+    ],
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = array(
-    'conversion' => array(
-      'description' => array('links', 'html'),
-      'content_type' => array('multi_int'),
-      'type' => array('single'),
-      'fts_id' => array('int'),
-    ),
-    'references' => array(
-      'type' => array(
-        'organization_type' => array('id', 'name'),
-      ),
-      'country' => array(
-        'country' => array('id', 'name', 'shortname', 'iso3', 'location'),
-      ),
-    ),
-  );
+  protected $processingOptions = [
+    'conversion' => [
+      'description' => ['links', 'html'],
+      'content_type' => ['multi_int'],
+      'type' => ['single'],
+      'fts_id' => ['int'],
+    ],
+    'references' => [
+      'type' => [
+        'organization_type' => ['id', 'name'],
+      ],
+      'country' => [
+        'country' => ['id', 'name', 'shortname', 'iso3', 'location'],
+      ],
+    ],
+  ];
 
   /**
    * Allowed content types for a source.
    *
    * @var array
    */
-  protected $contentTypes = array('job', 'report', 'training');
+  protected $contentTypes = ['job', 'report', 'training'];
 
   /**
    * {@inheritdoc}
@@ -87,7 +86,7 @@ class Source extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
-      ->addString('status', FALSE)
+      ->addStatus()
       ->addString('homepage', FALSE)
       ->addString('content_type', FALSE)
       // Names.
@@ -99,7 +98,7 @@ class Source extends Resource {
       ->addString('description')
       ->addString('description-html', NULL)
       // Country.
-      ->addTaxonomy('country', array('shortname', 'iso3'))
+      ->addTaxonomy('country', ['shortname', 'iso3'])
       ->addGeoPoint('country.location')
       // Organization type.
       ->addTaxonomy('type')

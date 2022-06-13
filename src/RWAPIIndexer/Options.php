@@ -12,7 +12,7 @@ class Options {
    *
    * @var array
    */
-  protected $options = array(
+  protected $options = [
     'bundle' => '',
     'elasticsearch' => 'http://127.0.0.1:9200',
     'mysql-host' => 'localhost',
@@ -31,8 +31,11 @@ class Options {
     'remove' => FALSE,
     'alias' => FALSE,
     'alias-only' => FALSE,
+    'simulate' => FALSE,
+    'replicas' => 1,
+    'shards' => 1,
     'log' => '',
-  );
+  ];
 
   /**
    * Construct the Options handler.
@@ -40,8 +43,8 @@ class Options {
    * @param array $options
    *   Indexing options.
    */
-  public function __construct(array $options = array()) {
-    // Called from ommand line.
+  public function __construct(array $options = []) {
+    // Called from command line.
     if (php_sapi_name() == 'cli') {
       $this->options['log'] = 'echo';
 
@@ -135,7 +138,7 @@ class Options {
 
         case '--filter':
         case '-f':
-          $options['filter'] = (int) array_shift($argv);
+          $options['filter'] = array_shift($argv);
           break;
 
         case '--chunk-size':
@@ -161,6 +164,21 @@ class Options {
         case '--alias-only':
         case '-A':
           $options['alias-only'] = TRUE;
+          break;
+
+        case '--simulate':
+        case '-s':
+          $options['simulate'] = TRUE;
+          break;
+
+        case '--replicas':
+        case '-R':
+          $options['replicas'] = (int) array_shift($argv);
+          break;
+
+        case '--shards':
+        case '-S':
+          $options['shards'] = (int) array_shift($argv);
           break;
 
         case '--help':
@@ -238,91 +256,105 @@ class Options {
    *   Options to validate.
    */
   public function validateOptions(array $options) {
-    $results = filter_var_array($options, array(
-      'bundle' => array(
+    $results = filter_var_array($options, [
+      'bundle' => [
         'filter' => FILTER_CALLBACK,
-        'options' => array($this, 'validateBundle'),
+        'options' => [$this, 'validateBundle'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'elasticsearch' => array(
+      ],
+      'elasticsearch' => [
         'filter' => FILTER_VALIDATE_URL,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'mysql-host' => array(
+      ],
+      'mysql-host' => [
         'filter' => FILTER_CALLBACK,
-        'options' => array($this, 'validateMysqlHost'),
+        'options' => [$this, 'validateMysqlHost'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'mysql-port' => array(
-        'filter'    => FILTER_VALIDATE_INT,
-        'options'   => array('min_range' => 1, 'max_range' => 65535),
+      ],
+      'mysql-port' => [
+        'filter' => FILTER_VALIDATE_INT,
+        'options' => ['min_range' => 1, 'max_range' => 65535],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'mysql-user' => array(
+      ],
+      'mysql-user' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^\S+$/'),
+        'options' => ['regexp' => '/^\S+$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'mysql-pass' => array(
+      ],
+      'mysql-pass' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^\S*$/'),
+        'options' => ['regexp' => '/^\S*$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'database' => array(
+      ],
+      'database' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^[a-zA-Z0-9_-]*$/'),
+        'options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'base-index-name' => array(
+      ],
+      'base-index-name' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^[a-zA-Z0-9_-]*$/'),
+        'options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'tag' => array(
+      ],
+      'tag' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^[a-zA-Z0-9_-]*$/'),
+        'options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'website' => array(
+      ],
+      'website' => [
         'filter' => FILTER_VALIDATE_URL,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'limit' => array(
+      ],
+      'limit' => [
         'filter' => FILTER_VALIDATE_INT,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'offset' => array(
+      ],
+      'offset' => [
         'filter' => FILTER_VALIDATE_INT,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'filter' => array(
+      ],
+      'filter' => [
         'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => array('regexp' => '/^(([a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+)*)([+][a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+(,[a-zA-Z0-9_-]+)*)*)*$/'),
+        'options' => ['regexp' => '/^(([a-zA-Z0-9_-]+:[a-zA-Z0-9_*-]+(,[a-zA-Z0-9_*-]+)*)([+][a-zA-Z0-9_-]+:[a-zA-Z0-9_*-]+(,[a-zA-Z0-9_*-]+)*)*)*$/'],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'chunk-size' => array(
-        'filter'    => FILTER_VALIDATE_INT,
-        'options'   => array('min_range' => 1, 'max_range' => 1000),
+      ],
+      'chunk-size' => [
+        'filter' => FILTER_VALIDATE_INT,
+        'options' => ['min_range' => 1, 'max_range' => 1000],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'id' => array(
-        'filter'    => FILTER_VALIDATE_INT,
-        'options'   => array('min_range' => 0),
+      ],
+      'id' => [
+        'filter' => FILTER_VALIDATE_INT,
+        'options' => ['min_range' => 0],
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'remove' => array(
+      ],
+      'remove' => [
         'filter' => FILTER_VALIDATE_BOOLEAN,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'alias' => array(
+      ],
+      'alias' => [
         'filter' => FILTER_VALIDATE_BOOLEAN,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-      'alias-only' => array(
+      ],
+      'alias-only' => [
         'filter' => FILTER_VALIDATE_BOOLEAN,
         'flags' => FILTER_NULL_ON_FAILURE,
-      ),
-    ));
+      ],
+      'simulate' => [
+        'filter' => FILTER_VALIDATE_BOOLEAN,
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ],
+      'replicas' => [
+        'filter' => FILTER_VALIDATE_INT,
+        'options' => ['min_range' => 0],
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ],
+      'shards' => [
+        'filter' => FILTER_VALIDATE_INT,
+        'options' => ['min_range' => 1, 'max_range' => 8],
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ],
+    ]);
 
     foreach ($results as $key => $value) {
       if (is_null($value)) {
@@ -361,7 +393,9 @@ class Options {
           "     -r, --remove Removes an entity if 'id' is provided or the index for the given entity bundle \n" .
           "     -a, --alias Set up the alias for the index after the indexing, ignored if id is provided \n" .
           "     -A, --alias-only Set up the alias for the index without indexing, ignored if id is provided \n" .
-          "\n";
+          "     -s, --simulate Return the number of indexable entities based on the provided limit and offset \n" .
+          "     -R, --replicas Create indices with this number of replicas, defaults to 1. Allowed: 0 or more \n" .
+          "     -S, --shards Create indices with this number of shards, defaults to 1. Allowed: 1-8) \n\n";
     exit();
   }
 

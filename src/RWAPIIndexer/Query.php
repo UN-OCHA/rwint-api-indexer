@@ -50,7 +50,7 @@ class Query {
    *
    * @var array
    */
-  protected $options = array();
+  protected $options = [];
 
   /**
    * Construct the query handler.
@@ -64,22 +64,22 @@ class Query {
    * @param array $options
    *   Query options.
    */
-  public function __construct(DatabaseConnection $connection, $entity_type, $bundle, array $options = array()) {
+  public function __construct(DatabaseConnection $connection, $entity_type, $bundle, array $options = []) {
     $this->connection = $connection;
     $this->entityType = $entity_type;
     $this->bundle = $bundle;
     $this->options = $options;
 
     if ($this->entityType === 'node') {
-      $this->baseTable = 'node';
+      $this->baseTable = 'node_field_data';
       $this->baseField = 'nid';
     }
     elseif ($entity_type === 'taxonomy_term') {
-      $this->baseTable = 'taxonomy_term_data';
+      $this->baseTable = 'taxonomy_term_field_data';
       $this->baseField = 'tid';
     }
     else {
-      throw new \Exception('RWAPIIndexer\Query: Unknow entity type');
+      throw new \Exception('RWAPIIndexer\Query: Unknown entity type');
     }
   }
 
@@ -114,9 +114,7 @@ class Query {
       $query->condition($this->baseTable . '.type', $this->bundle);
     }
     elseif ($this->entityType === 'taxonomy_term') {
-      $query->addField($this->baseTable, 'name', 'name');
-      $query->innerJoin('taxonomy_vocabulary', 'taxonomy_vocabulary', "taxonomy_vocabulary.vid = {$this->baseTable}.vid");
-      $query->condition('taxonomy_vocabulary.machine_name', $this->bundle, '=');
+      $query->condition($this->baseTable . '.vid', $this->bundle);
     }
   }
 
@@ -210,15 +208,24 @@ class Query {
     foreach ($conditions as $category => $fields) {
       foreach ($fields as $field => $values) {
         if ($category === 'fields') {
-          $query->condition($base_table . '.' . $field, $valus, 'IN');
+          if ($values !== '*') {
+            $query->condition($base_table . '.' . $field, $values, 'IN');
+          }
+          else {
+            $query->condition($base_table . '.' . $field, NULL, 'IS NOT NULL');
+          }
         }
         else {
-          $table = 'field_data_field_' . $field;
+          $table = $entity_type . '__field_' . $field;
           $alias = $table . '_filter';
-          $column = $category === 'references' ? 'tid' : 'value';
-          $condition = "{$alias}.entity_id = {$base_table}.{$base_field} AND {$alias}.entity_type = '{$entity_type}'";
+          $condition = "{$alias}.entity_id = {$base_table}.{$base_field}";
           $query->innerJoin($table, $alias, $condition);
-          $query->condition($alias . '.field_' . $field . '_' . $column, $values, 'IN');
+          // `*` is to check for the existence of the field which is already
+          // implied with the innerJoin().
+          if ($values !== '*') {
+            $column = $category === 'references' ? 'target_id' : 'value';
+            $query->condition($alias . '.field_' . $field . '_' . $column, $values, 'IN');
+          }
         }
       }
     }
@@ -321,7 +328,7 @@ class Query {
 
     // Fetch the ids.
     $result = $query->execute();
-    return !empty($result) ? $result->fetchCol() : array();
+    return !empty($result) ? $result->fetchCol() : [];
   }
 
   /**
@@ -339,14 +346,13 @@ class Query {
    */
   public function getItems($limit = NULL, $offset = NULL, array $ids = NULL) {
     $entity_type = $this->entityType;
-    $bundle = $this->bundle;
     $base_table = $this->baseTable;
     $base_field = $this->baseField;
 
     // Get the id of the entities to retrieve.
     $ids = $this->getIds($limit, $offset, $ids);
     if (empty($ids)) {
-      return array();
+      return [];
     }
 
     // Base query.
@@ -366,9 +372,9 @@ class Query {
     // Add the joined fields.
     if (isset($this->options['field_joins'])) {
       foreach ($this->options['field_joins'] as $field_name => $values) {
-        $field_table = 'field_data_' . $field_name;
+        $field_table = $entity_type . '__' . $field_name;
 
-        $condition = "{$field_table}.entity_id = {$base_table}.{$base_field} AND {$field_table}.entity_type = '{$entity_type}'";
+        $condition = "{$field_table}.entity_id = {$base_table}.{$base_field}";
         $query->leftJoin($field_table, $field_table, $condition);
 
         // Add the expressions.
@@ -379,35 +385,62 @@ class Query {
               $query->addExpression($expression, $alias);
               break;
 
+            // @todo review performances as there are many tables to join now.
             case 'image_reference':
-              $file_managed_table = 'file_managed_' . $field_name;
-              $condition = "{$file_managed_table}.fid = {$field_table}.{$field_name}_fid";
-              $query->leftJoin('file_managed', $file_managed_table, $condition);
+              // Join the image table.
+              $media_image_field = 'field_media_image';
+              $media_image_table = 'media__' . $media_image_field;
+              $media_image_alias = $media_image_table . '_' . $field_name;
+              $query->leftJoin($media_image_table, $media_image_alias, "{$media_image_alias}.entity_id = {$field_table}.{$field_name}_target_id");
 
-              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_fid, CONCAT_WS('###',
-                  {$field_table}.{$field_name}_fid,
-                  IFNULL({$field_table}.{$field_name}_alt, ''),
-                  IFNULL({$field_table}.{$field_name}_title, ''),
-                  IFNULL({$field_table}.{$field_name}_width, ''),
-                  IFNULL({$field_table}.{$field_name}_height, ''),
-                  IFNULL({$file_managed_table}.uri, ''),
-                  IFNULL({$file_managed_table}.filename, ''),
-                  IFNULL({$file_managed_table}.filesize, '')
+              // Join the copyright table.
+              $media_copyright_field = 'field_copyright';
+              $media_copyright_table = 'media__' . $media_copyright_field;
+              $media_copyright_alias = $media_copyright_table . '_' . $field_name;
+              $query->leftJoin($media_copyright_table, $media_copyright_alias, "{$media_copyright_alias}.entity_id = {$field_table}.{$field_name}_target_id");
+
+              // Join the description table.
+              $media_description_field = 'field_description';
+              $media_description_table = 'media__' . $media_description_field;
+              $media_description_alias = $media_description_table . '_' . $field_name;
+              $query->leftJoin($media_description_table, $media_description_alias, "{$media_description_alias}.entity_id = {$field_table}.{$field_name}_target_id");
+
+              // Join the file managed table.
+              $file_managed_table = 'file_managed';
+              $file_managed_alias = $file_managed_table . '_' . $field_name;
+              $query->leftJoin($file_managed_table, $file_managed_alias, "{$file_managed_alias}.fid = {$media_image_alias}.{$media_image_field}_target_id");
+
+              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_target_id IS NOT NULL, CONCAT_WS('###',
+                  {$field_table}.{$field_name}_target_id,
+                  IFNULL({$media_image_alias}.{$media_image_field}_width, ''),
+                  IFNULL({$media_image_alias}.{$media_image_field}_height, ''),
+                  IFNULL({$file_managed_alias}.uri, ''),
+                  IFNULL({$file_managed_alias}.filename, ''),
+                  IFNULL({$file_managed_alias}.filemime, ''),
+                  IFNULL({$file_managed_alias}.filesize, ''),
+                  IFNULL({$media_copyright_alias}.{$media_copyright_field}_value, ''),
+                  IFNULL({$media_description_alias}.{$media_description_field}_value, '')
                 ), NULL) SEPARATOR '%%%')";
               $query->addExpression($expression, $alias);
               break;
 
             case 'file_reference':
-              $file_managed_table = 'file_managed_' . $field_name;
-              $condition = "{$file_managed_table}.fid = {$field_table}.{$field_name}_fid";
-              $query->leftJoin('file_managed', $file_managed_table, $condition);
+              // Join the file managed table.
+              $file_managed_table = 'file_managed';
+              $file_managed_alias = $file_managed_table . '_' . $field_name;
+              $query->leftJoin($file_managed_table, $file_managed_alias, "{$file_managed_alias}.uuid = {$field_table}.{$field_name}_file_uuid");
 
-              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_fid, CONCAT_WS('###',
-                  {$field_table}.{$field_name}_fid,
+              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_file_uuid IS NOT NULL, CONCAT_WS('###',
+                  IFNULL({$field_table}.{$field_name}_revision_id, ''),
+                  IFNULL({$field_table}.{$field_name}_uuid, ''),
+                  IFNULL({$field_table}.{$field_name}_file_name, ''),
                   IFNULL({$field_table}.{$field_name}_description, ''),
-                  IFNULL({$file_managed_table}.uri, ''),
-                  IFNULL({$file_managed_table}.filename, ''),
-                  IFNULL({$file_managed_table}.filesize, '')
+                  IFNULL({$field_table}.{$field_name}_language, ''),
+                  IFNULL({$field_table}.{$field_name}_preview_page, ''),
+                  IFNULL({$field_table}.{$field_name}_preview_rotation, ''),
+                  IFNULL({$file_managed_alias}.uri, ''),
+                  IFNULL({$file_managed_alias}.filemime, ''),
+                  IFNULL({$file_managed_alias}.filesize, '')
                 ), NULL) SEPARATOR '%%%')";
               $query->addExpression($expression, $alias);
               break;
@@ -422,7 +455,7 @@ class Query {
     // Fetch the items.
     $result = $query->execute();
     if (empty($result)) {
-      return array();
+      return [];
     }
     $items = $result->fetchAllAssoc('id', \PDO::FETCH_ASSOC);
 
@@ -444,14 +477,13 @@ class Query {
   public function loadReferences(array &$items) {
     if (!empty($this->options['references']) && !empty($items)) {
       $ids = array_keys($items);
-      $queries = array();
+      $queries = [];
       foreach ($this->options['references'] as $field_name => $alias) {
-        $field_table = 'field_data_' . $field_name;
+        $field_table = $this->entityType . '__' . $field_name;
         $query = new DatabaseQuery($field_table, $field_table, $this->connection);
         $query->addField($field_table, 'entity_id', 'id');
-        $query->addField($field_table, "{$field_name}_tid", 'value');
+        $query->addField($field_table, "{$field_name}_target_id", 'value');
         $query->addExpression($this->connection->quote($alias), 'alias');
-        $query->condition("{$field_table}.entity_type", $this->entityType, '=');
         $query->condition("{$field_table}.entity_id", $ids, 'IN');
         $queries[] = $query->build();
       }

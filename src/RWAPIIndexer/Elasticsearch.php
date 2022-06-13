@@ -32,18 +32,18 @@ class Elasticsearch {
    *
    * @var array
    */
-  protected $defaultSettings = array(
+  protected $defaultSettings = [
     'number_of_shards' => 1,
     'number_of_replicas' => 1,
     // For deep pagination. Review "Search After" query when switching to 5.x.
     // 2,000,000 should be enough for several years.
     'max_result_window' => 2000000,
-    'analysis' => array(
-      'analyzer' => array(
-        'default' => array(
+    'analysis' => [
+      'analyzer' => [
+        'default' => [
           'type' => 'custom',
           'tokenizer' => 'standard',
-          'filter' => array(
+          'filter' => [
             'lowercase',
             'asciifolding',
             'elision',
@@ -51,13 +51,13 @@ class Elasticsearch {
             'filter_stemmer_possessive',
             'filter_word_delimiter',
             'filter_shingle',
-          ),
-          'char_filter' => array('html_strip'),
-        ),
-        'default_search' => array(
+          ],
+          'char_filter' => ['html_strip'],
+        ],
+        'default_search' => [
           'type' => 'custom',
           'tokenizer' => 'standard',
-          'filter' => array(
+          'filter' => [
             'lowercase',
             'asciifolding',
             'elision',
@@ -65,45 +65,69 @@ class Elasticsearch {
             'filter_stemmer_possessive',
             'filter_word_delimiter',
             'filter_shingle',
-          ),
-        ),
-        'search_as_you_type' => array(
+          ],
+        ],
+        'search_as_you_type' => [
           'type' => 'custom',
           'tokenizer' => 'standard',
-          'filter' => array(
+          'filter' => [
             'lowercase',
             'asciifolding',
             'elision',
-          ),
-        ),
-      ),
-      'filter' => array(
-        'filter_stemmer_possessive' => array(
+          ],
+        ],
+      ],
+      'normalizer' => [
+        'status' => [
+          'type' => 'custom',
+          'char_filter' => [
+            'status_synonyms',
+          ],
+          'filter' => [
+            'lowercase',
+          ],
+        ],
+      ],
+      'filter' => [
+        'filter_stemmer_possessive' => [
           'type' => 'stemmer',
           'name' => 'possessive_english',
-        ),
-        'filter_shingle' => array(
+        ],
+        'filter_shingle' => [
           'type' => 'shingle',
           'min_shingle_size' => 2,
           'max_shingle_size' => 4,
           'output_unigrams' => TRUE,
-        ),
-        'filter_edge_ngram' => array(
+        ],
+        'filter_edge_ngram' => [
           'type' => 'edge_ngram',
           'min_gram' => 1,
           'max_gram' => 20,
-        ),
-        'filter_word_delimiter' => array(
+        ],
+        'filter_word_delimiter' => [
           'type' => 'word_delimiter',
           'preserve_original' => TRUE,
-        ),
-        'filter_stop' => array(
+        ],
+        'filter_stop' => [
           'type' => 'stop',
-          'stopwords' => array('_english_'),
-        ),
-      ),
-    ),
-  );
+          'stopwords' => ['_english_'],
+        ],
+      ],
+      'char_filter' => [
+        'status_synonyms' => [
+          'type' => 'mapping',
+          'mappings' => [
+            'current => ongoing',
+            'on_hold => on-hold',
+            'to_review => to-review',
+            'alert_archive => alert-archive',
+            'draft_archive => draft-archive',
+            'external_archive => external-archive',
+          ],
+        ],
+      ],
+    ],
+  ];
 
   /**
    * Construct the elasticsearch handler for the given server.
@@ -154,10 +178,14 @@ class Elasticsearch {
    *   Elasticsearch index name.
    * @param array $mapping
    *   Index mapping.
+   * @param int $shards
+   *   The number of shards for this index.
+   * @param int $replicas
+   *   The number of replicas for this index.
    */
-  public function create($index, array $mapping) {
+  public function create($index, array $mapping, int $shards, int $replicas) {
     if (!$this->indexExists($index)) {
-      $this->createIndex($index, $mapping);
+      $this->createIndex($index, $mapping, $shards, $replicas);
     }
   }
 
@@ -190,16 +218,24 @@ class Elasticsearch {
    *   Index to create.
    * @param array $mapping
    *   Index mapping.
+   * @param int $shards
+   *   The number of shards for this index.
+   * @param int $replicas
+   *   The number of replicas for this index.
    */
-  public function createIndex($index, array $mapping) {
+  public function createIndex($index, array $mapping, int $shards, int $replicas) {
     $path = $this->getIndexPath($index);
 
-    $this->request('PUT', $path, array(
-      'settings' => $this->defaultSettings,
-      'mappings' => array(
+    $settings = $this->defaultSettings;
+    $settings['number_of_shards'] = $shards;
+    $settings['number_of_replicas'] = $replicas;
+
+    $this->request('PUT', $path, [
+      'settings' => $settings,
+      'mappings' => [
         'properties' => $mapping,
-      ),
-    ));
+      ],
+    ]);
   }
 
   /**
@@ -232,22 +268,22 @@ class Elasticsearch {
   public function addAlias($index) {
     $alias = $this->getIndexAlias($index);
 
-    $data = array(
-      'actions' => array(
-        array(
-          'remove' => array(
+    $data = [
+      'actions' => [
+        [
+          'remove' => [
             'index' => '*',
             'alias' => $alias,
-          ),
-        ),
-        array(
-          'add' => array(
+          ],
+        ],
+        [
+          'add' => [
             'index' => $this->getIndexPath($index),
             'alias' => $alias,
-          ),
-        ),
-      ),
-    );
+          ],
+        ],
+      ],
+    ];
 
     // Try to create the index alias.
     try {
@@ -272,16 +308,16 @@ class Elasticsearch {
   public function removeAlias($index) {
     $alias = $this->getIndexAlias($index);
 
-    $data = array(
-      'actions' => array(
-        array(
-          'remove' => array(
+    $data = [
+      'actions' => [
+        [
+          'remove' => [
             'index' => $this->getIndexPath($index),
             'alias' => $alias,
-          ),
-        ),
-      ),
-    );
+          ],
+        ],
+      ],
+    ];
 
     // Try to remove the index alias.
     try {
@@ -318,12 +354,12 @@ class Elasticsearch {
     // Prepare bulk indexing.
     foreach ($items as $item) {
       // Add the document to the bulk indexing data.
-      $action = array(
-        'index' => array(
+      $action = [
+        'index' => [
           '_index' => $path,
           '_id' => $item['id'],
-        ),
-      );
+        ],
+      ];
 
       $data .= json_encode($action, JSON_FORCE_OBJECT) . "\n";
       $data .= json_encode($item) . "\n";
@@ -384,7 +420,7 @@ class Elasticsearch {
         }
 
         // Request headers.
-        $headers = array();
+        $headers = [];
 
         if ($bulk) {
           $headers[] = 'Content-Type: application/x-ndjson';

@@ -57,7 +57,7 @@ class Manager {
    * @param array $options
    *   Indexing options.
    */
-  public function __construct(array $options = array()) {
+  public function __construct(array $options = []) {
     $this->metrics = new Metrics();
 
     // Indexing options.
@@ -70,7 +70,11 @@ class Manager {
     $this->references = new References();
 
     // Create a new elasticsearch handler.
-    $this->elasticsearch = new Elasticsearch($this->options->get('elasticsearch'), $this->options->get('base-index-name'), $this->options->get('tag'));
+    $this->elasticsearch = new Elasticsearch(
+      $this->options->get('elasticsearch'),
+      $this->options->get('base-index-name'),
+      $this->options->get('tag'),
+    );
 
     // Create a new field processor object to prepare items before indexing.
     $this->processor = new Processor($this->options->get('website'), $this->references);

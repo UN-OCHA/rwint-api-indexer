@@ -24,7 +24,9 @@ class DatabaseConnection extends \PDO {
     parent::__construct($dsn, $user, $password);
 
     // Set the statement class.
-    $this->setAttribute(\PDO::ATTR_STATEMENT_CLASS, array('\RWAPIIndexer\Database\Statement', array($this)));
+    $this->setAttribute(\PDO::ATTR_STATEMENT_CLASS, [
+      '\RWAPIIndexer\Database\Statement', [$this],
+    ]);
 
     // Make sure we can return all the concatenated data.
     $this->query('SET SESSION group_concat_max_len = 100000');

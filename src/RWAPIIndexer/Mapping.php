@@ -12,9 +12,9 @@ class Mapping {
    *
    * @var array
    */
-  private $mapping = array(
-    'timestamp' => array('type' => 'date', 'store' => TRUE, 'index' => FALSE),
-  );
+  private $mapping = [
+    'timestamp' => ['type' => 'date', 'store' => TRUE, 'index' => FALSE],
+  ];
 
   /**
    * Add an integer field definition to the mapping.
@@ -28,7 +28,7 @@ class Mapping {
    *   This Mapping instance.
    */
   public function addInteger($field, $alias = '') {
-    $this->addFieldMapping($field, array('type' => 'integer'), $alias);
+    $this->addFieldMapping($field, ['type' => 'integer'], $alias);
     return $this;
   }
 
@@ -44,7 +44,7 @@ class Mapping {
    *   This Mapping instance.
    */
   public function addFloat($field, $alias = '') {
-    $this->addFieldMapping($field, array('type' => 'float'), $alias);
+    $this->addFieldMapping($field, ['type' => 'float'], $alias);
     return $this;
   }
 
@@ -60,7 +60,7 @@ class Mapping {
    *   This Mapping instance.
    */
   public function addBoolean($field, $alias = '') {
-    $this->addFieldMapping($field, array('type' => 'boolean'), $alias);
+    $this->addFieldMapping($field, ['type' => 'boolean'], $alias);
     return $this;
   }
 
@@ -76,7 +76,21 @@ class Mapping {
    *   This Mapping instance.
    */
   public function addGeoPoint($field, $alias = '') {
-    $this->addFieldMapping($field, array('type' => 'geo_point'), $alias);
+    $this->addFieldMapping($field, ['type' => 'geo_point'], $alias);
+    return $this;
+  }
+
+  /**
+   * Add the status field definition to the mapping.
+   *
+   * @return \RWAPIIndexer\Bundles
+   *   This Mapping instance.
+   */
+  public function addStatus() {
+    $this->addFieldMapping('status', [
+      'type' => 'keyword',
+      'normalizer' => 'status',
+    ]);
     return $this;
   }
 
@@ -99,9 +113,9 @@ class Mapping {
    *   This Mapping instance.
    */
   public function addString($field, $index = TRUE, $exact = FALSE, $alias = '', $suggest = FALSE) {
-    $mapping = array(
+    $mapping = [
       'type' => 'text',
-    );
+    ];
     if ($index === NULL) {
       $mapping['index'] = FALSE;
     }
@@ -115,16 +129,16 @@ class Mapping {
       $mapping['type'] = 'keyword';
     }
     if ($exact) {
-      $mapping['fields']['exact'] = array(
+      $mapping['fields']['exact'] = [
         'type' => 'keyword',
-      );
+      ];
     }
     if ($suggest) {
-      $mapping['fields']['suggest'] = array(
+      $mapping['fields']['suggest'] = [
         'type' => 'search_as_you_type',
         'analyzer' => 'search_as_you_type',
         'search_analyzer' => 'search_as_you_type',
-      );
+      ];
     }
 
     $this->addFieldMapping($field, $mapping, $alias);
@@ -144,16 +158,16 @@ class Mapping {
    * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
-  public function addDates($field, array $subfields = array(), $alias = '') {
-    $properties = array();
+  public function addDates($field, array $subfields = [], $alias = '') {
+    $properties = [];
     // Add subfields.
-    foreach ($subfields as $key => $subfield) {
-      $properties[$subfield] = array('type' => 'date');
+    foreach ($subfields as $subfield) {
+      $properties[$subfield] = ['type' => 'date'];
     }
     // Default when using base field.
     $properties[$subfields[0]]['copy_to'] = $this->getCommonField($field, 'date');
 
-    $this->addFieldMapping($field, array('properties' => $properties), $alias);
+    $this->addFieldMapping($field, ['properties' => $properties], $alias);
     return $this;
   }
 
@@ -170,18 +184,18 @@ class Mapping {
    * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
-  public function addTaxonomy($field, array $subfields = array(), $alias = '') {
-    $properties = array(
-      'id' => array('type' => 'integer'),
-    );
+  public function addTaxonomy($field, array $subfields = [], $alias = '') {
+    $properties = [
+      'id' => ['type' => 'integer'],
+    ];
 
-    $subfields = array_merge(array('name'), $subfields);
+    $subfields = array_merge(['name'], $subfields);
     foreach ($subfields as $subfield) {
       $properties[$subfield] = $this->getMultiFieldMapping();
       // Copy the field to the common field (default of the base field).
       $properties[$subfield]['copy_to'] = $this->getCommonField($field);
     }
-    $this->addFieldMapping($field, array('properties' => $properties), $alias);
+    $this->addFieldMapping($field, ['properties' => $properties], $alias);
     return $this;
   }
 
@@ -197,22 +211,22 @@ class Mapping {
    *   This Mapping instance.
    */
   public function addImage($field, $alias = '') {
-    $mapping = array(
-      'properties' => array(
-        'id' => array('type' => 'integer'),
-        'mimetype' => array('type' => 'keyword'),
-        'filename' => array('type' => 'keyword'),
-        'filesize' => array('type' => 'integer'),
-        'caption' => array('type' => 'text', 'norms' => FALSE),
-        'copyright' => array('type' => 'text', 'norms' => FALSE),
-        'url' => array('type' => 'keyword'),
-        'url-large' => array('type' => 'text', 'index' => FALSE),
-        'url-small' => array('type' => 'text', 'index' => FALSE),
-        'url-thumb' => array('type' => 'text', 'index' => FALSE),
-        'width' => array('type' => 'integer'),
-        'height' => array('type' => 'integer'),
-      ),
-    );
+    $mapping = [
+      'properties' => [
+        'id' => ['type' => 'integer'],
+        'mimetype' => ['type' => 'keyword'],
+        'filename' => ['type' => 'keyword'],
+        'filesize' => ['type' => 'integer'],
+        'caption' => ['type' => 'text', 'norms' => FALSE],
+        'copyright' => ['type' => 'text', 'norms' => FALSE],
+        'url' => ['type' => 'keyword'],
+        'url-large' => ['type' => 'text', 'index' => FALSE],
+        'url-small' => ['type' => 'text', 'index' => FALSE],
+        'url-thumb' => ['type' => 'text', 'index' => FALSE],
+        'width' => ['type' => 'integer'],
+        'height' => ['type' => 'integer'],
+      ],
+    ];
     $this->addFieldMapping($field, $mapping, $alias);
     return $this;
   }
@@ -229,24 +243,25 @@ class Mapping {
    *   This Mapping instance.
    */
   public function addFile($field, $alias = '') {
-    $mapping = array(
-      'properties' => array(
-        'id' => array('type' => 'integer'),
-        'mimetype' => array('type' => 'keyword'),
-        'filename' => array('type' => 'keyword'),
-        'filesize' => array('type' => 'integer'),
-        'description' => array('type' => 'text', 'norms' => FALSE),
-        'url' => array('type' => 'keyword'),
-        'preview' => array(
-          'properties' => array(
-            'url' => array('type' => 'keyword'),
-            'url-large' => array('type' => 'text', 'index' => FALSE),
-            'url-small' => array('type' => 'text', 'index' => FALSE),
-            'url-thumb' => array('type' => 'text', 'index' => FALSE),
-          ),
-        ),
-      ),
-    );
+    $mapping = [
+      'properties' => [
+        'id' => ['type' => 'integer'],
+        'mimetype' => ['type' => 'keyword'],
+        'filename' => ['type' => 'keyword'],
+        'filesize' => ['type' => 'integer'],
+        'description' => ['type' => 'text', 'norms' => FALSE],
+        'url' => ['type' => 'keyword'],
+        'preview' => [
+          'properties' => [
+            'url' => ['type' => 'keyword'],
+            'url-large' => ['type' => 'text', 'index' => FALSE],
+            'url-small' => ['type' => 'text', 'index' => FALSE],
+            'url-thumb' => ['type' => 'text', 'index' => FALSE],
+            'version' => ['type' => 'keyword'],
+          ],
+        ],
+      ],
+    ];
     $this->addFieldMapping($field, $mapping, $alias);
     return $this;
   }
@@ -300,15 +315,15 @@ class Mapping {
    *   Mulitfield Mapping.
    */
   private function getMultiFieldMapping() {
-    return array(
+    return [
       'type' => 'text',
       'norms' => FALSE,
-      'fields' => array(
-        'exact' => array(
+      'fields' => [
+        'exact' => [
           'type' => 'keyword',
-        ),
-      ),
-    );
+        ],
+      ],
+    ];
   }
 
   /**
@@ -329,7 +344,7 @@ class Mapping {
     $name = 'common_' . str_replace('.', '_', $field);
 
     // Common fields.
-    $fields = array($name);
+    $fields = [$name];
 
     // Create the common field mapping if doesn't exist.
     if (!isset($this->mapping[$name])) {
@@ -342,7 +357,7 @@ class Mapping {
         }
       }
       else {
-        $this->addFieldMapping($name, array('type' => $type), $field);
+        $this->addFieldMapping($name, ['type' => $type], $field);
       }
     }
 
@@ -369,13 +384,13 @@ class Mapping {
     $field = array_shift($path);
 
     if (!isset($this->mapping[$field])) {
-      $this->mapping[$field] = array();
+      $this->mapping[$field] = [];
     }
     $parent = &$this->mapping[$field];
 
     foreach ($path as $field) {
       if (!isset($parent['properties'][$field])) {
-        $parent['properties'][$field] = array();
+        $parent['properties'][$field] = [];
       }
       $parent = &$parent['properties'][$field];
     }

@@ -38,7 +38,7 @@ class Statement extends \PDOStatement {
    *   Associative array of field data keyed by the given key.
    */
   public function fetchAllAssoc($key, $fetch = NULL) {
-    $return = array();
+    $return = [];
     if (isset($fetch)) {
       if (is_string($fetch)) {
         $this->setFetchMode(\PDO::FETCH_CLASS, $fetch);
@@ -68,7 +68,7 @@ class Statement extends \PDOStatement {
    *   Associative array.
    */
   public function fetchAllKeyed($key_index = 0, $value_index = 1) {
-    $return = array();
+    $return = [];
     $this->setFetchMode(\PDO::FETCH_NUM);
     foreach ($this as $record) {
       $return[$record[$key_index]] = $record[$value_index];

@@ -31,5 +31,10 @@
     ],
     "phpcs-install": "./composer-phpcs-install.sh || exit 0",
     "git-hooks": "test -d .git && git config core.hooksPath git-hooks || exit 0"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
   }
 }

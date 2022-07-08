@@ -18,10 +18,12 @@ class Disaster extends Resource {
       'name' => 'name',
       'description' => 'description__value',
       'status' => 'moderation_status',
+      'date_created' => 'created',
+      'date_changed' => 'changed',
     ],
     'field_joins' => [
       'field_disaster_date' => [
-        'date' => 'value',
+        'date_event' => 'value',
       ],
       'field_glide' => [
         'glide' => 'value',
@@ -47,7 +49,9 @@ class Disaster extends Resource {
   protected $processingOptions = [
     'conversion' => [
       'description' => ['links'],
-      'date' => ['time'],
+      'date_event' => ['time'],
+      'date_created' => ['time'],
+      'date_changed' => ['time'],
       'featured' => ['bool'],
       'country' => ['primary'],
       'type' => ['primary'],
@@ -106,7 +110,7 @@ class Disaster extends Resource {
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
       ->addStatus()
-      ->addDates('date', ['created'])
+      ->addDates('date', ['created', 'changed', 'event'])
       ->addBoolean('featured')
       ->addBoolean('current')
       // Names.
@@ -140,6 +144,24 @@ class Disaster extends Resource {
    * {@inheritdoc}
    */
   public function processItem(&$item) {
+    // Handle dates.
+    if (isset($item['date_event'])) {
+      $item['date']['event'] = $item['date_event'];
+      // This is for legacy compatibility where the event date was used as the
+      // creation date because there was no other date available. It will be
+      // overridden with the real creation date below if it exists.
+      $item['date']['created'] = $item['date_event'];
+      unset($item['date_event']);
+    }
+    if (isset($item['date_created'])) {
+      $item['date']['created'] = $item['date_created'];
+      unset($item['date_created']);
+    }
+    if (isset($item['date_changed'])) {
+      $item['date']['changed'] = $item['date_changed'];
+      unset($item['date_changed']);
+    }
+
     // Legacy "current" status.
     if (!empty($item['status']) && ($item['status'] === 'current' || $item['status'] === 'ongoing')) {
       $item['current'] = TRUE;
@@ -154,9 +176,6 @@ class Disaster extends Resource {
       $this->processor->processProfile($this->connection, $item, $this->profileSections);
     }
     unset($item['show_profile']);
-
-    // Handle date.
-    $item['date'] = ['created' => $item['date']];
   }
 
 }

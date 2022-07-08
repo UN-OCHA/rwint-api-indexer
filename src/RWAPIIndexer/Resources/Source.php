@@ -18,6 +18,8 @@ class Source extends Resource {
       'name' => 'name',
       'description' => 'description__value',
       'status' => 'moderation_status',
+      'date_created' => 'created',
+      'date_changed' => 'changed',
     ],
     'field_joins' => [
       'field_shortname' => [
@@ -60,6 +62,8 @@ class Source extends Resource {
       'content_type' => ['multi_int'],
       'type' => ['single'],
       'fts_id' => ['int'],
+      'date_created' => ['time'],
+      'date_changed' => ['time'],
     ],
     'references' => [
       'type' => [
@@ -106,6 +110,8 @@ class Source extends Resource {
       ->addInteger('fts_id')
       // Logo.
       ->addImage('logo')
+      // Dates.
+      ->addDates('date', ['created', 'changed'])
       // Disclaimer.
       ->addString('disclaimer', FALSE);
 
@@ -116,6 +122,16 @@ class Source extends Resource {
    * {@inheritdoc}
    */
   public function processItem(&$item) {
+    // Handle dates.
+    if (isset($item['date_created'])) {
+      $item['date']['created'] = $item['date_created'];
+      unset($item['date_created']);
+    }
+    if (isset($item['date_changed'])) {
+      $item['date']['changed'] = $item['date_changed'];
+      unset($item['date_changed']);
+    }
+
     // Content type.
     if (!empty($item['content_type'])) {
       foreach ($item['content_type'] as $key => $value) {

@@ -18,6 +18,8 @@ class Country extends Resource {
       'name' => 'name',
       'description' => 'description__value',
       'status' => 'moderation_status',
+      'date_created' => 'created',
+      'date_changed' => 'changed',
     ],
     'field_joins' => [
       'field_shortname' => [
@@ -46,6 +48,8 @@ class Country extends Resource {
       'featured' => ['bool'],
       'latitude' => ['float'],
       'longitude' => ['float'],
+      'date_created' => ['time'],
+      'date_changed' => ['time'],
     ],
   ];
 
@@ -95,6 +99,8 @@ class Country extends Resource {
       // Description -- legacy.
       ->addString('description')
       ->addString('description-html', NULL)
+      // Dates.
+      ->addDates('date', ['created', 'changed'])
       // Profile.
       ->addProfile($this->profileSections);
 
@@ -105,6 +111,16 @@ class Country extends Resource {
    * {@inheritdoc}
    */
   public function processItem(&$item) {
+    // Handle dates.
+    if (isset($item['date_created'])) {
+      $item['date']['created'] = $item['date_created'];
+      unset($item['date_created']);
+    }
+    if (isset($item['date_changed'])) {
+      $item['date']['changed'] = $item['date_changed'];
+      unset($item['date_changed']);
+    }
+
     // Legacy "current" status.
     if (!empty($item['status']) && ($item['status'] === 'current' || $item['status'] === 'ongoing')) {
       $item['current'] = TRUE;

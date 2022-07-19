@@ -436,6 +436,7 @@ class Query {
                   IFNULL({$field_table}.{$field_name}_file_name, ''),
                   IFNULL({$field_table}.{$field_name}_description, ''),
                   IFNULL({$field_table}.{$field_name}_language, ''),
+                  IFNULL({$field_table}.{$field_name}_preview_uuid, ''),
                   IFNULL({$field_table}.{$field_name}_preview_page, ''),
                   IFNULL({$field_table}.{$field_name}_preview_rotation, ''),
                   IFNULL({$file_managed_alias}.uri, ''),

@@ -709,6 +709,7 @@ class Processor {
           $filename,
           $description,
           $langcode,
+          $preview_uuid,
           $preview_page,
           $preview_rotation,
           $uri,
@@ -761,9 +762,9 @@ class Processor {
         ];
 
         // PDF attachment.
-        if ($array['mimetype'] === 'application/pdf' && !empty($preview_page)) {
+        if (!empty($preview_uuid) && !empty($preview_page)) {
           $preview_uri = str_replace('/attachments/', '/previews/', $uri);
-          $preview_uri = preg_replace('#\.pdf$#i', '.png', $preview_uri);
+          $preview_uri = preg_replace('#\..+$#i', '.png', $preview_uri);
           $array['preview'] = [
             'url' => $this->processFilePath($preview_uri),
             'url-large' => $this->processFilePath($preview_uri, 'large'),

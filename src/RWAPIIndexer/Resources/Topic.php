@@ -104,6 +104,7 @@ class Topic extends Resource {
       // Tags.
       ->addTaxonomy('theme')
       ->addTaxonomy('disaster_type')
+      ->addString('disaster_type.code', FALSE)
       // Images.
       ->addImage('icon')
       // Flags.

@@ -634,6 +634,7 @@ class Processor {
       $items = [];
       foreach (explode('%%%', $field) as $item) {
         [
+          $delta,
           $id,
           $width,
           $height,
@@ -678,10 +679,11 @@ class Processor {
           }
         }
 
-        $items[] = $array;
+        $items[$delta] = $array;
       }
+      ksort($items);
       if (!empty($items)) {
-        $field = $single ? $items[0] : $items;
+        $field = $single ? reset($items) : array_values($items);
         return TRUE;
       }
     }
@@ -704,6 +706,7 @@ class Processor {
       $items = [];
       foreach (explode('%%%', $field) as $item) {
         [
+          $delta,
           $id,
           $uuid,
           $filename,
@@ -784,10 +787,11 @@ class Processor {
           }
         }
 
-        $items[] = $array;
+        $items[$delta] = $array;
       }
+      ksort($items);
       if (!empty($items)) {
-        $field = $single ? $items[0] : $items;
+        $field = $single ? reset($items) : array_values($items);
         return TRUE;
       }
     }
@@ -1006,6 +1010,7 @@ class Processor {
       $items = [];
       foreach (explode('%%%', $field) as $item) {
         [
+          $delta,
           $url,
           $title,
           $override,
@@ -1023,10 +1028,11 @@ class Processor {
           }
         }
 
-        $items[] = $array;
+        $items[$delta] = $array;
       }
+      ksort($array);
       if (!empty($items)) {
-        $field = $single ? $items[0] : $items;
+        $field = $single ? reset($items) : array_values($items);
         return TRUE;
       }
     }

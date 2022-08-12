@@ -411,6 +411,7 @@ class Query {
               $query->leftJoin($file_managed_table, $file_managed_alias, "{$file_managed_alias}.fid = {$media_image_alias}.{$media_image_field}_target_id");
 
               $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_target_id IS NOT NULL, CONCAT_WS('###',
+                  {$field_table}.delta,
                   {$field_table}.{$field_name}_target_id,
                   IFNULL({$media_image_alias}.{$media_image_field}_width, ''),
                   IFNULL({$media_image_alias}.{$media_image_field}_height, ''),
@@ -431,6 +432,7 @@ class Query {
               $query->leftJoin($file_managed_table, $file_managed_alias, "{$file_managed_alias}.uuid = {$field_table}.{$field_name}_file_uuid");
 
               $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_file_uuid IS NOT NULL, CONCAT_WS('###',
+                  {$field_table}.delta,
                   IFNULL({$field_table}.{$field_name}_revision_id, ''),
                   IFNULL({$field_table}.{$field_name}_uuid, ''),
                   IFNULL({$field_table}.{$field_name}_file_name, ''),
@@ -448,6 +450,7 @@ class Query {
 
             case 'river_search':
               $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_url IS NOT NULL, CONCAT_WS('###',
+                  {$field_table}.delta,
                   {$field_table}.{$field_name}_url,
                   IFNULL({$field_table}.{$field_name}_title, ''),
                   IFNULL({$field_table}.{$field_name}_override, '')

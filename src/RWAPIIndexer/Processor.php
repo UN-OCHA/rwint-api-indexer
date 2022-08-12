@@ -674,7 +674,7 @@ class Processor {
 
         foreach ($array as $key => $value) {
           if (empty($value)) {
-            unset($key);
+            unset($array[$key]);
           }
         }
 
@@ -780,7 +780,7 @@ class Processor {
 
         foreach ($array as $key => $value) {
           if (empty($value)) {
-            unset($key);
+            unset($array[$key]);
           }
         }
 
@@ -988,6 +988,49 @@ class Processor {
         $this->processConversion(['html'], $item['profile'], 'overview');
       }
     }
+  }
+
+  /**
+   * Process a river search field.
+   *
+   * @param string $field
+   *   Image information to convert to image field.
+   * @param bool $single
+   *   Indicates that the field should could contain a single value.
+   *
+   * @return bool
+   *   Processing success.
+   */
+  public function processRiverSearch(&$field, $single = FALSE) {
+    if (isset($field) && !empty($field)) {
+      $items = [];
+      foreach (explode('%%%', $field) as $item) {
+        [
+          $url,
+          $title,
+          $override,
+        ] = explode('###', $item);
+
+        $array = [
+          'url' => $url,
+          'title' => $title,
+          'override' => !empty($override) ? intval($override, 10) : NULL,
+        ];
+
+        foreach ($array as $key => $value) {
+          if (empty($value)) {
+            unset($array[$key]);
+          }
+        }
+
+        $items[] = $array;
+      }
+      if (!empty($items)) {
+        $field = $single ? $items[0] : $items;
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 
 }

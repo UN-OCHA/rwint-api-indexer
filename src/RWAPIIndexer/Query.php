@@ -446,6 +446,15 @@ class Query {
               $query->addExpression($expression, $alias);
               break;
 
+            case 'river_search':
+              $expression = "GROUP_CONCAT(DISTINCT IF({$field_table}.{$field_name}_url IS NOT NULL, CONCAT_WS('###',
+                  {$field_table}.{$field_name}_url,
+                  IFNULL({$field_table}.{$field_name}_title, ''),
+                  IFNULL({$field_table}.{$field_name}_override, '')
+                ), NULL) SEPARATOR '%%%')";
+              $query->addExpression($expression, $alias);
+              break;
+
             default:
               $query->addField($field_table, $field_name . '_' . $value, $alias);
           }

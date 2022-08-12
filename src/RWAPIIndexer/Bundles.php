@@ -40,6 +40,11 @@ class Bundles {
       'type' => 'node',
       'index' => 'book',
     ],
+    'topic' => [
+      'class' => '\RWAPIIndexer\Resources\Topic',
+      'type' => 'node',
+      'index' => 'topics',
+    ],
     'country' => [
       'class' => '\RWAPIIndexer\Resources\Country',
       'type' => 'taxonomy_term',

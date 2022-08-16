@@ -634,6 +634,7 @@ class Processor {
       $items = [];
       foreach (explode('%%%', $field) as $item) {
         [
+          $delta,
           $id,
           $width,
           $height,
@@ -674,14 +675,15 @@ class Processor {
 
         foreach ($array as $key => $value) {
           if (empty($value)) {
-            unset($key);
+            unset($array[$key]);
           }
         }
 
-        $items[] = $array;
+        $items[$delta] = $array;
       }
+      ksort($items);
       if (!empty($items)) {
-        $field = $single ? $items[0] : $items;
+        $field = $single ? reset($items) : array_values($items);
         return TRUE;
       }
     }
@@ -704,6 +706,7 @@ class Processor {
       $items = [];
       foreach (explode('%%%', $field) as $item) {
         [
+          $delta,
           $id,
           $uuid,
           $filename,
@@ -780,14 +783,15 @@ class Processor {
 
         foreach ($array as $key => $value) {
           if (empty($value)) {
-            unset($key);
+            unset($array[$key]);
           }
         }
 
-        $items[] = $array;
+        $items[$delta] = $array;
       }
+      ksort($items);
       if (!empty($items)) {
-        $field = $single ? $items[0] : $items;
+        $field = $single ? reset($items) : array_values($items);
         return TRUE;
       }
     }
@@ -988,6 +992,51 @@ class Processor {
         $this->processConversion(['html'], $item['profile'], 'overview');
       }
     }
+  }
+
+  /**
+   * Process a river search field.
+   *
+   * @param string $field
+   *   Image information to convert to image field.
+   * @param bool $single
+   *   Indicates that the field should could contain a single value.
+   *
+   * @return bool
+   *   Processing success.
+   */
+  public function processRiverSearch(&$field, $single = FALSE) {
+    if (isset($field) && !empty($field)) {
+      $items = [];
+      foreach (explode('%%%', $field) as $item) {
+        [
+          $delta,
+          $url,
+          $title,
+          $override,
+        ] = explode('###', $item);
+
+        $array = [
+          'url' => $url,
+          'title' => $title,
+          'override' => !empty($override) ? intval($override, 10) : NULL,
+        ];
+
+        foreach ($array as $key => $value) {
+          if (empty($value)) {
+            unset($array[$key]);
+          }
+        }
+
+        $items[$delta] = $array;
+      }
+      ksort($array);
+      if (!empty($items)) {
+        $field = $single ? reset($items) : array_values($items);
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 
 }

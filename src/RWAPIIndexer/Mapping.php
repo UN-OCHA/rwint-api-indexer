@@ -200,6 +200,28 @@ class Mapping {
   }
 
   /**
+   * Add a river search field definition to the mapping.
+   *
+   * @param string $field
+   *   Field Name.
+   * @param string $alias
+   *   Field index alias.
+   *
+   * @return \RWAPIIndexer\Bundles
+   *   This Mapping instance.
+   */
+  public function addRiverSearch($field, $alias = '') {
+    $properties = [
+      'id' => ['type' => 'keyword'],
+      'url' => ['type' => 'keyword'],
+      'title' => ['type' => 'text', 'norms' => FALSE],
+      'override' => ['type' => 'integer'],
+    ];
+    $this->addFieldMapping($field, ['properties' => $properties], $alias);
+    return $this;
+  }
+
+  /**
    * Add a file field definition to the mapping.
    *
    * @param string $field

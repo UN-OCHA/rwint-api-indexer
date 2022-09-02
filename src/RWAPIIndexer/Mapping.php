@@ -108,11 +108,14 @@ class Mapping {
    *   Field index alias.
    * @param bool $suggest
    *   Whether to also index the string as a suggestion for autocomplete or not.
+   * @param array $collations
+   *   List of languages to use to create collated versions of the field that
+   *   can be used for sorting alphabatetically for example.
    *
    * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.
    */
-  public function addString($field, $index = TRUE, $exact = FALSE, $alias = '', $suggest = FALSE) {
+  public function addString($field, $index = TRUE, $exact = FALSE, $alias = '', $suggest = FALSE, array $collations = []) {
     $mapping = [
       'type' => 'text',
     ];
@@ -138,6 +141,13 @@ class Mapping {
         'type' => 'search_as_you_type',
         'analyzer' => 'search_as_you_type',
         'search_analyzer' => 'search_as_you_type',
+      ];
+    }
+    foreach ($collations as $language) {
+      $mapping['fields']['collation_' . $language] = [
+        'type' => 'icu_collation_keyword',
+        'index' => FALSE,
+        'language' => $language,
       ];
     }
 

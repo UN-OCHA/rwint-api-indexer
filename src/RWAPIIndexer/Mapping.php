@@ -110,7 +110,7 @@ class Mapping {
    *   Whether to also index the string as a suggestion for autocomplete or not.
    * @param array $collations
    *   List of languages to use to create collated versions of the field that
-   *   can be used for sorting alphabatetically for example.
+   *   can be used for sorting alphabetically for example.
    *
    * @return \RWAPIIndexer\Bundles
    *   This Mapping instance.

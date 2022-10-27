@@ -63,8 +63,8 @@ class Topic extends Resource {
    */
   protected $processingOptions = [
     'conversion' => [
-      'introduction' => ['links', 'html_iframe'],
-      'overview' => ['links', 'html_iframe'],
+      'introduction' => ['links', 'html'],
+      'overview' => ['links', 'html_iframe_disaster_map'],
       'resources' => ['links', 'html'],
       'date_created' => ['time'],
       'date_changed' => ['time'],

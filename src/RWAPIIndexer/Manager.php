@@ -77,7 +77,7 @@ class Manager {
     );
 
     // Create a new field processor object to prepare items before indexing.
-    $this->processor = new Processor($this->options->get('website'), $this->references);
+    $this->processor = new Processor($this->options->get('website'), $this->connection, $this->references);
   }
 
   /**

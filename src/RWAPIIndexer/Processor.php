@@ -32,6 +32,13 @@ class Processor {
   protected $hostname = '';
 
   /**
+   * Database connection.
+   *
+   * @var \RWAPIIndexer\Database\DatabaseConnection
+   */
+  protected $connection;
+
+  /**
    * References handler.
    *
    * @var \RWAPIIndexer\References
@@ -187,12 +194,15 @@ class Processor {
    *
    * @param string $website
    *   Website URL.
+   * @param \RWAPIIndexer\Database\DatabaseConnection $connection
+   *   Database connection.
    * @param \RWAPIIndexer\References $references
    *   References handler.
    */
-  public function __construct($website, References $references) {
+  public function __construct($website, DatabaseConnection $connection, References $references) {
     $this->website = $website;
     $this->hostname = preg_replace('#^https?://#', '', $this->website);
+    $this->connection = $connection;
     $this->references = $references;
     $this->publicSchemeUrl = $website . '/sites/default/files/';
     // Markdown library.
@@ -261,6 +271,19 @@ class Processor {
         // Convert iframe special syntax.
         case 'html_iframe':
           $text = $this->processIframes($item[$key]);
+          $html = $this->processMarkdown($text);
+          if (!empty($html)) {
+            $html = $this->processHtml($html, TRUE);
+            $item[$key . '-html'] = $html;
+          }
+          break;
+
+        // Convert a field value in markdown format to HTML.
+        // Convert iframe special syntax.
+        // Convert disaster map tokens.
+        case 'html_iframe_disaster_map':
+          $text = $this->processDisasterMapTokens($item[$key]);
+          $text = $this->processIframes($text);
           $html = $this->processMarkdown($text);
           if (!empty($html)) {
             $html = $this->processHtml($html, TRUE);
@@ -475,7 +498,7 @@ class Processor {
   /**
    * Convert the special iframe markdown-like syntax to html.
    *
-   * Syntax is: [iframe:width:height](link).
+   * Syntax is: [iframe:widthxheight "title"](link).
    *
    * @param string $text
    *   Markdown text to process.
@@ -491,7 +514,68 @@ class Processor {
       $title = !empty($data['title']) ? $data['title'] : 'iframe';
       $url = $data['url'];
 
-      return '<iframe width="' . $width . '" height="' . $height . '" src="' . $data['url'] . '" frameborder="0" allowfullscreen></iframe>';
+      return '<iframe width="' . $width . '" height="' . $height . '" src="' . $data['url'] . '" title="' . $title . '" frameborder="0" allowfullscreen></iframe>';
+    }, $text);
+  }
+
+  /**
+   * Convert disaster map tokens.
+   *
+   * Syntax is: [disaster-map:XX].
+   *
+   * @param string $text
+   *   Markdown text to process.
+   *
+   * @return string
+   *   Processed text.
+   */
+  public function processDisasterMapTokens($text) {
+    static $disaster_types = [];
+    if (!empty($disaster_type_references)) {
+      $table = 'taxonomy_term_field_data';
+      $code_table = 'taxonomy_term__field_disaster_type_code';
+      $query = new DatabaseQuery($table, $table, $this->connection);
+      $query->innerJoin($code_table, $code_table, "$code_table.entity_id = $table.tid");
+      $query->addExpression("UPPER($code_table.field_disaster_type_code_value)", 'code');
+      $query->addField($table, 'name', 'name');
+      $query->condition($table . '.vid', 'disaster_type');
+      $result = $query->execute();
+      if (!empty($result)) {
+        $disaster_types = $result->fetchAllKeyed();
+      }
+    }
+
+    $base_url = $this->website . '/disaster-map/';
+    $pattern = '/\[disaster-map:(?<values>[^\]]+)\]/';
+    return preg_replace_callback($pattern, static function ($data) use ($disaster_types, $base_url) {
+      $title = 'Disasters';
+      $url = $base_url . $data['values'];
+      if (!empty($disaster_types)) {
+        $values = explode('-', strtoupper($data['values']));
+        $types = [];
+        foreach ($values as $value) {
+          if (is_numeric($value)) {
+            $types = [];
+            break;
+          }
+          elseif (isset($disaster_types[$value])) {
+            $types[] = $disaster_types[$value];
+          }
+        }
+        if (!empty($types)) {
+          $type = array_pop($types);
+          if (count($types) > 0) {
+            $type = strtr('@types and @type', [
+              '@types' => implode(', ', $types),
+              '@type' => $type,
+            ]);
+          }
+          $title = strtr('@type disasters covered by ReliefWeb in the last 12 months.', [
+            '@type' => $type,
+          ]);
+        }
+      }
+      return '<iframe width="1000" height="490" src="' . $url . '" title="' . $title . '" frameborder="0" allowfullscreen></iframe>';
     }, $text);
   }
 
@@ -852,14 +936,12 @@ class Processor {
   /**
    * Process the profile of a taxonomy term (country or disaster).
    *
-   * @param \RWAPIIndexer\Database\DatabaseConnection $connection
-   *   Database connection.
    * @param array $item
    *   Item to process.
    * @param array $sections
    *   Definition of the profile sections.
    */
-  public function processProfile(DatabaseConnection $connection, array &$item, array $sections) {
+  public function processProfile(array &$item, array $sections) {
     $description = [];
     $profile = [];
 
@@ -882,7 +964,7 @@ class Processor {
       $section = [];
       $table = $entity_type . '__field_' . $id;
 
-      $query = new DatabaseQuery($table, $table, $connection);
+      $query = new DatabaseQuery($table, $table, $this->connection);
       $query->addField($table, 'field_' . $id . '_url', 'url');
       $query->addField($table, 'field_' . $id . '_title', 'title');
       $query->addField($table, 'field_' . $id . '_image', $image_field);

@@ -173,7 +173,7 @@ class Disaster extends Resource {
       unset($item['description']);
     }
     else {
-      $this->processor->processProfile($this->connection, $item, $this->profileSections);
+      $this->processor->processProfile($item, $this->profileSections);
     }
     unset($item['show_profile']);
   }

@@ -507,14 +507,18 @@ class Processor {
    *   Processed text.
    */
   public function processIframes($text) {
-    $pattern = "/\[iframe(?:[:](?<width>\d+))?(?:[:x](?<height>\d+))?(?:[ ]+\"?(?<title>[^\"\]]+)\"?)?\](\((?<url>[^\)]+)\))?/";
+    $pattern = "/\[iframe(?:[:](?<width>\d+))?(?:[:x](?<height>\d+))?(?:[ ]+\"?(?<title>[^\"\]]+)\"?)?\](\((?<url>[^\)]*)\))?/";
     return preg_replace_callback($pattern, static function ($data) {
+      $url = !empty($data['url']) ? trim($data['url']) : '';
+      if (empty($url)) {
+        return '';
+      }
+
       $width = !empty($data['width']) ? $data['width'] : '1000';
       $height = !empty($data['height']) ? $data['height'] : '400';
       $title = !empty($data['title']) ? $data['title'] : 'iframe';
-      $url = $data['url'];
 
-      return '<iframe width="' . $width . '" height="' . $height . '" src="' . $data['url'] . '" title="' . $title . '" frameborder="0" allowfullscreen></iframe>';
+      return '<iframe width="' . $width . '" height="' . $height . '" src="' . $url . '" title="' . $title . '" frameborder="0" allowfullscreen></iframe>';
     }, $text);
   }
 

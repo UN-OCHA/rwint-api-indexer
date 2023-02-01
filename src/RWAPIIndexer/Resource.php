@@ -81,6 +81,13 @@ abstract class Resource {
   protected $options = NULL;
 
   /**
+   * Database query object to get items to index.
+   *
+   * @var \RWAPIIndexer\Database\Query
+   */
+  protected $query;
+
+  /**
    * Construct the resource handler.
    *
    * @param string $bundle

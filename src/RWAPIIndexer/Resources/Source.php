@@ -90,6 +90,7 @@ class Source extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
+      ->addString('redirects', FALSE)
       ->addStatus()
       ->addString('homepage', FALSE)
       ->addString('content_type', FALSE)

@@ -282,6 +282,44 @@ abstract class Resource {
   }
 
   /**
+   * Retrieve the old URLs that redirect to the given entity ids.
+   *
+   * @param array $ids
+   *   Entity Ids.
+   *
+   * @return array
+   *   Associative array with entity ids as keys and lists of redirect URLs
+   *   as values.
+   */
+  public function fetchRedirects(array $ids) {
+    if (empty($ids)) {
+      return [];
+    }
+    $base = $this->entityType === 'taxonomy_term' ? 'taxonomy/term/' : 'node/';
+    $paths = [];
+    foreach ($ids as $id) {
+      $paths['entity:' . $base . $id] = $id;
+      $paths['internal:/' . $base . $id] = $id;
+    }
+
+    $query = new DatabaseQuery('redirect', 'redirect', $this->connection);
+    $query->addField('redirect', 'redirect_redirect__uri', 'path');
+    $query->addField('redirect', 'redirect_source__path', 'alias');
+    $query->condition('redirect.redirect_redirect__uri', array_keys($paths), 'IN');
+    $result = $query->execute();
+
+    $redirects = [];
+    if (!empty($result)) {
+      foreach ($result as $record) {
+        if (isset($paths[$record['path']])) {
+          $redirects[$paths[$record['path']]][] = $record['alias'];
+        }
+      }
+    }
+    return $redirects;
+  }
+
+  /**
    * Get the resource handler for the given entity bundle.
    *
    * @param string $bundle
@@ -304,6 +342,7 @@ abstract class Resource {
     $options = $this->processingOptions;
 
     $url_aliases = $this->fetchUrlAliases(array_keys($items));
+    $redirects = $this->fetchRedirects(array_keys($items));
 
     $statuses = [
       'current' => 'ongoing',
@@ -316,7 +355,7 @@ abstract class Resource {
 
     foreach ($items as $id => &$item) {
       // Add the entity link to the main website.
-      $this->processor->processEntityUrl($this->entityType, $item, $url_aliases[$id]);
+      $this->processor->processEntityUrl($this->entityType, $item, $url_aliases[$id], $redirects[$id] ?? []);
 
       // Convert ID to integer.
       $item['id'] = (int) $item['id'];

@@ -109,6 +109,7 @@ class Disaster extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
+      ->addString('redirects', FALSE)
       ->addStatus()
       ->addDates('date', ['created', 'changed', 'event'])
       ->addBoolean('featured')

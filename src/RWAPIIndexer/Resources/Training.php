@@ -116,6 +116,7 @@ class Training extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
+      ->addString('redirects', FALSE)
       ->addStatus()
       ->addString('title', TRUE, TRUE)
       // Body.

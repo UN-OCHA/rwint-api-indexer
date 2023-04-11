@@ -87,6 +87,7 @@ class Country extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
+      ->addString('redirects', FALSE)
       ->addStatus()
       ->addBoolean('current')
       ->addBoolean('featured')

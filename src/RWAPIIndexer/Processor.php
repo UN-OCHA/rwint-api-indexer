@@ -681,11 +681,16 @@ class Processor {
    *   Item to which add the URL field.
    * @param string $alias
    *   URL alias for the entity.
+   * @param array $redirects
+   *   List of old URLs that redirect to this entity.
    */
-  public function processEntityUrl($entity_type, array &$item, $alias) {
+  public function processEntityUrl($entity_type, array &$item, $alias, array $redirects = []) {
     $item['url'] = $this->website . '/' . str_replace('_', '/', $entity_type) . '/' . $item['id'];
     if (!empty($alias)) {
       $item['url_alias'] = $this->website . '/' . ltrim($this->encodePath($alias), '/');
+    }
+    foreach ($redirects as $url) {
+      $item['redirects'][] = $this->website . '/' . ltrim($this->encodePath($url), '/');
     }
   }
 

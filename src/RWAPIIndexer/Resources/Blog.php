@@ -63,6 +63,7 @@ class Blog extends Resource {
     $mapping->addInteger('id')
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
+      ->addString('redirects', FALSE)
       ->addStatus()
       ->addString('title', TRUE, TRUE)
       ->addString('author', TRUE, TRUE)

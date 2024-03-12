@@ -2,8 +2,8 @@
 
 namespace RWAPIIndexer\Resources;
 
-use RWAPIIndexer\Resource;
 use RWAPIIndexer\Mapping;
+use RWAPIIndexer\Resource;
 
 /**
  * Taxnomy default resource handler.
@@ -26,6 +26,7 @@ class TaxonomyDefault extends Resource {
   public function getMapping() {
     $mapping = new Mapping();
     $mapping->addInteger('id')
+      ->addString('uuid', FALSE)
       // Names.
       ->addString('name', TRUE, TRUE, '', TRUE, ['en'])
       // Description.

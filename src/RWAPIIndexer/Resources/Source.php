@@ -2,8 +2,8 @@
 
 namespace RWAPIIndexer\Resources;
 
-use RWAPIIndexer\Resource;
 use RWAPIIndexer\Mapping;
+use RWAPIIndexer\Resource;
 
 /**
  * Source resource handler.
@@ -88,6 +88,7 @@ class Source extends Resource {
   public function getMapping() {
     $mapping = new Mapping();
     $mapping->addInteger('id')
+      ->addString('uuid', FALSE)
       ->addString('url', FALSE)
       ->addString('url_alias', FALSE)
       ->addString('redirects', FALSE)

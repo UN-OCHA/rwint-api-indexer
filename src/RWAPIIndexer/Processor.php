@@ -803,6 +803,7 @@ class Processor {
           $id,
           $uuid,
           $filename,
+          $filehash,
           $description,
           $langcode,
           $preview_uuid,
@@ -853,6 +854,7 @@ class Processor {
           'description' => $description,
           'url' => $this->processFilePath($permanent_uri),
           'filename' => $filename,
+          'filehash' => $filehash,
           'mimetype' => $mimetype,
           'filesize' => $filesize,
         ];

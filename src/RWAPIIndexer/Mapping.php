@@ -280,6 +280,7 @@ class Mapping {
         'id' => ['type' => 'integer'],
         'mimetype' => ['type' => 'keyword'],
         'filename' => ['type' => 'keyword'],
+        'filehash' => ['type' => 'keyword'],
         'filesize' => ['type' => 'integer'],
         'description' => ['type' => 'text', 'norms' => FALSE],
         'url' => ['type' => 'keyword'],
@@ -291,6 +292,11 @@ class Mapping {
             'url-thumb' => ['type' => 'text', 'index' => FALSE],
             'version' => ['type' => 'keyword'],
           ],
+        ],
+        // Used for similarity detection.
+        'minhash_content' => [
+          'type' => 'text',
+          'analyzer' => 'minhash_analyzer',
         ],
       ],
     ];

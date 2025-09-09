@@ -188,13 +188,13 @@ abstract class Resource {
    *   Maximum number of items.
    * @param int $offset
    *   ID of the index from which to start getting items to index.
-   * @param array $ids
+   * @param ?array $ids
    *   Ids of the the entities to index.
    *
    * @return array
    *   Items to index.
    */
-  public function getItems($limit = NULL, $offset = NULL, array $ids = NULL) {
+  public function getItems($limit = NULL, $offset = NULL, ?array $ids = NULL) {
     $items = $this->query->getItems($limit, $offset, $ids);
 
     // If entity ids are provided then we want to lazily load the references.
@@ -388,6 +388,7 @@ abstract class Resource {
       }
 
       $this->processItem($item);
+      $this->postProcessItem($item);
     }
   }
 
@@ -398,6 +399,20 @@ abstract class Resource {
    *   Item to process.
    */
   public function processItem(array &$item) {
+  }
+
+  /**
+   * Post-process an item after the main processing is complete.
+   *
+   * @param array $item
+   *   Item to post-process.
+   */
+  public function postProcessItem(array &$item) {
+    // Execute custom post-process item hook if provided.
+    $hook = $this->options->get('post-process-item-hook');
+    if (!empty($hook)) {
+      $hook($this, $item);
+    }
   }
 
   /**
@@ -543,6 +558,116 @@ abstract class Resource {
     elseif (!empty($callback) && is_callable($callback)) {
       $callback($message);
     }
+  }
+
+  /**
+   * Get the entity type.
+   *
+   * @return string
+   *   Entity type ID.
+   */
+  public function getEntityType() {
+    return $this->entityType;
+  }
+
+  /**
+   * Get the bundle.
+   *
+   * @return string
+   *   Entity bundle.
+   */
+  public function getBundle() {
+    return $this->bundle;
+  }
+
+  /**
+   * Get the index name.
+   *
+   * @return string
+   *   Index name.
+   */
+  public function getIndex() {
+    return $this->index;
+  }
+
+  /**
+   * Get the query options.
+   *
+   * @return array
+   *   Query options.
+   */
+  public function getQueryOptions() {
+    return $this->queryOptions;
+  }
+
+  /**
+   * Get the processing options.
+   *
+   * @return array
+   *   Processing options.
+   */
+  public function getProcessingOptions() {
+    return $this->processingOptions;
+  }
+
+  /**
+   * Get the Elasticsearch handler.
+   *
+   * @return \RWAPIIndexer\Elasticsearch
+   *   Elasticsearch handler.
+   */
+  public function getElasticsearch() {
+    return $this->elasticsearch;
+  }
+
+  /**
+   * Get the database connection.
+   *
+   * @return \RWAPIIndexer\Database\DatabaseConnection
+   *   Database connection.
+   */
+  public function getConnection() {
+    return $this->connection;
+  }
+
+  /**
+   * Get the processor.
+   *
+   * @return \RWAPIIndexer\Processor
+   *   Processor.
+   */
+  public function getProcessor() {
+    return $this->processor;
+  }
+
+  /**
+   * Get the references handler.
+   *
+   * @return \RWAPIIndexer\References
+   *   References handler.
+   */
+  public function getReferencesHandler() {
+    return $this->references;
+  }
+
+  /**
+   * Get the options handler.
+   *
+   * @return \RWAPIIndexer\Options
+   *   Options handler.
+   */
+  public function getOptions() {
+    return $this->options;
+  }
+
+  /**
+   * Get the query object.
+   *
+   * @return \RWAPIIndexer\Database\Query
+   *   Database query.
+   */
+  public function getQuery() {
+    return $this->query;
   }
 
 }

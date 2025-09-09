@@ -35,6 +35,7 @@ class Options {
     'replicas' => 1,
     'shards' => 1,
     'log' => '',
+    'post-process-item-hook' => '',
   ];
 
   /**
@@ -250,6 +251,19 @@ class Options {
   }
 
   /**
+   * Validate post process item hook.
+   *
+   * @param mixed $hook
+   *   Post process item hook to validate.
+   */
+  public function validatePostProcessItemHook($hook) {
+    if (empty($hook) || is_callable($hook)) {
+      return $hook;
+    }
+    return FALSE;
+  }
+
+  /**
    * Validate the indexing options.
    *
    * @param array $options
@@ -352,6 +366,11 @@ class Options {
       'shards' => [
         'filter' => FILTER_VALIDATE_INT,
         'options' => ['min_range' => 1, 'max_range' => 8],
+        'flags' => FILTER_NULL_ON_FAILURE,
+      ],
+      'post-process-item-hook' => [
+        'filter' => FILTER_CALLBACK,
+        'options' => [$this, 'validatePostProcessItemHook'],
         'flags' => FILTER_NULL_ON_FAILURE,
       ],
     ]);

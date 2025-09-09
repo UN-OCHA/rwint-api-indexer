@@ -62,7 +62,13 @@ class Metrics {
   public static function formatTime($time) {
     $sec = intval($time);
     $micro = $time - $sec;
-    return strftime('%T', mktime(0, 0, $sec)) . str_replace('0.', '.', sprintf('%.3f', $micro));
+
+    $hours = floor($sec / 3600);
+    $minutes = floor(($sec % 3600) / 60);
+    $seconds = $sec % 60;
+
+    return sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds) .
+           str_replace('0.', '.', sprintf('%.3f', $micro));
   }
 
   /**

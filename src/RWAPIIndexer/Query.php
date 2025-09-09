@@ -210,10 +210,10 @@ class Query {
    *
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to filter.
-   * @param array $ids
+   * @param ?array $ids
    *   Entity Ids used to filter the query.
    */
-  public function setIds(DatabaseQuery $query, array $ids = NULL) {
+  public function setIds(DatabaseQuery $query, ?array $ids = NULL) {
     if (!empty($ids)) {
       $query->condition($this->baseTable . '.' . $this->baseField, $ids, 'IN');
     }
@@ -327,13 +327,13 @@ class Query {
    *   Maximum number of items to index.
    * @param int $offset
    *   Id of the entity from which to start the indexing.
-   * @param array $ids
+   * @param ?array $ids
    *   Ids of the entities to index.
    *
    * @return ids
    *   array.
    */
-  public function getIds($limit = NULL, $offset = NULL, array $ids = NULL) {
+  public function getIds($limit = NULL, $offset = NULL, ?array $ids = NULL) {
     if (!empty($ids)) {
       return $ids;
     }
@@ -365,13 +365,13 @@ class Query {
    *   Maximum number of items to index.
    * @param int $offset
    *   Entity ID from which to start fetching the items.
-   * @param array $ids
+   * @param ?array $ids
    *   Ids of the entities to index.
    *
    * @return array
    *   Items returned by the query.
    */
-  public function getItems($limit = NULL, $offset = NULL, array $ids = NULL) {
+  public function getItems($limit = NULL, $offset = NULL, ?array $ids = NULL) {
     $entity_type = $this->entityType;
     $base_table = $this->baseTable;
     $base_field = $this->baseField;
@@ -464,6 +464,7 @@ class Query {
                   IFNULL({$field_table}.{$field_name}_revision_id, ''),
                   IFNULL({$field_table}.{$field_name}_uuid, ''),
                   IFNULL({$field_table}.{$field_name}_file_name, ''),
+                  IFNULL({$field_table}.{$field_name}_file_hash, ''),
                   IFNULL({$field_table}.{$field_name}_description, ''),
                   IFNULL({$field_table}.{$field_name}_language, ''),
                   IFNULL({$field_table}.{$field_name}_preview_uuid, ''),

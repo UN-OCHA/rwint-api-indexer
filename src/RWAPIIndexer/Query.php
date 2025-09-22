@@ -46,6 +46,20 @@ class Query {
   protected $baseField = '';
 
   /**
+   * Table containing the UUID.
+   *
+   * @var string
+   */
+  protected $uuidTable = '';
+
+  /**
+   * Field containing the UUID.
+   *
+   * @var string
+   */
+  protected $uuidField = 'uuid';
+
+  /**
    * Query options for the current entity type/bundle.
    *
    * @var array
@@ -73,10 +87,12 @@ class Query {
     if ($this->entityType === 'node') {
       $this->baseTable = 'node_field_data';
       $this->baseField = 'nid';
+      $this->uuidTable = 'node';
     }
     elseif ($entity_type === 'taxonomy_term') {
       $this->baseTable = 'taxonomy_term_field_data';
       $this->baseField = 'tid';
+      $this->uuidTable = 'taxonomy_term_data';
     }
     else {
       throw new \Exception('RWAPIIndexer\Query: Unknown entity type');
@@ -101,6 +117,17 @@ class Query {
    */
   public function addIdField(DatabaseQuery $query) {
     $query->addField($this->baseTable, $this->baseField, 'id');
+  }
+
+  /**
+   * Add the entity id field to the list of fields returned by the query.
+   *
+   * @param \RWAPIIndexer\Database\Query $query
+   *   Query to which add the id field.
+   */
+  public function addUuidField(DatabaseQuery $query) {
+    $query->innerJoin($this->uuidTable, $this->uuidTable, "{$this->uuidTable}.{$this->baseField} = {$this->baseTable}.{$this->baseField}");
+    $query->addField($this->uuidTable, $this->uuidField, 'uuid');
   }
 
   /**
@@ -358,6 +385,7 @@ class Query {
     // Base query.
     $query = $this->newQuery();
     $this->addIdField($query);
+    $this->addUuidField($query);
     $this->setBundle($query);
     $this->setIds($query, $ids);
     $this->setGroupBy($query);

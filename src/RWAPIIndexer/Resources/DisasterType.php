@@ -30,6 +30,7 @@ class DisasterType extends TaxonomyDefault {
   public function getMapping() {
     $mapping = new Mapping();
     $mapping->addInteger('id')
+      ->addString('uuid', FALSE)
       // Names.
       ->addString('name', TRUE, TRUE, '', TRUE, ['en'])
       // Description.

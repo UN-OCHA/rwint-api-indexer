@@ -76,16 +76,6 @@ class Elasticsearch {
             'elision',
           ],
         ],
-        'minhash_analyzer' => [
-          'type' => 'custom',
-          'tokenizer' => 'icu_tokenizer',
-          'filter' => [
-            'icu_folding',
-            'icu_normalizer',
-            'filter_minhash_shingle',
-            'filter_minhash',
-          ],
-        ],
       ],
       'normalizer' => [
         'status' => [
@@ -121,19 +111,6 @@ class Elasticsearch {
         'filter_stop' => [
           'type' => 'stop',
           'stopwords' => ['_english_'],
-        ],
-        'filter_minhash_shingle' => [
-          'type' => 'shingle',
-          'min_shingle_size' => 4,
-          'max_shingle_size' => 4,
-          'output_unigrams' => FALSE,
-        ],
-        'filter_minhash' => [
-          'type' => 'min_hash',
-          'hash_count' => 1,
-          'bucket_count' => 512,
-          'hash_set_size' => 1,
-          'with_rotation' => TRUE,
         ],
       ],
       'char_filter' => [
@@ -257,11 +234,6 @@ class Elasticsearch {
       'settings' => $settings,
       'mappings' => [
         'properties' => $mapping,
-        '_source' => [
-          'excludes' => [
-            'file.minhash_content',
-          ],
-        ],
       ],
     ]);
   }

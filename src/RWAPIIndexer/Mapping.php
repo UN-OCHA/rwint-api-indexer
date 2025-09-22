@@ -293,11 +293,6 @@ class Mapping {
             'version' => ['type' => 'keyword'],
           ],
         ],
-        // Used for similarity detection.
-        'minhash_content' => [
-          'type' => 'text',
-          'analyzer' => 'minhash_analyzer',
-        ],
       ],
     ];
     $this->addFieldMapping($field, $mapping, $alias);

@@ -3,7 +3,7 @@
 # Lint php code.
 
 # We only lint files from the custom themes and modules.
-include='^src/.*\.php$'
+include='^(src|tests)/.*\.php$'
 exclude='vendor'
 
 # Assume that the php command is global.

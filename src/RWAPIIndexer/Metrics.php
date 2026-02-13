@@ -83,6 +83,9 @@ class Metrics {
    *   Formatted memory size.
    */
   public static function formatMemory(int $size): string {
+    if ($size <= 0) {
+      return '0';
+    }
     $base = log($size) / log(1024);
     $suffixes = ["", "k", "M", "G", "T"];
     return pow(1024, $base - floor($base)) . ($suffixes[(int) floor($base)] ?? '');

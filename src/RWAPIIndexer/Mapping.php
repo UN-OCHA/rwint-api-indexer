@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer;
 
 /**
@@ -10,9 +12,9 @@ class Mapping {
   /**
    * Mapping.
    *
-   * @var array
+   * @var array<string, array<string, mixed>>
    */
-  private $mapping = [
+  private array $mapping = [
     'timestamp' => ['type' => 'date', 'store' => TRUE, 'index' => FALSE],
   ];
 
@@ -24,10 +26,10 @@ class Mapping {
    * @param string $alias
    *   Field index alias.
    *
-   * @return \RWAPIIndexer\Bundles
+   * @return \RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addInteger($field, $alias = '') {
+  public function addInteger(string $field, string $alias = ''): self {
     $this->addFieldMapping($field, ['type' => 'integer'], $alias);
     return $this;
   }
@@ -40,10 +42,10 @@ class Mapping {
    * @param string $alias
    *   Field index alias.
    *
-   * @return \RWAPIIndexer\Bundles
+   * @return \RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addFloat($field, $alias = '') {
+  public function addFloat(string $field, string $alias = ''): self {
     $this->addFieldMapping($field, ['type' => 'float'], $alias);
     return $this;
   }
@@ -56,10 +58,10 @@ class Mapping {
    * @param string $alias
    *   Field index alias.
    *
-   * @return \RWAPIIndexer\Bundles
+   * @return \RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addBoolean($field, $alias = '') {
+  public function addBoolean(string $field, string $alias = ''): self {
     $this->addFieldMapping($field, ['type' => 'boolean'], $alias);
     return $this;
   }
@@ -72,10 +74,10 @@ class Mapping {
    * @param string $alias
    *   Field index alias.
    *
-   * @return \RWAPIIndexer\Bundles
+   * @return \RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addGeoPoint($field, $alias = '') {
+  public function addGeoPoint(string $field, string $alias = ''): self {
     $this->addFieldMapping($field, ['type' => 'geo_point'], $alias);
     return $this;
   }
@@ -83,10 +85,10 @@ class Mapping {
   /**
    * Add the status field definition to the mapping.
    *
-   * @return \RWAPIIndexer\Bundles
+   * @return \RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addStatus() {
+  public function addStatus(): self {
     $this->addFieldMapping('status', [
       'type' => 'keyword',
       'normalizer' => 'status',
@@ -99,7 +101,7 @@ class Mapping {
    *
    * @param string $field
    *   Field Name.
-   * @param bool $index
+   * @param ?bool $index
    *   Indicates whether the field should be indexed and analyzed or not:
    *   TRUE = indexed and analyzed, FALSE = not analyzed, NULL = not indexed.
    * @param bool $exact
@@ -108,14 +110,14 @@ class Mapping {
    *   Field index alias.
    * @param bool $suggest
    *   Whether to also index the string as a suggestion for autocomplete or not.
-   * @param array $collations
+   * @param string[] $collations
    *   List of languages to use to create collated versions of the field that
    *   can be used for sorting alphabetically for example.
    *
-   * @return \RWAPIIndexer\Bundles
+   * @return \RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addString($field, $index = TRUE, $exact = FALSE, $alias = '', $suggest = FALSE, array $collations = []) {
+  public function addString(string $field, ?bool $index = TRUE, bool $exact = FALSE, string $alias = '', bool $suggest = FALSE, array $collations = []): self {
     $mapping = [
       'type' => 'text',
     ];
@@ -160,15 +162,15 @@ class Mapping {
    *
    * @param string $field
    *   Field Name.
-   * @param array $subfields
+   * @param string[] $subfields
    *   Date subfields.
    * @param string $alias
    *   Field index alias.
    *
-   * @return \RWAPIIndexer\Bundles
+   * @return \RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addDates($field, array $subfields = [], $alias = '') {
+  public function addDates(string $field, array $subfields = [], string $alias = ''): self {
     $properties = [];
     // Add subfields.
     foreach ($subfields as $subfield) {
@@ -186,15 +188,15 @@ class Mapping {
    *
    * @param string $field
    *   Field Name.
-   * @param array $subfields
+   * @param string[] $subfields
    *   Taxonomy name subfields.
    * @param string $alias
    *   Field index alias.
    *
-   * @return \RWAPIIndexer\Bundles
+   * @return \RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addTaxonomy($field, array $subfields = [], $alias = '') {
+  public function addTaxonomy(string $field, array $subfields = [], string $alias = ''): self {
     $properties = [
       'id' => ['type' => 'integer'],
     ];
@@ -217,10 +219,10 @@ class Mapping {
    * @param string $alias
    *   Field index alias.
    *
-   * @return \RWAPIIndexer\Bundles
+   * @return \RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addRiverSearch($field, $alias = '') {
+  public function addRiverSearch(string $field, string $alias = ''): self {
     $properties = [
       'id' => ['type' => 'keyword'],
       'url' => ['type' => 'keyword'],
@@ -239,10 +241,10 @@ class Mapping {
    * @param string $alias
    *   Field index alias.
    *
-   * @return \RWAPIIndexer\Bundles
+   * @return \RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addImage($field, $alias = '') {
+  public function addImage(string $field, string $alias = ''): self {
     $mapping = [
       'properties' => [
         'id' => ['type' => 'integer'],
@@ -271,10 +273,10 @@ class Mapping {
    * @param string $alias
    *   Field index alias.
    *
-   * @return \RWAPIIndexer\Bundles
+   * @return \RWAPIIndexer\Mapping
    *   This Mapping instance.
    */
-  public function addFile($field, $alias = '') {
+  public function addFile(string $field, string $alias = ''): self {
     $mapping = [
       'properties' => [
         'id' => ['type' => 'integer'],
@@ -302,10 +304,10 @@ class Mapping {
   /**
    * Add a taxonomy term profile mapping.
    *
-   * @param array $sections
+   * @param array<string, array<string, string|bool>> $sections
    *   Definition of the profile sections.
    */
-  public function addProfile(array $sections) {
+  public function addProfile(array $sections): self {
     // Only index the overview.
     $this->addString('profile.overview');
     $this->addString('profile.overview-html', NULL);
@@ -334,20 +336,20 @@ class Mapping {
   /**
    * Export the mapping.
    *
-   * @return array
+   * @return array<string, array<string, mixed>>
    *   Mapping.
    */
-  public function export() {
+  public function export(): array {
     return $this->mapping;
   }
 
   /**
    * Multifield mapping definition.
    *
-   * @return array
+   * @return array{type: string, norms: bool, fields: array<string, array<string, string>>}
    *   Mulitfield Mapping.
    */
-  private function getMultiFieldMapping() {
+  private function getMultiFieldMapping(): array {
     return [
       'type' => 'text',
       'norms' => FALSE,
@@ -369,10 +371,10 @@ class Mapping {
    * @param bool $exact
    *   Indicates if an exact (not analyzed) field should also be created.
    *
-   * @return array
+   * @return string[]
    *   Common fields.
    */
-  private function getCommonField($field, $type = 'string', $exact = TRUE) {
+  private function getCommonField(string $field, string $type = 'string', bool $exact = TRUE): array {
     // Common field name.
     $name = 'common_' . str_replace('.', '_', $field);
 
@@ -407,12 +409,12 @@ class Mapping {
    *
    * @param string $field
    *   Field to add to the mapping.
-   * @param array $mapping
+   * @param array<string, mixed> $mapping
    *   Field mapping.
    * @param string $alias
    *   Field index alias.
    */
-  private function addFieldMapping($field, array $mapping, $alias = '') {
+  private function addFieldMapping(string $field, array $mapping, string $alias = ''): void {
     $path = explode('.', $field);
     $field = array_shift($path);
 
@@ -425,7 +427,9 @@ class Mapping {
       if (!isset($parent['properties'][$field])) {
         $parent['properties'][$field] = [];
       }
-      $parent = &$parent['properties'][$field];
+      if (is_array($parent['properties'][$field])) {
+        $parent = &$parent['properties'][$field];
+      }
     }
 
     $parent += $mapping;

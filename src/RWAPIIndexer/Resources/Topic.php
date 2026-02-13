@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer\Resources;
 
 use RWAPIIndexer\Mapping;
@@ -7,13 +9,37 @@ use RWAPIIndexer\Resource;
 
 /**
  * Topic resource handler.
+ *
+ * @phpstan-type TopicProcessItem array{
+ *   id: int,
+ *   timestamp: string,
+ *   url: string,
+ *   url_alias?: string,
+ *   redirects?: array<int, string>,
+ *   title?: string,
+ *   introduction?: string,
+ *   overview?: string,
+ *   resources?: string,
+ *   date_created?: int,
+ *   date_changed?: int,
+ *   status?: string,
+ *   featured?: bool,
+ *   disasters_search?: mixed,
+ *   jobs_search?: mixed,
+ *   reports_search?: mixed,
+ *   training_search?: mixed,
+ *   sections?: mixed,
+ *   icon?: mixed,
+ *   theme?: array<int, array<string, mixed>>,
+ *   disaster_type?: array<int, array<string, mixed>>,
+ * }
  */
 class Topic extends Resource {
 
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = [
+  protected array $queryOptions = [
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
@@ -61,7 +87,7 @@ class Topic extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = [
+  protected array $processingOptions = [
     'conversion' => [
       'introduction' => ['links', 'html'],
       'overview' => ['links', 'html_iframe_disaster_map'],
@@ -83,7 +109,7 @@ class Topic extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function getMapping() {
+  public function getMapping(): array {
     $mapping = new Mapping();
     $mapping->addInteger('id')
       ->addString('uuid', FALSE)
@@ -118,17 +144,21 @@ class Topic extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function processItem(&$item) {
+  public function processItem(array &$item): void {
+    /** @var TopicProcessItem $item */
+
     // Handle dates.
-    $item['date'] = [
-      'created' => $item['date_created'],
-      'changed' => $item['date_changed'],
-    ];
-    unset($item['date_created']);
-    unset($item['date_changed']);
+    if (isset($item['date_created'])) {
+      $item['date']['created'] = $item['date_created'];
+      unset($item['date_created']);
+    }
+    if (isset($item['date_changed'])) {
+      $item['date']['changed'] = $item['date_changed'];
+      unset($item['date_changed']);
+    }
 
     // Handle icon.
-    if ($this->processor->processImage($item['icon'], TRUE, FALSE, FALSE) !== TRUE) {
+    if ($this->processor->processImage($item, 'icon', TRUE, FALSE, FALSE) !== TRUE) {
       unset($item['icon']);
     }
 
@@ -153,7 +183,7 @@ class Topic extends Resource {
     ];
 
     foreach ($rivers as $id => $info) {
-      if (!empty($item[$id . '_search']) && $this->processor->processRiverSearch($item[$id . '_search'], TRUE)) {
+      if (!empty($item[$id . '_search']) && is_array($item[$id . '_search']) && $this->processor->processRiverSearch($item, $id . '_search', TRUE) === TRUE) {
         $rivers[$id] += $item[$id . '_search'];
       }
       else {
@@ -162,11 +192,13 @@ class Topic extends Resource {
       unset($item[$id . '_search']);
     }
 
-    if (!empty($item['sections']) && $this->processor->processRiverSearch($item['sections'])) {
+    if (!empty($item['sections']) && is_array($item['sections']) && $this->processor->processRiverSearch($item, 'sections') === TRUE) {
       foreach ($item['sections'] as $index => $section) {
-        $rivers[] = $section + [
-          'id' => 'section-' . ($index + 1),
-        ];
+        if (is_array($section)) {
+          $rivers[] = $section + [
+            'id' => 'section-' . ($index + 1),
+          ];
+        }
       }
     }
     unset($item['sections']);

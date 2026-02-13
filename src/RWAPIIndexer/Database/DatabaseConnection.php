@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer\Database;
 
 /**
@@ -20,7 +22,7 @@ class DatabaseConnection extends \PDO {
    * @param string $password
    *   Database password.
    */
-  public function __construct($dsn, $user, $password) {
+  public function __construct(string $dsn, string $user, string $password) {
     parent::__construct($dsn, $user, $password);
 
     // Set the statement class.
@@ -28,8 +30,10 @@ class DatabaseConnection extends \PDO {
       '\RWAPIIndexer\Database\Statement', [$this],
     ]);
 
-    // Make sure we can return all the concatenated data.
-    $this->query('SET SESSION group_concat_max_len = 100000');
+    // Make sure we can return all the concatenated data (MySQL only).
+    if (strpos($dsn, 'sqlite') === FALSE) {
+      $this->query('SET SESSION group_concat_max_len = 100000');
+    }
   }
 
 }

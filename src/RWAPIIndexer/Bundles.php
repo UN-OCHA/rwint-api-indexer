@@ -1,20 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer;
 
 use RWAPIIndexer\Database\DatabaseConnection;
 
 /**
  * Bundles class manager.
+ *
+ * @phpstan-type Bundle array{
+ *   class: class-string<\RWAPIIndexer\Resource>,
+ *   type: string,
+ *   index: string
+ * }
  */
 class Bundles {
 
   /**
    * List of Resources entity bundles and their corresponding class.
    *
-   * @var array
+   * @var Bundle[]
    */
-  public static $bundles = [
+  public const BUNDLES = [
     'report' => [
       'class' => '\RWAPIIndexer\Resources\Report',
       'type' => 'node',
@@ -135,6 +143,15 @@ class Bundles {
   ];
 
   /**
+   * List of Resources entity bundles and their corresponding class.
+   *
+   * Kept for backward compatibility.
+   *
+   * @var Bundle[]
+   */
+  public static array $bundles = self::BUNDLES;
+
+  /**
    * Get the resource handler for the given entity bundle.
    *
    * @param string $bundle
@@ -153,15 +170,23 @@ class Bundles {
    * @return \RWAPIIndexer\Resource
    *   Resource handler for the given bundle.
    */
-  public static function getResourceHandler($bundle, Elasticsearch $elasticsearch, DatabaseConnection $connection, Processor $processor, References $references, Options $options) {
-    if (!empty(static::$bundles[$bundle]['class']) && class_exists(static::$bundles[$bundle]['class'])) {
-      $class = static::$bundles[$bundle]['class'];
-      $index = static::$bundles[$bundle]['index'];
-      $type = static::$bundles[$bundle]['type'];
-      return new $class($bundle, $type, $index, $elasticsearch, $connection, $processor, $references, $options);
+  public static function getResourceHandler(
+    string $bundle,
+    Elasticsearch $elasticsearch,
+    DatabaseConnection $connection,
+    Processor $processor,
+    References $references,
+    Options $options,
+  ): Resource {
+    if (!empty(self::BUNDLES[$bundle]['class']) && class_exists(self::BUNDLES[$bundle]['class'])) {
+      $class = self::BUNDLES[$bundle]['class'];
+      $index = self::BUNDLES[$bundle]['index'];
+      $type = self::BUNDLES[$bundle]['type'];
+      $resource = new $class($bundle, $type, $index, $elasticsearch, $connection, $processor, $references, $options);
+      return $resource;
     }
     else {
-      $bundles = implode(', ', array_keys(static::$bundles));
+      $bundles = implode(', ', array_keys(self::BUNDLES));
       throw new \Exception("No resource handler for the bundle '$bundle'. Valid ones are: " . $bundles . "\n");
     }
   }
@@ -175,8 +200,8 @@ class Bundles {
    * @return bool
    *   Return TRUE if the bundle exists.
    */
-  public static function has($bundle) {
-    return isset(static::$bundles[$bundle]);
+  public static function has(string $bundle): bool {
+    return isset(self::BUNDLES[$bundle]);
   }
 
 }

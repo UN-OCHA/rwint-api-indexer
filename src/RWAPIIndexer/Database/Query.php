@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer\Database;
 
 /**
@@ -15,28 +17,70 @@ class Query {
    *
    * @var string
    */
-  private $table = '';
+  private string $table = '';
 
   /**
    * Query base table alias.
    *
    * @var string
    */
-  private $alias = '';
+  private string $alias = '';
 
   /**
    * Database connection.
    *
    * @var \RWAPIIndexer\Database\DatabaseConnection
    */
-  private $connection = NULL;
+  private DatabaseConnection $connection;
 
   /**
-   * Query parts.
+   * Fields to select.
    *
-   * @var array
+   * @var string[]
    */
-  private $parts = [];
+  private array $queryFields = [];
+
+  /**
+   * Join clauses.
+   *
+   * @var string[]
+   */
+  private array $queryJoins = [];
+
+  /**
+   * Where conditions.
+   *
+   * @var string[]
+   */
+  private array $queryWhere = [];
+
+  /**
+   * Group by clauses.
+   *
+   * @var string[]
+   */
+  private array $queryGroupBy = [];
+
+  /**
+   * Order by clauses.
+   *
+   * @var string[]
+   */
+  private array $queryOrderBy = [];
+
+  /**
+   * Limit clause (e.g. "0, 10").
+   *
+   * @var string|null
+   */
+  private ?string $queryLimit = NULL;
+
+  /**
+   * Whether this is a count query.
+   *
+   * @var bool
+   */
+  private bool $queryCount = FALSE;
 
   /**
    * Construct a query object.
@@ -48,7 +92,7 @@ class Query {
    * @param \RWAPIIndexer\Database\DatabaseConnection $connection
    *   Database connection.
    */
-  public function __construct($table, $alias, DatabaseConnection $connection) {
+  public function __construct(string $table, string $alias, DatabaseConnection $connection) {
     $this->table = $table;
     $this->alias = $alias;
     $this->connection = $connection;
@@ -67,8 +111,8 @@ class Query {
    * @return \RWAPIIndexer\Database\Query
    *   This query instance.
    */
-  public function addField($table, $field, $alias) {
-    $this->parts['fields'][] = "{$table}.{$field} AS {$alias}";
+  public function addField(string $table, string $field, string $alias): self {
+    $this->queryFields[] = "{$table}.{$field} AS {$alias}";
     return $this;
   }
 
@@ -83,8 +127,8 @@ class Query {
    * @return \RWAPIIndexer\Database\Query
    *   This query instance.
    */
-  public function addExpression($expression, $alias) {
-    $this->parts['fields'][] = "{$expression} AS {$alias}";
+  public function addExpression(string $expression, string $alias): self {
+    $this->queryFields[] = "{$expression} AS {$alias}";
     return $this;
   }
 
@@ -101,7 +145,7 @@ class Query {
    * @return string
    *   Alias of the joined table.
    */
-  public function leftJoin($table, $alias, $condition) {
+  public function leftJoin(string $table, string $alias, string $condition): string {
     return $this->join('LEFT', $table, $alias, $condition);
   }
 
@@ -118,7 +162,7 @@ class Query {
    * @return string
    *   Alias of the joined table.
    */
-  public function innerJoin($table, $alias, $condition) {
+  public function innerJoin(string $table, string $alias, string $condition): string {
     return $this->join('INNER', $table, $alias, $condition);
   }
 
@@ -137,8 +181,8 @@ class Query {
    * @return string
    *   Alias of the joined table.
    */
-  public function join($type, $table, $alias, $condition) {
-    $this->parts['joins'][] = "{$type} JOIN {$table} AS {$alias} ON {$condition}";
+  public function join(string $type, string $table, string $alias, string $condition): string {
+    $this->queryJoins[] = "{$type} JOIN {$table} AS {$alias} ON {$condition}";
     return $alias;
   }
 
@@ -155,25 +199,45 @@ class Query {
    * @return \RWAPIIndexer\Database\Query
    *   This query instance.
    */
-  public function condition($field, $value, $operator = '=') {
+  public function condition(string $field, mixed $value, string $operator = '='): self {
     switch ($operator) {
       case 'IN':
         $values = [];
         foreach ((array) $value as $data) {
-          $values[] = $this->connection->quote($data);
+          $values[] = $this->quote($data);
         }
-        $this->parts['where'][] = "{$field} IN (" . implode(",", $values) . ")";
+        $this->queryWhere[] = "{$field} IN (" . implode(",", $values) . ")";
         break;
 
       case 'IS NOT NULL':
-        $this->parts['where'][] = "{$field} {$operator}";
+        $this->queryWhere[] = "{$field} {$operator}";
         break;
 
       default:
-        $value = $this->connection->quote($value);
-        $this->parts['where'][] = "{$field} {$operator} {$value}";
+        $this->queryWhere[] = "{$field} {$operator} " . $this->quote($value);
     }
     return $this;
+  }
+
+  /**
+   * Quote a value for safe use in SQL.
+   *
+   * PDO::quote() expects a string; this wrapper normalizes mixed types
+   * before quoting.
+   *
+   * @param mixed $value
+   *   The value to quote (string, int, float, bool, or null).
+   *
+   * @return string
+   *   Quoted value, or the literal NULL for null input.
+   */
+  private function quote(mixed $value): string {
+    if (!is_scalar($value)) {
+      throw new \InvalidArgumentException('Value must be a scalar type');
+    }
+    else {
+      return $this->connection->quote((string) $value);
+    }
   }
 
   /**
@@ -185,8 +249,8 @@ class Query {
    * @return \RWAPIIndexer\Database\Query
    *   This query instance.
    */
-  public function groupBy($field) {
-    $this->parts['group by'][] = $field;
+  public function groupBy(string $field): self {
+    $this->queryGroupBy[] = $field;
     return $this;
   }
 
@@ -201,8 +265,8 @@ class Query {
    * @return \RWAPIIndexer\Database\Query
    *   This query instance.
    */
-  public function orderBy($field, $direction) {
-    $this->parts['order by'][] = "{$field} {$direction}";
+  public function orderBy(string $field, string $direction): self {
+    $this->queryOrderBy[] = "{$field} {$direction}";
     return $this;
   }
 
@@ -217,8 +281,8 @@ class Query {
    * @return \RWAPIIndexer\Database\Query
    *   This query instance.
    */
-  public function range($offset, $limit) {
-    $this->parts['limit'] = "{$offset}, {$limit}";
+  public function range(int $offset, int $limit): self {
+    $this->queryLimit = "{$offset}, {$limit}";
     return $this;
   }
 
@@ -228,8 +292,8 @@ class Query {
    * @return \RWAPIIndexer\Database\Query
    *   This query instance.
    */
-  public function count() {
-    $this->parts['count'] = TRUE;
+  public function count(): self {
+    $this->queryCount = TRUE;
     return $this;
   }
 
@@ -239,16 +303,16 @@ class Query {
    * @return string
    *   Query string.
    */
-  public function build() {
+  public function build(): string {
     // Select.
     $query = ['SELECT'];
 
     // Fields.
-    if (!empty($this->parts['count'])) {
+    if ($this->queryCount) {
       $query[] = "COUNT(*)";
     }
-    elseif (!empty($this->parts['fields'])) {
-      $query[] = implode(', ', $this->parts['fields']);
+    elseif ($this->queryFields !== []) {
+      $query[] = implode(', ', $this->queryFields);
     }
     else {
       $query[] = '*';
@@ -258,28 +322,28 @@ class Query {
     $query[] = 'FROM ' . $this->table . ' AS ' . $this->alias;
 
     // Joins.
-    if (!empty($this->parts['joins'])) {
-      $query[] = implode(' ', $this->parts['joins']);
+    if ($this->queryJoins !== []) {
+      $query[] = implode(' ', $this->queryJoins);
     }
 
     // Where.
-    if (!empty($this->parts['where'])) {
-      $query[] = 'WHERE ' . implode(' AND ', $this->parts['where']);
+    if ($this->queryWhere !== []) {
+      $query[] = 'WHERE ' . implode(' AND ', $this->queryWhere);
     }
 
     // Group By.
-    if (!empty($this->parts['group by'])) {
-      $query[] = 'GROUP BY ' . implode(', ', $this->parts['group by']);
+    if ($this->queryGroupBy !== []) {
+      $query[] = 'GROUP BY ' . implode(', ', $this->queryGroupBy);
     }
 
     // Order By.
-    if (!empty($this->parts['order by'])) {
-      $query[] = 'ORDER BY ' . implode(', ', $this->parts['order by']);
+    if ($this->queryOrderBy !== []) {
+      $query[] = 'ORDER BY ' . implode(', ', $this->queryOrderBy);
     }
 
     // Limit.
-    if (isset($this->parts['limit'])) {
-      $query[] = 'LIMIT ' . $this->parts['limit'];
+    if ($this->queryLimit !== NULL) {
+      $query[] = 'LIMIT ' . $this->queryLimit;
     }
 
     $query = implode(' ', $query);
@@ -290,18 +354,20 @@ class Query {
   /**
    * Execute the query.
    *
-   * @return \RWAPIIndexer\Database\Statement
+   * @return \RWAPIIndexer\Database\Statement|null
    *   Database statement.
    */
-  public function execute() {
+  public function execute(): Statement|null {
     $query = $this->build();
-    return $this->connection->query($query);
+    /** @var \RWAPIIndexer\Database\Statement|null $statement */
+    $statement = $this->connection->query($query) ?: NULL;
+    return $statement;
   }
 
   /**
    * Get query string.
    */
-  public function __tostring() {
+  public function __tostring(): string {
     return $this->build();
   }
 

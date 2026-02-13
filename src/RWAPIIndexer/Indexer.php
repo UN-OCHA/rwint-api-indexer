@@ -5,6 +5,8 @@
  * Handle indexing using command line arguments.
  */
 
+declare(strict_types=1);
+
 use RWAPIIndexer\Manager;
 
 // DEBUG.

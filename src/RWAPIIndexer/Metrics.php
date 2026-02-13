@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer;
 
 /**
@@ -9,9 +11,9 @@ class Metrics {
   /**
    * Starting time.
    *
-   * @var int
+   * @var float
    */
-  protected $time = 0;
+  protected float $time = 0.0;
 
   /**
    * Set up the initial time and memory.
@@ -23,17 +25,17 @@ class Metrics {
   /**
    * Reset the metrics.
    */
-  public function reset() {
+  public function reset(): void {
     $this->time = microtime(TRUE);
   }
 
   /**
    * Get the metrics.
    *
-   * @return array
+   * @return array<string, string>
    *   Time and memory metrics.
    */
-  public function get() {
+  public function get(): array {
     return [
       'time' => static::formatTime(microtime(TRUE) - $this->time),
       'memory usage' => static::formatMemory(memory_get_peak_usage(TRUE)),
@@ -43,7 +45,7 @@ class Metrics {
   /**
    * Print the metrics.
    */
-  public function __toString() {
+  public function __toString(): string {
     $metrics = $this->get();
 
     return "Execution time: {$metrics['time']}\n" .
@@ -53,13 +55,13 @@ class Metrics {
   /**
    * Format duration time to be more human readable.
    *
-   * @param int $time
+   * @param float $time
    *   Time to format.
    *
    * @return string
-   *   Formatted memory size.
+   *   Formatted time.
    */
-  public static function formatTime($time) {
+  public static function formatTime(float $time): string {
     $sec = intval($time);
     $micro = $time - $sec;
 
@@ -80,10 +82,10 @@ class Metrics {
    * @return string
    *   Formatted memory size.
    */
-  public static function formatMemory($size) {
+  public static function formatMemory(int $size): string {
     $base = log($size) / log(1024);
     $suffixes = ["", "k", "M", "G", "T"];
-    return pow(1024, $base - floor($base)) . $suffixes[floor($base)];
+    return pow(1024, $base - floor($base)) . ($suffixes[(int) floor($base)] ?? '');
   }
 
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer\Resources;
 
 use RWAPIIndexer\Mapping;
@@ -7,13 +9,36 @@ use RWAPIIndexer\Resource;
 
 /**
  * Source resource handler.
+ *
+ * @phpstan-type SourceProcessItem array{
+ *   id: int,
+ *   timestamp: string,
+ *   url: string,
+ *   url_alias?: string,
+ *   redirects?: array<int, string>,
+ *   name?: string,
+ *   description?: string,
+ *   status?: string,
+ *   date_created?: int,
+ *   date_changed?: int,
+ *   shortname?: string,
+ *   longname?: string,
+ *   spanish_name?: string,
+ *   homepage?: string,
+ *   content_type?: array<int, int>,
+ *   fts_id?: int,
+ *   logo?: mixed,
+ *   disclaimer?: string,
+ *   type?: mixed,
+ *   country?: array<int, array<string, mixed>>,
+ * }
  */
 class Source extends Resource {
 
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = [
+  protected array $queryOptions = [
     'fields' => [
       'name' => 'name',
       'description' => 'description__value',
@@ -56,7 +81,7 @@ class Source extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = [
+  protected array $processingOptions = [
     'conversion' => [
       'description' => ['links', 'html'],
       'content_type' => ['multi_int'],
@@ -78,14 +103,14 @@ class Source extends Resource {
   /**
    * Allowed content types for a source.
    *
-   * @var array
+   * @var array<int, string>
    */
-  protected $contentTypes = ['job', 'report', 'training'];
+  protected array $contentTypes = ['job', 'report', 'training'];
 
   /**
    * {@inheritdoc}
    */
-  public function getMapping() {
+  public function getMapping(): array {
     $mapping = new Mapping();
     $mapping->addInteger('id')
       ->addString('uuid', FALSE)
@@ -123,7 +148,9 @@ class Source extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function processItem(&$item) {
+  public function processItem(array &$item): void {
+    /** @var SourceProcessItem $item */
+
     // Handle dates.
     if (isset($item['date_created'])) {
       $item['date']['created'] = $item['date_created'];
@@ -142,7 +169,7 @@ class Source extends Resource {
     }
 
     // Handle logo.
-    if ($this->processor->processImage($item['logo'], TRUE, FALSE, FALSE) !== TRUE) {
+    if ($this->processor->processImage($item, 'logo', TRUE, FALSE, FALSE) !== TRUE) {
       unset($item['logo']);
     }
   }

@@ -1,85 +1,194 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer;
 
 /**
  * Indexing options handler class.
+ *
+ * Immutable value object. Create via Options::fromArray().
+ *
+ * @phpstan-type IndexingOptions array{
+ *   bundle?: string,
+ *   elasticsearch?: string,
+ *   mysql-host?: string,
+ *   mysql-port?: int,
+ *   mysql-user?: string,
+ *   mysql-pass?: string,
+ *   database?: string,
+ *   base-index-name?: string,
+ *   tag?: string,
+ *   website?: string,
+ *   limit?: int,
+ *   offset?: int,
+ *   filter?: string,
+ *   chunk-size?: int,
+ *   id?: int,
+ *   remove?: bool,
+ *   alias?: bool,
+ *   alias-only?: bool,
+ *   simulate?: bool,
+ *   replicas?: int,
+ *   shards?: int,
+ *   log?: string,
+ *   post-process-item-hook?: mixed
+ * }
  */
-class Options {
+readonly class Options {
 
   /**
-   * Indexing options.
+   * Constructor.
    *
-   * @var array
-   */
-  protected $options = [
-    'bundle' => '',
-    'elasticsearch' => 'http://127.0.0.1:9200',
-    'mysql-host' => 'localhost',
-    'mysql-port' => 3306,
-    'mysql-user' => 'root',
-    'mysql-pass' => '',
-    'database' => 'reliefwebint_0',
-    'base-index-name' => 'reliefwebint_0',
-    'tag' => '',
-    'website' => 'https://reliefweb.int',
-    'limit' => 0,
-    'offset' => 0,
-    'filter' => '',
-    'chunk-size' => 500,
-    'id' => 0,
-    'remove' => FALSE,
-    'alias' => FALSE,
-    'alias-only' => FALSE,
-    'simulate' => FALSE,
-    'replicas' => 1,
-    'shards' => 1,
-    'log' => '',
-    'post-process-item-hook' => '',
-  ];
-
-  /**
-   * Construct the Options handler.
+   * Use Options::fromArray() to create instances from kebab-case arrays.
+   * Validation runs on construction so every instance is guaranteed valid.
    *
-   * @param array $options
-   *   Indexing options.
+   * @param string $bundle
+   *   Entity bundle to index (e.g. report, job, country).
+   * @param string $elasticsearch
+   *   Elasticsearch base URL.
+   * @param string $mysqlHost
+   *   MySQL hostname or IP address.
+   * @param int $mysqlPort
+   *   MySQL port (1-65535).
+   * @param string $mysqlUser
+   *   MySQL username.
+   * @param string $mysqlPass
+   *   MySQL password.
+   * @param string $database
+   *   Database name.
+   * @param string $baseIndexName
+   *   Base name for the Elasticsearch index.
+   * @param string $tag
+   *   Optional tag appended to the index name.
+   * @param string $website
+   *   Website base URL (e.g. https://reliefweb.int).
+   * @param int $limit
+   *   Maximum number of entities to index (0 = all).
+   * @param int $offset
+   *   Entity ID from which to start indexing.
+   * @param string $filter
+   *   Filter expression (field:value,value+field2:value).
+   * @param int $chunkSize
+   *   Number of entities to index per batch (1-1000).
+   * @param int $id
+   *   Single entity ID to index (0 = none).
+   * @param bool $remove
+   *   TRUE to remove an entity or the index.
+   * @param bool $alias
+   *   TRUE to set the index alias after indexing.
+   * @param bool $aliasOnly
+   *   TRUE to set the alias without indexing.
+   * @param bool $simulate
+   *   TRUE to only output the number of indexable entities.
+   * @param int $replicas
+   *   Number of index replicas (0 or more).
+   * @param int $shards
+   *   Number of index shards (1-8).
+   * @param string $log
+   *   Log callback name (e.g. 'echo') or empty.
+   * @param mixed $postProcessItemHook
+   *   Optional post-process hook (callable, empty string or NULL).
    */
-  public function __construct(array $options = []) {
-    // Called from command line.
-    if (php_sapi_name() == 'cli') {
-      $this->options['log'] = 'echo';
-
-      // Parse the options from the command line arguments if not set.
-      if (empty($options)) {
-        $options = static::parseArguments();
-      }
-    }
-
-    // Replace the default options.
-    $this->options = array_replace($this->options, $options);
-
-    // Validate the options.
-    $this->validateOptions($this->options);
+  public function __construct(
+    public string $bundle = '',
+    public string $elasticsearch = 'http://127.0.0.1:9200',
+    public string $mysqlHost = 'localhost',
+    public int $mysqlPort = 3306,
+    public string $mysqlUser = 'root',
+    public string $mysqlPass = '',
+    public string $database = 'reliefwebint_0',
+    public string $baseIndexName = 'reliefwebint_0',
+    public string $tag = '',
+    public string $website = 'https://reliefweb.int',
+    public int $limit = 0,
+    public int $offset = 0,
+    public string $filter = '',
+    public int $chunkSize = 500,
+    public int $id = 0,
+    public bool $remove = FALSE,
+    public bool $alias = FALSE,
+    public bool $aliasOnly = FALSE,
+    public bool $simulate = FALSE,
+    public int $replicas = 1,
+    public int $shards = 1,
+    public string $log = '',
+    public mixed $postProcessItemHook = NULL,
+  ) {
+    $this->validateOptions();
   }
 
   /**
-   * Parse the options form the command line.
+   * Create Options from an associative array (e.g. from CLI).
    *
-   * @return array
-   *   Parsed options.
+   * Maps kebab-case array keys to constructor parameter names and unpacks
+   * the result into the constructor.
+   *
+   * @param IndexingOptions $options
+   *   Indexing options (kebab-case keys).
+   *
+   * @return self
+   *   Options instance.
    */
-  public static function parseArguments() {
-    global $argv;
-
-    // Remove the name of the executing script.
-    array_shift($argv);
-
-    // No parameters, we display the usage.
-    if (empty($argv)) {
-      static::displayUsage();
+  public static function fromArray(array $options = []): self {
+    if (php_sapi_name() === 'cli' && !isset($options['log'])) {
+      $options['log'] = 'echo';
     }
 
-    // Parse the arguments.
+    // Map kebab-case array keys to constructor parameter names.
+    $mapping = [
+      'bundle' => 'bundle',
+      'elasticsearch' => 'elasticsearch',
+      'mysql-host' => 'mysqlHost',
+      'mysql-port' => 'mysqlPort',
+      'mysql-user' => 'mysqlUser',
+      'mysql-pass' => 'mysqlPass',
+      'database' => 'database',
+      'base-index-name' => 'baseIndexName',
+      'tag' => 'tag',
+      'website' => 'website',
+      'limit' => 'limit',
+      'offset' => 'offset',
+      'filter' => 'filter',
+      'chunk-size' => 'chunkSize',
+      'id' => 'id',
+      'remove' => 'remove',
+      'alias' => 'alias',
+      'alias-only' => 'aliasOnly',
+      'simulate' => 'simulate',
+      'replicas' => 'replicas',
+      'shards' => 'shards',
+      'log' => 'log',
+      'post-process-item-hook' => 'postProcessItemHook',
+    ];
+
+    $parameters = [];
+    foreach ($mapping as $option => $parameter) {
+      if (isset($options[$option])) {
+        $parameters[$parameter] = $options[$option];
+      }
+    }
+
+    /** @var IndexingOptions $parameters */
+    return new self(...$parameters);
+  }
+
+  /**
+   * Parse the options from the command line.
+   *
+   * @return IndexingOptions
+   *   Parsed options (kebab-case keys).
+   */
+  public static function parseArguments(): array {
+    global $argv;
+
+    array_shift($argv);
+
+    if (empty($argv)) {
+      self::displayUsage();
+    }
+
+    $options = [];
     while (($arg = array_shift($argv)) !== NULL) {
       switch ($arg) {
         case '--elasticsearch':
@@ -184,12 +293,12 @@ class Options {
 
         case '--help':
         case '-h':
-          static::displayUsage();
+          self::displayUsage();
           break;
 
         default:
-          if (strpos($arg, '-') === 0) {
-            static::displayUsage("Invalid argument '{$arg}'.");
+          if (str_starts_with($arg, '-')) {
+            self::displayUsage("Invalid argument '{$arg}'.");
           }
           else {
             $options['bundle'] = $arg;
@@ -198,52 +307,24 @@ class Options {
       }
     }
 
-    // Display usage if no entity bundle is provided.
     if (empty($options['bundle'])) {
-      static::displayUsage("No entity bundle provided.");
+      self::displayUsage("No entity bundle provided.");
     }
 
     return $options;
   }
 
   /**
-   * Return the indexing options.
-   *
-   * @param string $key
-   *   Option key.
-   *
-   * @return int|string|array
-   *   All indexing options or option value for the given key.
+   * Validate entity bundle parameter.
    */
-  public function get($key = NULL) {
-    if (isset($key)) {
-      if (!isset($this->options[$key])) {
-        throw new \Exception("Undefined indexing option '{$key}'.");
-      }
-      else {
-        return $this->options[$key];
-      }
-    }
-    return $this->options;
-  }
-
-  /**
-   * Get passed entity bundle parameter and check its validity.
-   *
-   * @param string $bundle
-   *   Entity bundle to validate.
-   */
-  public function validateBundle($bundle) {
+  public static function validateBundle(string $bundle): string|FALSE {
     return Bundles::has($bundle) ? $bundle : FALSE;
   }
 
   /**
-   * Validate Mysql host.
-   *
-   * @param string $host
-   *   Mysql host to validate.
+   * Validate MySQL host.
    */
-  public function validateMysqlHost($host) {
+  public static function validateMysqlHost(string $host): string|FALSE {
     if (filter_var($host, FILTER_VALIDATE_IP) || preg_match('/^\S+$/', $host) === 1) {
       return $host;
     }
@@ -254,142 +335,106 @@ class Options {
    * Validate post process item hook.
    *
    * @param mixed $hook
-   *   Post process item hook to validate.
+   *   Post-process item hook to validate.
+   *
+   * @return callable|string|null|false
+   *   Validated post-process item hook (callable, empty string) or FALSE if
+   *   invalid.
    */
-  public function validatePostProcessItemHook($hook) {
-    if (empty($hook) || is_callable($hook)) {
+  public static function validatePostProcessItemHook(mixed $hook): callable|string|null|false {
+    if ($hook === NULL || $hook === '' || is_callable($hook)) {
       return $hook;
     }
     return FALSE;
   }
 
   /**
-   * Validate the indexing options.
-   *
-   * @param array $options
-   *   Options to validate.
+   * Validate this instance's properties. Called from constructor.
    */
-  public function validateOptions(array $options) {
-    $results = filter_var_array($options, [
-      'bundle' => [
-        'filter' => FILTER_CALLBACK,
-        'options' => [$this, 'validateBundle'],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'elasticsearch' => [
-        'filter' => FILTER_VALIDATE_URL,
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'mysql-host' => [
-        'filter' => FILTER_CALLBACK,
-        'options' => [$this, 'validateMysqlHost'],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'mysql-port' => [
-        'filter' => FILTER_VALIDATE_INT,
-        'options' => ['min_range' => 1, 'max_range' => 65535],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'mysql-user' => [
-        'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => ['regexp' => '/^\S+$/'],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'mysql-pass' => [
-        'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => ['regexp' => '/^\S*$/'],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'database' => [
-        'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/'],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'base-index-name' => [
-        'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/'],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'tag' => [
-        'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/'],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'website' => [
-        'filter' => FILTER_VALIDATE_URL,
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'limit' => [
-        'filter' => FILTER_VALIDATE_INT,
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'offset' => [
-        'filter' => FILTER_VALIDATE_INT,
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'filter' => [
-        'filter' => FILTER_VALIDATE_REGEXP,
-        'options' => ['regexp' => '/^(([a-zA-Z0-9_-]+:[a-zA-Z0-9_*-]+(,[a-zA-Z0-9_*-]+)*)([+][a-zA-Z0-9_-]+:[a-zA-Z0-9_*-]+(,[a-zA-Z0-9_*-]+)*)*)*$/'],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'chunk-size' => [
-        'filter' => FILTER_VALIDATE_INT,
-        'options' => ['min_range' => 1, 'max_range' => 1000],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'id' => [
-        'filter' => FILTER_VALIDATE_INT,
-        'options' => ['min_range' => 0],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'remove' => [
-        'filter' => FILTER_VALIDATE_BOOLEAN,
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'alias' => [
-        'filter' => FILTER_VALIDATE_BOOLEAN,
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'alias-only' => [
-        'filter' => FILTER_VALIDATE_BOOLEAN,
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'simulate' => [
-        'filter' => FILTER_VALIDATE_BOOLEAN,
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'replicas' => [
-        'filter' => FILTER_VALIDATE_INT,
-        'options' => ['min_range' => 0],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'shards' => [
-        'filter' => FILTER_VALIDATE_INT,
-        'options' => ['min_range' => 1, 'max_range' => 8],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-      'post-process-item-hook' => [
-        'filter' => FILTER_CALLBACK,
-        'options' => [$this, 'validatePostProcessItemHook'],
-        'flags' => FILTER_NULL_ON_FAILURE,
-      ],
-    ]);
-
-    foreach ($results as $key => $value) {
-      if (is_null($value)) {
-        throw new \Exception("Invalid '{$key}' argument value.");
-      }
+  private function validateOptions(): void {
+    // Validate bundle.
+    if (self::validateBundle($this->bundle) === FALSE) {
+      $known = implode(', ', array_keys(Bundles::BUNDLES));
+      throw new \InvalidArgumentException("Invalid bundle '{$this->bundle}'. Known bundles: {$known}.");
+    }
+    // Validate Elasticsearch URL.
+    if (filter_var($this->elasticsearch, FILTER_VALIDATE_URL) === FALSE) {
+      throw new \InvalidArgumentException('Invalid Elasticsearch option, it must be a valid URL.');
+    }
+    // Validate MySQL host.
+    if (self::validateMysqlHost($this->mysqlHost) === FALSE) {
+      throw new \InvalidArgumentException('Invalid MySQL host. It must be a valid hostname or IP address.');
+    }
+    // Validate MySQL port.
+    if (filter_var($this->mysqlPort, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid MySQL port. It must be between 1 and 65535.');
+    }
+    // Validate MySQL user.
+    if (filter_var($this->mysqlUser, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^\S+$/']]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid MySQL user. It must be a non-empty string without spaces.');
+    }
+    // Validate MySQL password.
+    if (filter_var($this->mysqlPass, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^\S*$/']]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid MySQL password. It must not contain spaces.');
+    }
+    // Validate database name.
+    if (filter_var($this->database, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/']]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid database name. Only letters, numbers, underscores and hyphens are allowed.');
+    }
+    // Validate base index name.
+    if (filter_var($this->baseIndexName, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/']]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid base index name. Only letters, numbers, underscores and hyphens are allowed.');
+    }
+    // Validate tag.
+    if (filter_var($this->tag, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/']]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid tag. Only letters, numbers, underscores and hyphens are allowed.');
+    }
+    // Validate website URL.
+    if (filter_var($this->website, FILTER_VALIDATE_URL) === FALSE) {
+      throw new \InvalidArgumentException('Invalid website option, it must be a valid URL.');
+    }
+    // Validate limit.
+    if (filter_var($this->limit, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid limit. It must be a non-negative integer.');
+    }
+    // Validate offset.
+    if (filter_var($this->offset, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid offset. It must be a non-negative integer.');
+    }
+    // Validate filter.
+    if (filter_var($this->filter, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^(([a-zA-Z0-9_-]+:[a-zA-Z0-9_*-]+(,[a-zA-Z0-9_*-]+)*)([+][a-zA-Z0-9_-]+:[a-zA-Z0-9_*-]+(,[a-zA-Z0-9_*-]+)*)*)*$/']]) === FALSE) {
+      throw new \InvalidArgumentException("Invalid filter. Format: field1:value1,value2+field2:value1 (e.g. status:current+theme:123).");
+    }
+    // Validate chunk-size.
+    if (filter_var($this->chunkSize, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 1000]]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid chunk-size. It must be between 1 and 1000.');
+    }
+    // Validate id.
+    if (filter_var($this->id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid id. It must be a non-negative integer.');
+    }
+    // Validate replicas.
+    if (filter_var($this->replicas, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid replicas. It must be 0 or greater.');
+    }
+    // Validate shards.
+    if (filter_var($this->shards, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 8]]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid shards. It must be between 1 and 8.');
+    }
+    // Validate post-process-item-hook.
+    if (self::validatePostProcessItemHook($this->postProcessItemHook) === FALSE) {
+      throw new \InvalidArgumentException('Invalid post-process-item-hook. It must be callable or empty.');
     }
   }
 
   /**
    * Display the script usage and indexing options.
    *
-   * @param string $error
-   *   Error message.
+   * @param ?string $error
+   *   Error message to display, if any.
    */
-  public static function displayUsage($error = '') {
-    if (!empty($error)) {
+  public static function displayUsage(?string $error = NULL): void {
+    if ($error !== NULL && $error !== '') {
       echo "[ERROR] " . $error . "\n\n";
     }
 

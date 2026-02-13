@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer\Database;
 
 /**
@@ -14,7 +16,7 @@ class Statement extends \PDOStatement {
    *
    * @var \RWAPIIndexer\Database\DatabaseConnection
    */
-  public $connection;
+  public DatabaseConnection $connection;
 
   /**
    * Construct the statement.
@@ -22,7 +24,7 @@ class Statement extends \PDOStatement {
    * @param \RWAPIIndexer\Database\DatabaseConnection $connection
    *   Database connection.
    */
-  protected function __construct(DatabaseConnection $connection) {
+  public function __construct(DatabaseConnection $connection) {
     $this->connection = $connection;
   }
 
@@ -31,25 +33,29 @@ class Statement extends \PDOStatement {
    *
    * @param string $key
    *   Field to use a key.
-   * @param int $fetch
+   * @param int|string|null $fetch
    *   Fetch mode.
    *
-   * @return array
+   * @return array<string, mixed>
    *   Associative array of field data keyed by the given key.
    */
-  public function fetchAllAssoc($key, $fetch = NULL) {
+  public function fetchAllAssoc(string $key, int|string|null $fetch = NULL): array {
     $return = [];
     if (isset($fetch)) {
       if (is_string($fetch)) {
         $this->setFetchMode(\PDO::FETCH_CLASS, $fetch);
       }
-      else {
+      elseif (is_int($fetch)) {
         $this->setFetchMode($fetch);
       }
     }
 
     foreach ($this as $record) {
-      $record_key = is_object($record) ? $record->$key : $record[$key];
+      $record_key = match (TRUE) {
+        is_object($record) && property_exists($record, $key) => $record->$key,
+        is_array($record) && isset($record[$key]) => $record[$key],
+        default => throw new \InvalidArgumentException('Record must be an object or array'),
+      };
       $return[$record_key] = $record;
     }
 
@@ -64,13 +70,25 @@ class Statement extends \PDOStatement {
    * @param int $value_index
    *   Index of the field to use as value.
    *
-   * @return array
+   * @return array<int|string, mixed>
    *   Associative array.
    */
-  public function fetchAllKeyed($key_index = 0, $value_index = 1) {
+  public function fetchAllKeyed(int $key_index = 0, int $value_index = 1): array {
     $return = [];
     $this->setFetchMode(\PDO::FETCH_NUM);
     foreach ($this as $record) {
+      if (!is_array($record)) {
+        throw new \InvalidArgumentException('Record must be an array');
+      }
+      if (!isset($record[$key_index])) {
+        throw new \InvalidArgumentException('Key index must be set');
+      }
+      if (!isset($record[$value_index])) {
+        throw new \InvalidArgumentException('Value index must be set');
+      }
+      if (!is_int($record[$key_index]) && !is_string($record[$key_index])) {
+        throw new \InvalidArgumentException('Key index must be an integer or string');
+      }
       $return[$record[$key_index]] = $record[$value_index];
     }
     return $return;
@@ -85,7 +103,7 @@ class Statement extends \PDOStatement {
    * @return mixed
    *   Field data.
    */
-  public function fetchField($index = 0) {
+  public function fetchField(int $index = 0): mixed {
     return $this->fetchColumn($index);
   }
 
@@ -95,10 +113,10 @@ class Statement extends \PDOStatement {
    * @param int $index
    *   Index of the column to fetch.
    *
-   * @return array
+   * @return array<int, mixed>
    *   Field data.
    */
-  public function fetchCol($index = 0) {
+  public function fetchCol(int $index = 0): array {
     return $this->fetchAll(\PDO::FETCH_COLUMN, $index);
   }
 

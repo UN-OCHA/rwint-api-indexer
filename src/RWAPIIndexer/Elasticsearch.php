@@ -505,7 +505,7 @@ class Elasticsearch {
     }
 
     // If the response is empty, throw an exception.
-    if (empty($response)) {
+    if ($response === FALSE) {
       throw new \Exception('Empty response from the request.');
     }
 

@@ -382,7 +382,12 @@ class Processor {
                 $values[] = (int) $data;
               }
             }
-            $item[$key] = $values;
+            if (!empty($values)) {
+              $item[$key] = $values;
+            }
+            else {
+              unset($item[$key]);
+            }
           }
           else {
             unset($item[$key]);
@@ -828,66 +833,63 @@ class Processor {
    *   Processing success.
    */
   public function processImage(array &$item, string $key, bool $single = FALSE, bool $meta = TRUE, bool $styles = TRUE): bool {
-    if (!isset($item[$key]) || empty($item[$key])) {
+    if (!isset($item[$key]) || !is_string($item[$key]) || empty($item[$key])) {
+      unset($item[$key]);
       return FALSE;
     }
+    $items = [];
+    foreach (explode('%%%', $item[$key]) as $part) {
+      [
+        $delta,
+        $id,
+        $width,
+        $height,
+        $uri,
+        $filename,
+        $mimetype,
+        $filesize,
+        $copyright,
+        $caption,
+      ] = explode('###', $part);
 
-    if (is_string($item[$key])) {
-      $items = [];
-      foreach (explode('%%%', $item[$key]) as $part) {
-        [
-          $delta,
-          $id,
-          $width,
-          $height,
-          $uri,
-          $filename,
-          $mimetype,
-          $filesize,
-          $copyright,
-          $caption,
-        ] = explode('###', $part);
-
-        // Update the mime type if necessary. Some old content have the wrong
-        // one.
-        if (empty($mimetype) || $mimetype === 'application/octet-stream') {
-          $mimetype = $this->getMimeType($filename);
-        }
-
-        $array = [
-          'id' => $id,
-          'width' => $width,
-          'height' => $height,
-          'url' => $this->processFilePath($uri),
-          'filename' => $filename,
-          'mimetype' => $mimetype,
-          'filesize' => $filesize,
-        ];
-
-        if (!empty($meta)) {
-          $array['copyright'] = preg_replace('/^@+/', '', $copyright);
-          $array['caption'] = $caption;
-        }
-
-        if (!empty($styles)) {
-          $array['url-large'] = $this->processFilePath($uri, 'large');
-          $array['url-small'] = $this->processFilePath($uri, 'small');
-          $array['url-thumb'] = $this->processFilePath($uri, 'thumbnail');
-        }
-
-        foreach ($array as $array_key => $array_value) {
-          if (empty($array_value)) {
-            unset($array[$array_key]);
-          }
-        }
-
-        $items[$delta] = $array;
+      // Update the mime type if necessary. Some old content have the wrong
+      // one.
+      if (empty($mimetype) || $mimetype === 'application/octet-stream') {
+        $mimetype = $this->getMimeType($filename);
       }
-      ksort($items);
-      $item[$key] = $single ? reset($items) : array_values($items);
-      return TRUE;
+
+      $array = [
+        'id' => $id,
+        'width' => $width,
+        'height' => $height,
+        'url' => $this->processFilePath($uri),
+        'filename' => $filename,
+        'mimetype' => $mimetype,
+        'filesize' => $filesize,
+      ];
+
+      if (!empty($meta)) {
+        $array['copyright'] = preg_replace('/^@+/', '', $copyright);
+        $array['caption'] = $caption;
+      }
+
+      if (!empty($styles)) {
+        $array['url-large'] = $this->processFilePath($uri, 'large');
+        $array['url-small'] = $this->processFilePath($uri, 'small');
+        $array['url-thumb'] = $this->processFilePath($uri, 'thumbnail');
+      }
+
+      foreach ($array as $array_key => $array_value) {
+        if (empty($array_value)) {
+          unset($array[$array_key]);
+        }
+      }
+
+      $items[$delta] = $array;
     }
-    return FALSE;
+    ksort($items);
+    $item[$key] = $single ? reset($items) : array_values($items);
+    return TRUE;
   }
 
   /**
@@ -904,104 +906,108 @@ class Processor {
    *   Processing success.
    */
   public function processFile(array &$item, string $key, bool $single = FALSE): bool {
-    if (!isset($item[$key]) || empty($item[$key])) {
+    if (!isset($item[$key]) || !is_string($item[$key]) || empty($item[$key])) {
+      unset($item[$key]);
       return FALSE;
     }
 
-    if (is_string($item[$key])) {
-      $items = [];
-      foreach (explode('%%%', $item[$key]) as $part) {
-        [
-          $delta,
-          $id,
-          $uuid,
-          $filename,
-          $filehash,
-          $description,
-          $langcode,
-          $preview_uuid,
-          $preview_page,
-          $preview_rotation,
-          $uri,
-          $mimetype,
-          $filesize,
-        ] = explode('###', $part);
+    $items = [];
+    foreach (explode('%%%', $item[$key]) as $part) {
+      [
+        $delta,
+        $id,
+        $uuid,
+        $filename,
+        $filehash,
+        $description,
+        $langcode,
+        $preview_uuid,
+        $preview_page,
+        $preview_rotation,
+        $uri,
+        $mimetype,
+        $filesize,
+      ] = explode('###', $part);
 
-        // Skip private files.
-        if (strpos($uri, 'private://') === 0) {
-          continue;
-        }
-
-        $description = trim($description);
-
-        // Add the language version to the description for backward
-        // compatibility.
-        $language_versions = [
-          'ar' => 'Arabic version',
-          'en' => 'English version',
-          'es' => 'Spanish version',
-          'fr' => 'French version',
-          'ot' => 'Other version',
-          'ru' => 'Russian version',
-        ];
-        if (isset($language_versions[$langcode])) {
-          if (!empty($description)) {
-            $description .= ' - ' . $language_versions[$langcode];
-          }
-          else {
-            $description = $language_versions[$langcode];
-          }
-        }
-
-        // Update the mime type if necessary. Some old content have the wrong
-        // one.
-        if (empty($mimetype) || $mimetype === 'application/octet-stream') {
-          $mimetype = $this->getMimeType($filename);
-        }
-
-        // We need to expose the permanent URI not the system one.
-        $permanent_uri = 'public://attachments/' . $uuid . '/' . $filename;
-
-        $array = [
-          'id' => $id,
-          'description' => $description,
-          'url' => $this->processFilePath($permanent_uri),
-          'filename' => $filename,
-          'filehash' => $filehash,
-          'mimetype' => $mimetype,
-          'filesize' => $filesize,
-        ];
-
-        // PDF attachment.
-        if (!empty($preview_uuid) && !empty($preview_page)) {
-          $preview_uri = str_replace('/attachments/', '/previews/', $uri);
-          $preview_uri = preg_replace('#\..+$#i', '.png', $preview_uri) ?? $preview_uri;
-          $array['preview'] = [
-            'url' => $this->processFilePath($preview_uri),
-            'url-large' => $this->processFilePath($preview_uri, 'large'),
-            'url-small' => $this->processFilePath($preview_uri, 'small'),
-            'url-thumb' => $this->processFilePath($preview_uri, 'thumbnail'),
-            'version' => implode('-', [
-              $id,
-              $preview_page,
-              $preview_rotation,
-            ]),
-          ];
-        }
-
-        foreach ($array as $array_key => $array_value) {
-          if (empty($array_value)) {
-            unset($array[$array_key]);
-          }
-        }
-
-        $items[$delta] = $array;
+      // Skip private files.
+      if (strpos($uri, 'private://') === 0) {
+        continue;
       }
-      ksort($items);
-      $item[$key] = $single ? reset($items) : array_values($items);
-      return TRUE;
+
+      $description = trim($description);
+
+      // Add the language version to the description for backward
+      // compatibility.
+      $language_versions = [
+        'ar' => 'Arabic version',
+        'en' => 'English version',
+        'es' => 'Spanish version',
+        'fr' => 'French version',
+        'ot' => 'Other version',
+        'ru' => 'Russian version',
+      ];
+      if (isset($language_versions[$langcode])) {
+        if (!empty($description)) {
+          $description .= ' - ' . $language_versions[$langcode];
+        }
+        else {
+          $description = $language_versions[$langcode];
+        }
+      }
+
+      // Update the mime type if necessary. Some old content have the wrong
+      // one.
+      if (empty($mimetype) || $mimetype === 'application/octet-stream') {
+        $mimetype = $this->getMimeType($filename);
+      }
+
+      // We need to expose the permanent URI not the system one.
+      $permanent_uri = 'public://attachments/' . $uuid . '/' . $filename;
+
+      $array = [
+        'id' => $id,
+        'description' => $description,
+        'url' => $this->processFilePath($permanent_uri),
+        'filename' => $filename,
+        'filehash' => $filehash,
+        'mimetype' => $mimetype,
+        'filesize' => $filesize,
+      ];
+
+      // PDF attachment.
+      if (!empty($preview_uuid) && !empty($preview_page)) {
+        $preview_uri = str_replace('/attachments/', '/previews/', $uri);
+        $preview_uri = preg_replace('#\..+$#i', '.png', $preview_uri) ?? $preview_uri;
+        $array['preview'] = [
+          'url' => $this->processFilePath($preview_uri),
+          'url-large' => $this->processFilePath($preview_uri, 'large'),
+          'url-small' => $this->processFilePath($preview_uri, 'small'),
+          'url-thumb' => $this->processFilePath($preview_uri, 'thumbnail'),
+          'version' => implode('-', [
+            $id,
+            $preview_page,
+            $preview_rotation,
+          ]),
+        ];
+      }
+
+      foreach ($array as $array_key => $array_value) {
+        if (empty($array_value)) {
+          unset($array[$array_key]);
+        }
+      }
+
+      $items[$delta] = $array;
     }
-    return FALSE;
+
+    if (empty($items)) {
+      unset($item[$key]);
+      return FALSE;
+    }
+
+    ksort($items);
+    $item[$key] = $single ? reset($items) : array_values($items);
+    return TRUE;
   }
 
   /**
@@ -1238,7 +1244,7 @@ class Processor {
 
         $items[$delta] = $array;
       }
-      ksort($array);
+      ksort($items);
       $item[$key] = $single ? reset($items) : array_values($items);
       return TRUE;
     }

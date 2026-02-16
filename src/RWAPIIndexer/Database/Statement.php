@@ -21,10 +21,13 @@ class Statement extends \PDOStatement {
   /**
    * Construct the statement.
    *
+   * PDO does not allow a public constructor when using ATTR_STATEMENT_CLASS,
+   * so we use a protected constructor.
+   *
    * @param \RWAPIIndexer\Database\DatabaseConnection $connection
    *   Database connection.
    */
-  public function __construct(DatabaseConnection $connection) {
+  protected function __construct(DatabaseConnection $connection) {
     $this->connection = $connection;
   }
 

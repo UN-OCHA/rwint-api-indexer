@@ -1216,39 +1216,37 @@ class Processor {
    *   Processing success.
    */
   public function processRiverSearch(array &$item, string $key, bool $single = FALSE): bool {
-    if (!isset($item[$key]) || empty($item[$key])) {
+    if (!isset($item[$key]) || !is_string($item[$key]) || empty($item[$key])) {
+      unset($item[$key]);
       return FALSE;
     }
 
-    if (is_string($item[$key])) {
-      $items = [];
-      foreach (explode('%%%', $item[$key]) as $part) {
-        [
-          $delta,
-          $url,
-          $title,
-          $override,
-        ] = explode('###', $part);
+    $items = [];
+    foreach (explode('%%%', $item[$key]) as $part) {
+      [
+        $delta,
+        $url,
+        $title,
+        $override,
+      ] = explode('###', $part);
 
-        $array = [
-          'url' => $url,
-          'title' => $title,
-          'override' => !empty($override) ? intval($override, 10) : NULL,
-        ];
+      $array = [
+        'url' => $url,
+        'title' => $title,
+        'override' => !empty($override) ? intval($override, 10) : NULL,
+      ];
 
-        foreach ($array as $array_key => $array_value) {
-          if (empty($array_value)) {
-            unset($array[$array_key]);
-          }
+      foreach ($array as $array_key => $array_value) {
+        if (empty($array_value)) {
+          unset($array[$array_key]);
         }
-
-        $items[$delta] = $array;
       }
-      ksort($items);
-      $item[$key] = $single ? reset($items) : array_values($items);
-      return TRUE;
+
+      $items[$delta] = $array;
     }
-    return FALSE;
+    ksort($items);
+    $item[$key] = $single ? reset($items) : array_values($items);
+    return TRUE;
   }
 
 }

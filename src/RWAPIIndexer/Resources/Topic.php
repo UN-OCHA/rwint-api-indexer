@@ -183,21 +183,28 @@ class Topic extends Resource {
     ];
 
     foreach ($rivers as $id => $info) {
-      if (!empty($item[$id . '_search']) && is_array($item[$id . '_search']) && $this->processor->processRiverSearch($item, $id . '_search', TRUE) === TRUE) {
-        $rivers[$id] += $item[$id . '_search'];
+      if (!empty($item[$id . '_search']) && $this->processor->processRiverSearch($item, $id . '_search', TRUE) === TRUE) {
+        if (is_array($item[$id . '_search'])) {
+          $rivers[$id] += $item[$id . '_search'];
+        }
       }
       else {
+        unset($rivers[$id]);
+      }
+      if (empty($rivers[$id])) {
         unset($rivers[$id]);
       }
       unset($item[$id . '_search']);
     }
 
-    if (!empty($item['sections']) && is_array($item['sections']) && $this->processor->processRiverSearch($item, 'sections') === TRUE) {
-      foreach ($item['sections'] as $index => $section) {
-        if (is_array($section)) {
-          $rivers[] = $section + [
-            'id' => 'section-' . ($index + 1),
-          ];
+    if (!empty($item['sections']) && $this->processor->processRiverSearch($item, 'sections') === TRUE) {
+      if (is_array($item['sections'])) {
+        foreach ($item['sections'] as $index => $section) {
+          if (is_array($section)) {
+            $rivers[] = $section + [
+              'id' => 'section-' . ($index + 1),
+            ];
+          }
         }
       }
     }

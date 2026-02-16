@@ -432,6 +432,53 @@ final class ProcessorTest extends TestCase {
   }
 
   /**
+   * ProcessFile() includes pagecount as integer when present and numeric.
+   */
+  #[Test]
+  public function processFileWithPagecountIncludesPagecountAsInteger(): void {
+    $processor = $this->createProcessor();
+    // 14 segments: delta, id, uuid, filename, filehash, pagecount, description,
+    // langcode, preview_*, uri, mimetype, filesize.
+    $item = [
+      'file' => '0###1###abc-uuid###doc.pdf###h1###42###Description###en############public://attachments/abc-uuid/doc.pdf###application/pdf###1000',
+    ];
+    $result = $processor->processFile($item, 'file');
+    self::assertTrue($result);
+    self::assertIsArray($item['file']);
+    self::assertCount(1, $item['file']);
+    self::assertArrayHasKey('pagecount', $item['file'][0]);
+    self::assertSame(42, $item['file'][0]['pagecount']);
+  }
+
+  /**
+   * ProcessFile() omits pagecount when segment is empty.
+   */
+  #[Test]
+  public function processFileWithoutPagecountOmitsPagecount(): void {
+    $processor = $this->createProcessor();
+    $item = [
+      'file' => '0###1###abc-uuid###doc.pdf###h1#######Description###en############public://attachments/abc-uuid/doc.pdf###application/pdf###1000',
+    ];
+    $result = $processor->processFile($item, 'file');
+    self::assertTrue($result);
+    self::assertArrayNotHasKey('pagecount', $item['file'][0]);
+  }
+
+  /**
+   * ProcessFile() omits pagecount when value is non-numeric.
+   */
+  #[Test]
+  public function processFileWithNonNumericPagecountOmitsPagecount(): void {
+    $processor = $this->createProcessor();
+    $item = [
+      'file' => '0###1###abc-uuid###doc.pdf###h1###n/a###Description###en############public://attachments/abc-uuid/doc.pdf###application/pdf###1000',
+    ];
+    $result = $processor->processFile($item, 'file');
+    self::assertTrue($result);
+    self::assertArrayNotHasKey('pagecount', $item['file'][0]);
+  }
+
+  /**
    * ProcessFilePath() with attachments path uses website base.
    */
   #[Test]

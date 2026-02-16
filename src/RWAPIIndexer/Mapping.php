@@ -284,6 +284,7 @@ class Mapping {
         'filename' => ['type' => 'keyword'],
         'filehash' => ['type' => 'keyword'],
         'filesize' => ['type' => 'integer'],
+        'pagecount' => ['type' => 'integer'],
         'description' => ['type' => 'text', 'norms' => FALSE],
         'url' => ['type' => 'keyword'],
         'preview' => [

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer\Resources;
 
 use RWAPIIndexer\Mapping;
@@ -7,13 +9,36 @@ use RWAPIIndexer\Resource;
 
 /**
  * Job resource handler.
+ *
+ * @phpstan-type JobProcessItem array{
+ *   id: int,
+ *   timestamp: string,
+ *   url: string,
+ *   url_alias?: string,
+ *   redirects?: array<int, string>,
+ *   title?: string,
+ *   body?: string,
+ *   how_to_apply?: string,
+ *   date_created?: int,
+ *   date_changed?: int,
+ *   date_closing?: int,
+ *   status?: string,
+ *   city?: string,
+ *   country?: array<int, array<string, mixed>>,
+ *   source?: array<int, array<string, mixed>>,
+ *   language?: array<int, array<string, mixed>>,
+ *   theme?: array<int, array<string, mixed>>,
+ *   type?: array<int, array<string, mixed>>,
+ *   experience?: array<int, array<string, mixed>>,
+ *   career_categories?: array<int, array<string, mixed>>,
+ * }
  */
 class Job extends Resource {
 
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = [
+  protected array $queryOptions = [
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
@@ -48,7 +73,7 @@ class Job extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = [
+  protected array $processingOptions = [
     'conversion' => [
       'body' => ['links', 'html_strict'],
       'how_to_apply' => ['links', 'html_strict'],
@@ -92,7 +117,7 @@ class Job extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function getMapping() {
+  public function getMapping(): array {
     $mapping = new Mapping();
     $mapping->addInteger('id')
       ->addString('uuid', FALSE)
@@ -134,18 +159,22 @@ class Job extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function processItem(&$item) {
+  public function processItem(array &$item): void {
+    /** @var JobProcessItem $item */
+
     // Handle dates.
-    $item['date'] = [
-      'created' => $item['date_created'],
-      'changed' => $item['date_changed'],
-    ];
+    if (isset($item['date_created'])) {
+      $item['date']['created'] = $item['date_created'];
+      unset($item['date_created']);
+    }
+    if (isset($item['date_changed'])) {
+      $item['date']['changed'] = $item['date_changed'];
+      unset($item['date_changed']);
+    }
     if (isset($item['date_closing'])) {
       $item['date']['closing'] = $item['date_closing'];
+      unset($item['date_closing']);
     }
-    unset($item['date_created']);
-    unset($item['date_changed']);
-    unset($item['date_closing']);
 
     // Handle city. Keep compatibility.
     if (isset($item['city'])) {

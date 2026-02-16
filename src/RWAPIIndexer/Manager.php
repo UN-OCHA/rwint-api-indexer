@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer;
 
 use RWAPIIndexer\Database\DatabaseConnection;
 
 /**
  * Resource manager class.
+ *
+ * @phpstan-import-type IndexingOptions from Options
  */
 class Manager {
 
@@ -14,82 +18,92 @@ class Manager {
    *
    * @var \RWAPIIndexer\Metrics
    */
-  protected $metrics = NULL;
+  protected Metrics $metrics;
 
   /**
    * Indexing options handler.
    *
-   * @var \RWAPIIndexer\Metrics
+   * @var \RWAPIIndexer\Options
    */
-  protected $options = NULL;
+  protected Options $options;
 
   /**
    * Database Connection.
    *
    * @var \RWAPIIndexer\Database\DatabaseConnection
    */
-  protected $connection = NULL;
+  protected DatabaseConnection $connection;
 
   /**
    * References handler.
    *
    * @var \RWAPIIndexer\References
    */
-  protected $references = NULL;
+  protected References $references;
 
   /**
    * Elasticsearch handler.
    *
    * @var \RWAPIIndexer\Elasticsearch
    */
-  protected $elasticsearch = NULL;
+  protected Elasticsearch $elasticsearch;
 
   /**
    * Field processor.
    *
    * @var \RWAPIIndexer\Processor
    */
-  protected $processor = NULL;
+  protected Processor $processor;
 
   /**
    * Construct the resource manager with the given indexing options.
    *
-   * @param array $options
+   * @param IndexingOptions $options
    *   Indexing options.
+   * @param ?\RWAPIIndexer\Database\DatabaseConnection $connection
+   *   Optional database connection (for testing). If null, a new connection
+   *   is created.
    */
-  public function __construct(array $options = []) {
+  public function __construct(array $options = [], ?DatabaseConnection $connection = NULL) {
     $this->metrics = new Metrics();
 
-    // Indexing options.
-    $this->options = new Options($options);
+    // Indexing options (parse CLI args when empty and running from CLI).
+    $options = (empty($options) && php_sapi_name() === 'cli')
+      ? Options::parseArguments()
+      : $options;
+    $this->options = Options::fromArray($options);
 
-    // Create a new database connection.
-    $this->createDatabaseConnection();
+    if ($connection !== NULL) {
+      $this->connection = $connection;
+    }
+    else {
+      $this->createDatabaseConnection();
+    }
 
     // Create a new reference handler.
     $this->references = new References();
 
     // Create a new elasticsearch handler.
     $this->elasticsearch = new Elasticsearch(
-      $this->options->get('elasticsearch'),
-      $this->options->get('base-index-name'),
-      $this->options->get('tag'),
+      $this->options->elasticsearch,
+      $this->options->baseIndexName,
+      $this->options->tag,
     );
 
     // Create a new field processor object to prepare items before indexing.
-    $this->processor = new Processor($this->options->get('website'), $this->connection, $this->references);
+    $this->processor = new Processor($this->options->website, $this->connection, $this->references);
   }
 
   /**
    * Create a database connection.
    */
-  public function createDatabaseConnection() {
-    $dbname = $this->options->get('database');
-    $host = $this->options->get('mysql-host');
-    $port = $this->options->get('mysql-port');
+  public function createDatabaseConnection(): void {
+    $dbname = $this->options->database;
+    $host = $this->options->mysqlHost;
+    $port = $this->options->mysqlPort;
     $dsn = "mysql:dbname={$dbname};host={$host};port={$port};charset=utf8";
-    $user = $this->options->get('mysql-user');
-    $password = $this->options->get('mysql-pass');
+    $user = $this->options->mysqlUser;
+    $password = $this->options->mysqlPass;
 
     $this->connection = new DatabaseConnection($dsn, $user, $password);
   }
@@ -97,20 +111,20 @@ class Manager {
   /**
    * Index items or remove index type.
    */
-  public function execute() {
-    $bundle = $this->options->get('bundle');
-    $id = $this->options->get('id');
-    $remove = $this->options->get('remove');
-    $alias = $this->options->get('alias');
-    $aliasOnly = $this->options->get('alias-only');
+  public function execute(): void {
+    $bundle = $this->options->bundle;
+    $id = $this->options->id;
+    $remove = $this->options->remove;
+    $alias = $this->options->alias;
+    $aliasOnly = $this->options->aliasOnly;
 
     // Remove or index a particular entity.
     if (!empty($id)) {
       if (!empty($remove)) {
-        $this->removeItem($bundle, $this->options->get('id'));
+        $this->removeItem($bundle, $this->options->id);
       }
       else {
-        $this->indexItem($bundle, $this->options->get('id'));
+        $this->indexItem($bundle, $this->options->id);
       }
     }
     // Or remove the index or index entities.
@@ -138,7 +152,7 @@ class Manager {
    * @param string $bundle
    *   Bundle for the entities to index.
    */
-  public function index($bundle) {
+  public function index(string $bundle): void {
     // Get the resource handler for the bundle.
     $handler = $this->getResourceHandler($bundle);
 
@@ -157,7 +171,7 @@ class Manager {
    * @param int $id
    *   Id of the entity item.
    */
-  public function indexItem($bundle, $id) {
+  public function indexItem(string $bundle, int $id): void {
     // Get the resource handler for the bundle.
     $handler = $this->getResourceHandler($bundle);
 
@@ -173,7 +187,7 @@ class Manager {
    * @param int $id
    *   Id of the entity item.
    */
-  public function removeItem($bundle, $id) {
+  public function removeItem(string $bundle, int $id): void {
     // Get the resource handler for the bundle.
     $handler = $this->getResourceHandler($bundle);
 
@@ -187,7 +201,7 @@ class Manager {
    * @param string $bundle
    *   Bundle of the resource to remove.
    */
-  public function remove($bundle) {
+  public function remove(string $bundle): void {
     // Get the resource handler for the bundle.
     $handler = $this->getResourceHandler($bundle);
 
@@ -203,7 +217,7 @@ class Manager {
    * @param bool $remove
    *   Remove or set the alias.
    */
-  public function setAlias($bundle, $remove = FALSE) {
+  public function setAlias(string $bundle, bool $remove = FALSE): void {
     // Get the resource handler for the bundle.
     $handler = $this->getResourceHandler($bundle);
 
@@ -214,10 +228,10 @@ class Manager {
   /**
    * Recursively load the references and add them to the references handler.
    *
-   * @param array $references
+   * @param string[] $references
    *   List of the reference bundles.
    */
-  public function loadReferences(array $references) {
+  public function loadReferences(array $references): void {
     foreach ($references as $bundle) {
       // If not already set, load the reference items for this bundle.
       if (!$this->references->has($bundle)) {
@@ -241,7 +255,7 @@ class Manager {
    * @return \RWAPIIndexer\Resource
    *   Resource handler for the given bundle.
    */
-  public function getResourceHandler($bundle) {
+  public function getResourceHandler(string $bundle): Resource {
     return Bundles::getResourceHandler($bundle, $this->elasticsearch, $this->connection, $this->processor, $this->references, $this->options);
   }
 
@@ -251,7 +265,7 @@ class Manager {
    * @return \RWAPIIndexer\Metrics
    *   Metrics handler.
    */
-  public function getMetrics() {
+  public function getMetrics(): Metrics {
     return $this->metrics;
   }
 
@@ -261,8 +275,8 @@ class Manager {
    * @param string $message
    *   Message to log.
    */
-  public function log($message) {
-    $callback = $this->options->get('log');
+  public function log(string $message): void {
+    $callback = $this->options->log;
     if ($callback === 'echo') {
       echo $message;
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer;
 
 /**
@@ -10,19 +12,19 @@ class References {
   /**
    * Associative array of references.
    *
-   * @var array
+   * @var array<string, array<int, array<string, mixed>>>
    */
-  protected $references = [];
+  protected array $references = [];
 
   /**
    * Set the reference items for the given entity bundle.
    *
    * @param string $bundle
    *   Bundle to which belongs the reference items.
-   * @param string $items
+   * @param array<int, array<string, mixed>> $items
    *   Reference items for the given entity bundle.
    */
-  public function set($bundle, $items) {
+  public function set(string $bundle, array $items): void {
     $this->references[$bundle] = $items;
   }
 
@@ -32,10 +34,10 @@ class References {
    * @param string $bundle
    *   Bundle of the reference items to return.
    *
-   * @return array
+   * @return array<int, array<string, mixed>>
    *   Reference items for the given bundle.
    */
-  public function get($bundle) {
+  public function get(string $bundle): array {
     return $this->has($bundle) ? $this->references[$bundle] : [];
   }
 
@@ -48,7 +50,7 @@ class References {
    * @return bool
    *   Indicates if the entity bundle has reference items stored.
    */
-  public function has($bundle) {
+  public function has(string $bundle): bool {
     return !empty($this->references[$bundle]);
   }
 
@@ -59,13 +61,13 @@ class References {
    *   Bundle of the reference item.
    * @param int $id
    *   ID of the reference item.
-   * @param array $fields
+   * @param string[] $fields
    *   List of fields to return with the item.
    *
-   * @return array
+   * @return array<string, mixed>|null
    *   Reference item.
    */
-  public function getItem($bundle, $id, array $fields = []) {
+  public function getItem(string $bundle, int $id, array $fields = []): array|null {
     if (isset($this->references[$bundle][$id])) {
       if (!empty($fields)) {
         return array_intersect_key($this->references[$bundle][$id], array_flip($fields));
@@ -80,10 +82,10 @@ class References {
    *
    * @param string $bundle
    *   Bundle of the reference items.
-   * @param array $items
+   * @param array<int, array<string, mixed>> $items
    *   Reference items to add.
    */
-  public function setItems($bundle, array $items) {
+  public function setItems(string $bundle, array $items): void {
     foreach ($items as $id => $item) {
       if (!isset($this->references[$bundle][$id])) {
         $this->references[$bundle][$id] = $item;
@@ -96,13 +98,13 @@ class References {
    *
    * @param string $bundle
    *   Bundle to which belong the references.
-   * @param array $ids
+   * @param int[] $ids
    *   List of reference ids to check.
    *
-   * @return array
+   * @return int[]
    *   Reference Ids to load.
    */
-  public function getNotLoaded($bundle, array $ids) {
+  public function getNotLoaded(string $bundle, array $ids): array {
     if (!empty($this->references[$bundle])) {
       return array_diff($ids, array_keys($this->references[$bundle]));
     }

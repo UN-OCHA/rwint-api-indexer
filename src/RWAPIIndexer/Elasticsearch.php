@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer;
 
 /**
@@ -11,28 +13,28 @@ class Elasticsearch {
    *
    * @var string
    */
-  protected $server = 'http://localhost:9200';
+  protected string $server = 'http://localhost:9200';
 
   /**
    * Base index name.
    *
    * @var string
    */
-  protected $base = '';
+  protected string $base = '';
 
   /**
    * Index tag.
    *
    * @var string
    */
-  protected $tag = '';
+  protected string $tag = '';
 
   /**
    * Default index settings.
    *
-   * @var array
+   * @var array<string, mixed>
    */
-  protected $defaultSettings = [
+  protected array $defaultSettings = [
     'number_of_shards' => 1,
     'number_of_replicas' => 1,
     // For deep pagination. Review "Search After" query when switching to 5.x.
@@ -139,7 +141,7 @@ class Elasticsearch {
    * @param string $tag
    *   Index tag.
    */
-  public function __construct($server, $base, $tag = '') {
+  public function __construct(string $server, string $base, string $tag = '') {
     $this->server = $server;
     $this->base = $base . '_';
     $this->tag = !empty($tag) ? '_' . $tag : '';
@@ -154,7 +156,7 @@ class Elasticsearch {
    * @return string
    *   Index path.
    */
-  public function getIndexPath($index) {
+  public function getIndexPath(string $index): string {
     return $this->base . $index . '_index' . $this->tag;
   }
 
@@ -167,7 +169,7 @@ class Elasticsearch {
    * @return string
    *   Index alias.
    */
-  public function getIndexAlias($index) {
+  public function getIndexAlias(string $index): string {
     return $this->base . $index;
   }
 
@@ -176,14 +178,14 @@ class Elasticsearch {
    *
    * @param string $index
    *   Elasticsearch index name.
-   * @param array $mapping
+   * @param array<string, mixed> $mapping
    *   Index mapping.
    * @param int $shards
    *   The number of shards for this index.
    * @param int $replicas
    *   The number of replicas for this index.
    */
-  public function create($index, array $mapping, int $shards, int $replicas) {
+  public function create(string $index, array $mapping, int $shards, int $replicas): void {
     if (!$this->indexExists($index)) {
       $this->createIndex($index, $mapping, $shards, $replicas);
     }
@@ -195,7 +197,7 @@ class Elasticsearch {
    * @param string $index
    *   Elasticsearch index name.
    */
-  public function indexExists($index) {
+  public function indexExists(string $index): bool {
     $path = $this->getIndexPath($index);
 
     try {
@@ -216,14 +218,14 @@ class Elasticsearch {
    *
    * @param string $index
    *   Index to create.
-   * @param array $mapping
+   * @param array<string, mixed> $mapping
    *   Index mapping.
    * @param int $shards
    *   The number of shards for this index.
    * @param int $replicas
    *   The number of replicas for this index.
    */
-  public function createIndex($index, array $mapping, int $shards, int $replicas) {
+  public function createIndex(string $index, array $mapping, int $shards, int $replicas): void {
     $path = $this->getIndexPath($index);
 
     $settings = $this->defaultSettings;
@@ -244,7 +246,7 @@ class Elasticsearch {
    * @param string $index
    *   Index name.
    */
-  public function remove($index) {
+  public function remove(string $index): void {
     $path = $this->getIndexPath($index);
 
     // Try to delete the elasticsearch index.
@@ -265,7 +267,7 @@ class Elasticsearch {
    * @param string $index
    *   Index name.
    */
-  public function addAlias($index) {
+  public function addAlias(string $index): void {
     $alias = $this->getIndexAlias($index);
 
     $data = [
@@ -305,7 +307,7 @@ class Elasticsearch {
    * @param string $index
    *   Index name.
    */
-  public function removeAlias($index) {
+  public function removeAlias(string $index): void {
     $alias = $this->getIndexAlias($index);
 
     $data = [
@@ -336,13 +338,13 @@ class Elasticsearch {
    *
    * @param string $index
    *   Index name.
-   * @param array $items
+   * @param array<int, array<string, mixed>> $items
    *   Items to index.
    *
    * @return int
    *   ID of the last indexed item.
    */
-  public function indexItems($index, array &$items) {
+  public function indexItems(string $index, array &$items): int {
     $data = '';
     $path = $this->getIndexPath($index);
 
@@ -353,11 +355,17 @@ class Elasticsearch {
 
     // Prepare bulk indexing.
     foreach ($items as $item) {
+      if (!isset($item['id']) || !is_numeric($item['id'])) {
+        continue;
+      }
+      // Elasticsearch requires the id to be a string.
+      $doc_id = (string) $item['id'];
+
       // Add the document to the bulk indexing data.
       $action = [
         'index' => [
           '_index' => $path,
-          '_id' => $item['id'],
+          '_id' => $doc_id,
         ],
       ];
 
@@ -379,7 +387,7 @@ class Elasticsearch {
    * @param int $id
    *   Id of the item to remove.
    */
-  public function removeItem($index, $id) {
+  public function removeItem(string $index, int $id): void {
     $path = $this->getIndexPath($index) . '/_doc/' . $id;
     $this->request('DELETE', $path);
   }
@@ -391,13 +399,29 @@ class Elasticsearch {
    *   Request method (GET, POST, PUT or DELETE).
    * @param string $path
    *   Elasticsearch resource path.
-   * @param array|string $data
+   * @param array<string, mixed>|string $data
    *   Optional data to convey with the request.
    * @param bool $bulk
    *   Indicates that this is bulk request so that we can set the appropriate
    *   header.
+   *
+   * @return string
+   *   Response from the request as a string.
+   *
+   * @throws \Exception
+   *   If the request fails.
    */
-  public function request($method, $path, $data = NULL, $bulk = FALSE) {
+  public function request(string $method, string $path, mixed $data = NULL, bool $bulk = FALSE): string {
+    if (empty($method)) {
+      throw new \Exception('Method is required.');
+    }
+    if (empty($path)) {
+      throw new \Exception('Path is required.');
+    }
+    if (empty($this->server)) {
+      throw new \Exception('Server is required.');
+    }
+
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $this->server . '/' . $path);
     curl_setopt($curl, CURLOPT_TIMEOUT, $bulk ? 200 : 20);
@@ -430,8 +454,11 @@ class Elasticsearch {
         }
 
         // Compress the data and tell ES that it's compressed.
-        $data = gzencode($data);
-        $headers[] = 'Content-Encoding: gzip';
+        $encoded_data = gzencode($data);
+        if ($encoded_data !== FALSE) {
+          $headers[] = 'Content-Encoding: gzip';
+          $data = $encoded_data;
+        }
 
         // Prevent curl from expecting a 100 Continue with data is large.
         $headers[] = 'Expect:';
@@ -443,11 +470,13 @@ class Elasticsearch {
       }
     }
 
+    // We enabled the return transfer option so we can get the response as a
+    // string or false if the request fails.
+    /** @var string|false $response */
     $response = curl_exec($curl);
     $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
     $error = curl_error($curl);
     $errno = curl_errno($curl);
-    curl_close($curl);
 
     // Handle timeout and other errors.
     if (!empty($errno)) {
@@ -458,18 +487,26 @@ class Elasticsearch {
     if ($status != 200) {
       $message = "Unknown error";
       if (!empty($response)) {
-        $response = json_decode($response);
-        if (isset($response->error->type)) {
-          $message = str_replace(' ', '', ucwords(str_replace('_', ' ', $response->error->type)));
-          if (isset($response->error->reason)) {
-            $message .= ' [reason: ' . $response->error->reason . ']';
-          }
-          if (isset($response->error->index)) {
-            $message .= ' [index: ' . $response->error->index . ']';
+        $decoded_response = json_decode($response, TRUE);
+        if (is_array($decoded_response) && isset($decoded_response['error']) && is_array($decoded_response['error'])) {
+          $error = $decoded_response['error'];
+          if (isset($error['type']) && is_string($error['type'])) {
+            $message = str_replace(' ', '', ucwords(str_replace('_', ' ', $error['type'])));
+            if (isset($error['reason']) && is_string($error['reason'])) {
+              $message .= ' [reason: ' . $error['reason'] . ']';
+            }
+            if (isset($error['index']) && is_string($error['index'])) {
+              $message .= ' [index: ' . $error['index'] . ']';
+            }
           }
         }
       }
       throw new \Exception($message, (int) $status);
+    }
+
+    // If the response is empty, throw an exception.
+    if ($response === FALSE) {
+      throw new \Exception('Empty response from the request.');
     }
 
     return $response;

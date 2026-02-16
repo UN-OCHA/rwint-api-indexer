@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer;
 
 use League\CommonMark\Environment\Environment;
@@ -22,49 +24,49 @@ class Processor {
    *
    * @var string
    */
-  protected $website = '';
+  protected string $website = '';
 
   /**
    * Host name of the website URL.
    *
    * @var string
    */
-  protected $hostname = '';
+  protected string $hostname = '';
 
   /**
    * Database connection.
    *
    * @var \RWAPIIndexer\Database\DatabaseConnection
    */
-  protected $connection;
+  protected DatabaseConnection $connection;
 
   /**
    * References handler.
    *
    * @var \RWAPIIndexer\References
    */
-  protected $references = NULL;
+  protected References $references;
 
   /**
    * Markdown converter.
    *
    * @var string
    */
-  protected $markdown = '';
+  protected string $markdown = '';
 
   /**
    * Base public scheme for URLs.
    *
    * @var string
    */
-  private $publicSchemeUrl = '';
+  private string $publicSchemeUrl = '';
 
   /**
    * Default mimetypes.
    *
-   * @var array
+   * @var array<string, string>
    */
-  protected $mimeTypes = [
+  protected array $mimeTypes = [
     'txt' => 'text/plain',
     'htm' => 'text/html',
     'html' => 'text/html',
@@ -116,9 +118,9 @@ class Processor {
   /**
    * List of HTML block level elements.
    *
-   * @var array
+   * @var string[]
    */
-  public static $htmlBlockElements = [
+  public static array $htmlBlockElements = [
     "address",
     "article",
     "aside",
@@ -190,6 +192,13 @@ class Processor {
   ];
 
   /**
+   * Disaster types.
+   *
+   * @var array<string, string>
+   */
+  protected array $disasterTypes;
+
+  /**
    * Check if the Markdown function is available.
    *
    * @param string $website
@@ -199,9 +208,13 @@ class Processor {
    * @param \RWAPIIndexer\References $references
    *   References handler.
    */
-  public function __construct($website, DatabaseConnection $connection, References $references) {
+  public function __construct(
+    string $website,
+    DatabaseConnection $connection,
+    References $references,
+  ) {
     $this->website = $website;
-    $this->hostname = preg_replace('#^https?://#', '', $this->website);
+    $this->hostname = preg_replace('#^https?://#', '', $this->website) ?? $this->website;
     $this->connection = $connection;
     $this->references = $references;
     $this->publicSchemeUrl = $website . '/sites/default/files/';
@@ -217,29 +230,55 @@ class Processor {
   /**
    * Convert the value of a field of an entity item.
    *
-   * @param array $definition
+   * @param string[] $definition
    *   Processing definition.
-   * @param array $item
+   * @param array<string, mixed> $item
    *   Entity item being processed.
    * @param string $key
    *   Field to process.
    */
-  public function processConversion(array $definition, array &$item, $key) {
+  public function processConversion(array $definition, array &$item, string $key): void {
+    if (!isset($item[$key])) {
+      return;
+    }
+
     foreach ($definition as $conversion) {
+      // The key may have been removed by a previous conversion.
+      if (!isset($item[$key])) {
+        return;
+      }
+
+      // Process the conversion.
       switch ($conversion) {
-        // Convert a value to boolean.
+        // Convert a value to boolean. When key is missing, add FALSE.
         case 'bool':
-          $item[$key] = (bool) $item[$key];
+          $item[$key] = isset($item[$key]) ? (bool) $item[$key] : FALSE;
           break;
 
-        // Convert a value to integer.
+        // Convert a value to integer. When key is missing, leave unset.
         case 'int':
-          $item[$key] = (int) $item[$key];
+          if (!isset($item[$key])) {
+            break;
+          }
+          if (is_numeric($item[$key])) {
+            $item[$key] = (int) $item[$key];
+          }
+          else {
+            unset($item[$key]);
+          }
           break;
 
-        // Convert a value to float.
+        // Convert a value to float. When key is missing, leave unset.
         case 'float':
-          $item[$key] = (float) $item[$key];
+          if (!isset($item[$key])) {
+            break;
+          }
+          if (is_numeric($item[$key])) {
+            $item[$key] = (float) $item[$key];
+          }
+          else {
+            unset($item[$key]);
+          }
           break;
 
         // Convert time in seconds to milliseconds.
@@ -247,34 +286,57 @@ class Processor {
           if (is_numeric($item[$key])) {
             $item[$key] = $item[$key] * 1000;
           }
+          elseif (is_string($item[$key])) {
+            try {
+              $date = new \DateTime($item[$key], new \DateTimeZone('UTC'));
+              $item[$key] = $date->getTimestamp() * 1000;
+            }
+            catch (\Exception $e) {
+              unset($item[$key]);
+            }
+          }
           else {
-            $date = new \DateTime($item[$key], new \DateTimeZone('UTC'));
-            $item[$key] = $date->getTimestamp() * 1000;
+            unset($item[$key]);
           }
           break;
 
         // Convert links to absolute links.
         case 'links':
-          $item[$key] = $this->processLinks($item[$key]);
+          if (is_string($item[$key])) {
+            $item[$key] = $this->processLinks($item[$key]);
+          }
+          else {
+            unset($item[$key]);
+          }
           break;
 
         // Convert a field value in markdown format to HTML.
         case 'html':
-          $html = $this->processMarkdown($item[$key]);
-          if (!empty($html)) {
-            $html = $this->processHtml($html, TRUE);
-            $item[$key . '-html'] = $html;
+          if (is_string($item[$key])) {
+            $html = $this->processMarkdown($item[$key]);
+            if (!empty($html)) {
+              $html = $this->processHtml($html, TRUE);
+              $item[$key . '-html'] = $html;
+            }
+          }
+          else {
+            unset($item[$key]);
           }
           break;
 
         // Convert a field value in markdown format to HTML.
         // Convert iframe special syntax.
         case 'html_iframe':
-          $text = $this->processIframes($item[$key]);
-          $html = $this->processMarkdown($text);
-          if (!empty($html)) {
-            $html = $this->processHtml($html, TRUE);
-            $item[$key . '-html'] = $html;
+          if (is_string($item[$key])) {
+            $text = $this->processIframes($item[$key]);
+            $html = $this->processMarkdown($text);
+            if (!empty($html)) {
+              $html = $this->processHtml($html, TRUE);
+              $item[$key . '-html'] = $html;
+            }
+          }
+          else {
+            unset($item[$key]);
           }
           break;
 
@@ -282,32 +344,54 @@ class Processor {
         // Convert iframe special syntax.
         // Convert disaster map tokens.
         case 'html_iframe_disaster_map':
-          $text = $this->processDisasterMapTokens($item[$key]);
-          $text = $this->processIframes($text);
-          $html = $this->processMarkdown($text);
-          if (!empty($html)) {
-            $html = $this->processHtml($html, TRUE);
-            $item[$key . '-html'] = $html;
+          if (is_string($item[$key])) {
+            $text = $this->processDisasterMapTokens($item[$key]);
+            $text = $this->processIframes($text);
+            $html = $this->processMarkdown($text);
+            if (!empty($html)) {
+              $html = $this->processHtml($html, TRUE);
+              $item[$key . '-html'] = $html;
+            }
+          }
+          else {
+            unset($item[$key]);
           }
           break;
 
         // Convert a field value in markdown format to HTML.
         // Strip embedded images and iframes.
         case 'html_strict':
-          $html = $this->processMarkdown($item[$key]);
-          if (!empty($html)) {
-            $html = $this->processHtml($html, FALSE);
-            $item[$key . '-html'] = $html;
+          if (is_string($item[$key])) {
+            $html = $this->processMarkdown($item[$key]);
+            if (!empty($html)) {
+              $html = $this->processHtml($html, FALSE);
+              $item[$key . '-html'] = $html;
+            }
+          }
+          else {
+            unset($item[$key]);
           }
           break;
 
         // Explode a concatenated mutli integer field.
         case 'multi_int':
-          $values = [];
-          foreach (explode('%%%', $item[$key]) as $data) {
-            $values[] = (int) $data;
+          if (is_string($item[$key])) {
+            $values = [];
+            foreach (explode('%%%', $item[$key]) as $data) {
+              if (is_numeric($data)) {
+                $values[] = (int) $data;
+              }
+            }
+            if (!empty($values)) {
+              $item[$key] = $values;
+            }
+            else {
+              unset($item[$key]);
+            }
           }
-          $item[$key] = $values;
+          else {
+            unset($item[$key]);
+          }
           break;
 
         // Check if a field has a primary counter part field,
@@ -315,19 +399,21 @@ class Processor {
         // matches the value of the primary field.
         case 'primary':
           $field = 'primary_' . $key;
-          // Check if there is a primary field.
-          if (isset($item[$field]['id'])) {
-            $primary_id = $item[$field]['id'];
+          if (isset($item[$field]) && is_array($item[$field]) && is_array($item[$key])) {
+            // Check if there is a primary field.
+            if (isset($item[$field]['id'])) {
+              $primary_id = $item[$field]['id'];
 
-            // Set the primary flag if IDs match.
-            if (key($item[$key]) !== 0) {
-              $item[$key]['primary'] = TRUE;
-            }
-            else {
-              foreach ($item[$key] as &$term) {
-                if ($term['id'] == $primary_id) {
-                  $term['primary'] = TRUE;
+              // Set the primary flag if IDs match.
+              if (array_is_list($item[$key])) {
+                foreach ($item[$key] as &$term) {
+                  if (isset($term['id']) && $term['id'] == $primary_id) {
+                    $term['primary'] = TRUE;
+                  }
                 }
+              }
+              else {
+                $item[$key]['primary'] = TRUE;
               }
             }
           }
@@ -335,15 +421,23 @@ class Processor {
 
         // Convert to single value field.
         case 'single':
-          if (isset($item[$key][0])) {
+          if (is_array($item[$key]) && isset($item[$key][0])) {
             $item[$key] = $item[$key][0];
+          }
+          else {
+            unset($item[$key]);
           }
           break;
 
         // Explode a list of strings seperated by spaces or commas into array.
         // Includes " ", \r, \t, \n and \f.
         case 'multi_string':
-          $item[$key] = preg_split("/[\s,]+/", $item[$key]);
+          if (is_string($item[$key])) {
+            $item[$key] = preg_split("/[\s,]+/", $item[$key]);
+          }
+          else {
+            unset($item[$key]);
+          }
           break;
       }
     }
@@ -355,24 +449,29 @@ class Processor {
    * Process a reference field of an entity item,
    * replacing the ID with the reference taxanomy term.
    *
-   * @param array $definition
+   * @param array<string, string[]> $definition
    *   Processing definition.
-   * @param array $item
+   * @param array<string, mixed> $item
    *   Entity being processed.
    * @param string $key
    *   Reference field to process.
    */
-  public function processReference(array $definition, array &$item, $key) {
-    $bundle = key($definition);
+  public function processReference(array $definition, array &$item, string $key): void {
+    if (!isset($item[$key]) || !is_array($item[$key])) {
+      return;
+    }
 
+    $bundle = key($definition) ?? '';
     if ($this->references->has($bundle)) {
       $fields = $definition[$bundle];
 
       $array = [];
       foreach ($item[$key] as $id) {
-        $term = $this->references->getItem($bundle, $id, $fields);
-        if (isset($term)) {
-          $array[] = $term;
+        if (is_numeric($id)) {
+          $term = $this->references->getItem($bundle, (int) $id, $fields);
+          if (isset($term)) {
+            $array[] = $term;
+          }
         }
       }
 
@@ -397,11 +496,11 @@ class Processor {
    * @return string
    *   Text with processed links.
    */
-  public function processLinks($text) {
+  public function processLinks(string $text): string {
     // Convert relative links to absolute.
-    $text = preg_replace('@((\]\(|((src|href)=))(?![\'"]?https?://)[\'"]?)/*@', '$1' . $this->website . '/', $text);
+    $text = preg_replace('@((\]\(|((src|href)=))(?![\'"]?https?://)[\'"]?)/*@', '$1' . $this->website . '/', $text) ?? $text;
     // Substitute domain for reliefweb.int links.
-    $text = preg_replace('@https?://reliefweb\.int@', $this->website, $text);
+    $text = preg_replace('@https?://reliefweb\.int@', $this->website, $text) ?? $text;
     return $text;
   }
 
@@ -414,11 +513,13 @@ class Processor {
    * @return string
    *   Text converted to HTML.
    */
-  public function processMarkdown($text) {
+  public function processMarkdown(string $text): string {
     switch ($this->markdown) {
       case 'hoedown':
         static $hoedown;
         if (!isset($hoedown)) {
+          // We already check for the class existence in the constructor.
+          // @phpstan-ignore-next-line
           $hoedown = new \Hoedown();
         }
         return $hoedown->parse($text);
@@ -434,13 +535,13 @@ class Processor {
    *
    * @param string $text
    *   Markdown text to convert.
-   * @param array $internal_hosts
+   * @param string[] $internal_hosts
    *   List of internal hosts to determine if a link is external or not.
    *
    * @return string
    *   HTML.
    */
-  public static function convertToHtml($text, array $internal_hosts = ['reliefweb.int']) {
+  public static function convertToHtml(string $text, array $internal_hosts = ['reliefweb.int']): string {
     static $pattern;
 
     // CommonMark specs consider text following an HTML block element without
@@ -453,12 +554,12 @@ class Processor {
     if (!isset($pattern)) {
       $pattern = '#(</' . implode('>|</', static::$htmlBlockElements) . '>)\s*#m';
     }
-    $text = preg_replace($pattern, "$1\n\n", $text);
+    $text = preg_replace($pattern, "$1\n\n", $text) ?? $text;
 
     // Add a space before the heading '#' which is fine as ReliefWeb doesn't use
     // hash tags.
     // @see https://talk.commonmark.org/t/heading-not-working/819/42
-    $text = preg_replace('/^(#+)([^# ])/m', '$1 $2', $text);
+    $text = preg_replace('/^(#+)([^# ])/m', '$1 $2', $text) ?? $text;
 
     // No need for extra blanks.
     $text = trim($text);
@@ -506,7 +607,7 @@ class Processor {
    * @return string
    *   Processed text.
    */
-  public function processIframes($text) {
+  public function processIframes(string $text): string {
     $pattern = "/\[iframe(?:[:](?<width>\d+))?(?:[:x](?<height>\d+))?(?:[ ]+\"?(?<title>[^\"\]]+)\"?)?\](\((?<url>[^\)]*)\))?/";
     return preg_replace_callback($pattern, static function ($data) {
       $url = !empty($data['url']) ? trim($data['url']) : '';
@@ -519,7 +620,7 @@ class Processor {
       $title = !empty($data['title']) ? $data['title'] : 'iframe';
 
       return '<iframe width="' . $width . '" height="' . $height . '" src="' . $url . '" title="' . $title . '" frameborder="0" allowfullscreen></iframe>';
-    }, $text);
+    }, $text) ?? $text;
   }
 
   /**
@@ -533,9 +634,8 @@ class Processor {
    * @return string
    *   Processed text.
    */
-  public function processDisasterMapTokens($text) {
-    static $disaster_types = [];
-    if (!empty($disaster_type_references)) {
+  public function processDisasterMapTokens(string $text): string {
+    if (!isset($this->disasterTypes)) {
       $table = 'taxonomy_term_field_data';
       $code_table = 'taxonomy_term__field_disaster_type_code';
       $query = new DatabaseQuery($table, $table, $this->connection);
@@ -543,12 +643,12 @@ class Processor {
       $query->addExpression("UPPER($code_table.field_disaster_type_code_value)", 'code');
       $query->addField($table, 'name', 'name');
       $query->condition($table . '.vid', 'disaster_type');
-      $result = $query->execute();
-      if (!empty($result)) {
-        $disaster_types = $result->fetchAllKeyed();
-      }
+      /** @var array<string, string> $disaster_types */
+      $disaster_types = $query->execute()?->fetchAllKeyed() ?? [];
+      $this->disasterTypes = $disaster_types;
     }
 
+    $disaster_types = $this->disasterTypes;
     $base_url = $this->website . '/disaster-map/';
     $pattern = '/\[disaster-map:(?<values>[^\]]+)\]/';
     return preg_replace_callback($pattern, static function ($data) use ($disaster_types, $base_url) {
@@ -580,7 +680,7 @@ class Processor {
         }
       }
       return '<iframe width="1000" height="490" src="' . $url . '" title="' . $title . '" frameborder="0" allowfullscreen></iframe>';
-    }, $text);
+    }, $text) ?? $text;
   }
 
   /**
@@ -599,7 +699,7 @@ class Processor {
    * @return string
    *   Cleaned-up HTML.
    */
-  public function processHtml($html, $embedded = FALSE) {
+  public function processHtml(string $html, bool $embedded = FALSE): string {
     $tags = [
       'div',
       'span',
@@ -649,16 +749,17 @@ class Processor {
    *
    * @param string $html
    *   HTML text.
-   * @param array $tags
+   * @param string[] $tags
    *   Allowed HTML tags.
    *
    * @return string
    *   Filtered HTML.
    */
-  protected static function filterXss($html, array $tags) {
+  protected static function filterXss(string $html, array $tags): string {
     static $drupal_filter_xss;
 
     if (!isset($drupal_filter_xss)) {
+      // @phpstan-ignore-next-line
       $drupal_filter_xss = method_exists('\Drupal\Component\Utility\Xss', 'filter');
     }
 
@@ -677,20 +778,27 @@ class Processor {
    *
    * @param string $entity_type
    *   Entity type of the item.
-   * @param array $item
+   * @param array<string, mixed> $item
    *   Item to which add the URL field.
    * @param string $alias
    *   URL alias for the entity.
-   * @param array $redirects
+   * @param string[] $redirects
    *   List of old URLs that redirect to this entity.
    */
-  public function processEntityUrl($entity_type, array &$item, $alias, array $redirects = []) {
-    $item['url'] = $this->website . '/' . str_replace('_', '/', $entity_type) . '/' . $item['id'];
+  public function processEntityUrl(string $entity_type, array &$item, string $alias, array $redirects = []): void {
+    if (isset($item['id']) && is_numeric($item['id'])) {
+      $item['url'] = $this->website . '/' . str_replace('_', '/', $entity_type) . '/' . $item['id'];
+    }
     if (!empty($alias)) {
       $item['url_alias'] = $this->website . '/' . ltrim($this->encodePath($alias), '/');
     }
     foreach ($redirects as $url) {
-      $item['redirects'][] = $this->website . '/' . ltrim($this->encodePath($url), '/');
+      if (!isset($item['redirects'])) {
+        $item['redirects'] = [];
+      }
+      if (is_array($item['redirects'])) {
+        $item['redirects'][] = $this->website . '/' . ltrim($this->encodePath($url), '/');
+      }
     }
   }
 
@@ -703,14 +811,16 @@ class Processor {
    * @return string
    *   Absolute URL.
    */
-  public function processEntityRelativeUrl($url) {
+  public function processEntityRelativeUrl(string $url): string {
     return $this->website . '/' . ltrim($this->encodePath($url), '/');
   }
 
   /**
    * Process an image field.
    *
-   * @param string $field
+   * @param array<string, mixed> $item
+   *   Item to process.
+   * @param string $key
    *   Image information to convert to image field.
    * @param bool $single
    *   Indicates that the field should could contain a single value.
@@ -722,71 +832,72 @@ class Processor {
    * @return bool
    *   Processing success.
    */
-  public function processImage(&$field, $single = FALSE, $meta = TRUE, $styles = TRUE) {
-    if (isset($field) && !empty($field)) {
-      $items = [];
-      foreach (explode('%%%', $field) as $item) {
-        [
-          $delta,
-          $id,
-          $width,
-          $height,
-          $uri,
-          $filename,
-          $mimetype,
-          $filesize,
-          $copyright,
-          $caption,
-        ] = explode('###', $item);
-
-        // Update the mime type if necessary. Some old content have the wrong
-        // one.
-        if (empty($mimetype) || $mimetype === 'application/octet-stream') {
-          $mimetype = $this->getMimeType($filename);
-        }
-
-        $array = [
-          'id' => $id,
-          'width' => $width,
-          'height' => $height,
-          'url' => $this->processFilePath($uri),
-          'filename' => $filename,
-          'mimetype' => $mimetype,
-          'filesize' => $filesize,
-        ];
-
-        if (!empty($meta)) {
-          $array['copyright'] = preg_replace('/^@+/', '', $copyright);
-          $array['caption'] = $caption;
-        }
-
-        if (!empty($styles)) {
-          $array['url-large'] = $this->processFilePath($uri, 'large');
-          $array['url-small'] = $this->processFilePath($uri, 'small');
-          $array['url-thumb'] = $this->processFilePath($uri, 'thumbnail');
-        }
-
-        foreach ($array as $key => $value) {
-          if (empty($value)) {
-            unset($array[$key]);
-          }
-        }
-
-        $items[$delta] = $array;
-      }
-      ksort($items);
-      if (!empty($items)) {
-        $field = $single ? reset($items) : array_values($items);
-        return TRUE;
-      }
+  public function processImage(array &$item, string $key, bool $single = FALSE, bool $meta = TRUE, bool $styles = TRUE): bool {
+    if (!isset($item[$key]) || !is_string($item[$key]) || empty($item[$key])) {
+      unset($item[$key]);
+      return FALSE;
     }
-    return FALSE;
+    $items = [];
+    foreach (explode('%%%', $item[$key]) as $part) {
+      [
+        $delta,
+        $id,
+        $width,
+        $height,
+        $uri,
+        $filename,
+        $mimetype,
+        $filesize,
+        $copyright,
+        $caption,
+      ] = explode('###', $part);
+
+      // Update the mime type if necessary. Some old content have the wrong
+      // one.
+      if (empty($mimetype) || $mimetype === 'application/octet-stream') {
+        $mimetype = $this->getMimeType($filename);
+      }
+
+      $array = [
+        'id' => $id,
+        'width' => $width,
+        'height' => $height,
+        'url' => $this->processFilePath($uri),
+        'filename' => $filename,
+        'mimetype' => $mimetype,
+        'filesize' => $filesize,
+      ];
+
+      if (!empty($meta)) {
+        $array['copyright'] = preg_replace('/^@+/', '', $copyright);
+        $array['caption'] = $caption;
+      }
+
+      if (!empty($styles)) {
+        $array['url-large'] = $this->processFilePath($uri, 'large');
+        $array['url-small'] = $this->processFilePath($uri, 'small');
+        $array['url-thumb'] = $this->processFilePath($uri, 'thumbnail');
+      }
+
+      foreach ($array as $array_key => $array_value) {
+        if (empty($array_value)) {
+          unset($array[$array_key]);
+        }
+      }
+
+      $items[$delta] = $array;
+    }
+    ksort($items);
+    $item[$key] = $single ? reset($items) : array_values($items);
+    return TRUE;
   }
 
   /**
    * Process a file field.
    *
-   * @param string $field
+   * @param array<string, mixed> $item
+   *   Item to process.
+   * @param string $key
    *   File information to convert to file field.
    * @param bool $single
    *   Indicates that the field should could contain a single value.
@@ -794,103 +905,109 @@ class Processor {
    * @return bool
    *   Processing success.
    */
-  public function processFile(&$field, $single = FALSE) {
-    if (isset($field) && !empty($field)) {
-      $items = [];
-      foreach (explode('%%%', $field) as $item) {
-        [
-          $delta,
-          $id,
-          $uuid,
-          $filename,
-          $filehash,
-          $description,
-          $langcode,
-          $preview_uuid,
-          $preview_page,
-          $preview_rotation,
-          $uri,
-          $mimetype,
-          $filesize,
-        ] = explode('###', $item);
-
-        // Skip private files.
-        if (strpos($uri, 'private://') === 0) {
-          continue;
-        }
-
-        $description = trim($description);
-
-        // Add the language version to the description for backward
-        // compatibility.
-        $language_versions = [
-          'ar' => 'Arabic version',
-          'en' => 'English version',
-          'es' => 'Spanish version',
-          'fr' => 'French version',
-          'ot' => 'Other version',
-          'ru' => 'Russian version',
-        ];
-        if (isset($language_versions[$langcode])) {
-          if (!empty($description)) {
-            $description .= ' - ' . $language_versions[$langcode];
-          }
-          else {
-            $description = $language_versions[$langcode];
-          }
-        }
-
-        // Update the mime type if necessary. Some old content have the wrong
-        // one.
-        if (empty($mimetype) || $mimetype === 'application/octet-stream') {
-          $mimetype = $this->getMimeType($filename);
-        }
-
-        // We need to expose the permanent URI not the system one.
-        $permanent_uri = 'public://attachments/' . $uuid . '/' . $filename;
-
-        $array = [
-          'id' => $id,
-          'description' => $description,
-          'url' => $this->processFilePath($permanent_uri),
-          'filename' => $filename,
-          'filehash' => $filehash,
-          'mimetype' => $mimetype,
-          'filesize' => $filesize,
-        ];
-
-        // PDF attachment.
-        if (!empty($preview_uuid) && !empty($preview_page)) {
-          $preview_uri = str_replace('/attachments/', '/previews/', $uri);
-          $preview_uri = preg_replace('#\..+$#i', '.png', $preview_uri);
-          $array['preview'] = [
-            'url' => $this->processFilePath($preview_uri),
-            'url-large' => $this->processFilePath($preview_uri, 'large'),
-            'url-small' => $this->processFilePath($preview_uri, 'small'),
-            'url-thumb' => $this->processFilePath($preview_uri, 'thumbnail'),
-            'version' => implode('-', [
-              $id,
-              $preview_page,
-              $preview_rotation,
-            ]),
-          ];
-        }
-
-        foreach ($array as $key => $value) {
-          if (empty($value)) {
-            unset($array[$key]);
-          }
-        }
-
-        $items[$delta] = $array;
-      }
-      ksort($items);
-      if (!empty($items)) {
-        $field = $single ? reset($items) : array_values($items);
-        return TRUE;
-      }
+  public function processFile(array &$item, string $key, bool $single = FALSE): bool {
+    if (!isset($item[$key]) || !is_string($item[$key]) || empty($item[$key])) {
+      unset($item[$key]);
+      return FALSE;
     }
-    return FALSE;
+
+    $items = [];
+    foreach (explode('%%%', $item[$key]) as $part) {
+      [
+        $delta,
+        $id,
+        $uuid,
+        $filename,
+        $filehash,
+        $description,
+        $langcode,
+        $preview_uuid,
+        $preview_page,
+        $preview_rotation,
+        $uri,
+        $mimetype,
+        $filesize,
+      ] = explode('###', $part);
+
+      // Skip private files.
+      if (strpos($uri, 'private://') === 0) {
+        continue;
+      }
+
+      $description = trim($description);
+
+      // Add the language version to the description for backward
+      // compatibility.
+      $language_versions = [
+        'ar' => 'Arabic version',
+        'en' => 'English version',
+        'es' => 'Spanish version',
+        'fr' => 'French version',
+        'ot' => 'Other version',
+        'ru' => 'Russian version',
+      ];
+      if (isset($language_versions[$langcode])) {
+        if (!empty($description)) {
+          $description .= ' - ' . $language_versions[$langcode];
+        }
+        else {
+          $description = $language_versions[$langcode];
+        }
+      }
+
+      // Update the mime type if necessary. Some old content have the wrong
+      // one.
+      if (empty($mimetype) || $mimetype === 'application/octet-stream') {
+        $mimetype = $this->getMimeType($filename);
+      }
+
+      // We need to expose the permanent URI not the system one.
+      $permanent_uri = 'public://attachments/' . $uuid . '/' . $filename;
+
+      $array = [
+        'id' => $id,
+        'description' => $description,
+        'url' => $this->processFilePath($permanent_uri),
+        'filename' => $filename,
+        'filehash' => $filehash,
+        'mimetype' => $mimetype,
+        'filesize' => $filesize,
+      ];
+
+      // PDF attachment.
+      if (!empty($preview_uuid) && !empty($preview_page)) {
+        $preview_uri = str_replace('/attachments/', '/previews/', $uri);
+        $preview_uri = preg_replace('#\..+$#i', '.png', $preview_uri) ?? $preview_uri;
+        $array['preview'] = [
+          'url' => $this->processFilePath($preview_uri),
+          'url-large' => $this->processFilePath($preview_uri, 'large'),
+          'url-small' => $this->processFilePath($preview_uri, 'small'),
+          'url-thumb' => $this->processFilePath($preview_uri, 'thumbnail'),
+          'version' => implode('-', [
+            $id,
+            $preview_page,
+            $preview_rotation,
+          ]),
+        ];
+      }
+
+      foreach ($array as $array_key => $array_value) {
+        if (empty($array_value)) {
+          unset($array[$array_key]);
+        }
+      }
+
+      $items[$delta] = $array;
+    }
+
+    if (empty($items)) {
+      unset($item[$key]);
+      return FALSE;
+    }
+
+    ksort($items);
+    $item[$key] = $single ? reset($items) : array_values($items);
+    return TRUE;
   }
 
   /**
@@ -902,7 +1019,7 @@ class Processor {
    * @return string
    *   Mime type.
    */
-  public function getMimeType($filename) {
+  public function getMimeType(string $filename): string {
     $extension = strtolower(pathinfo($filename, \PATHINFO_EXTENSION));
     return $this->mimeTypes[$extension] ?? 'application/octet-stream';
   }
@@ -918,7 +1035,7 @@ class Processor {
    * @return string
    *   File URL.
    */
-  public function processFilePath($path, $style = '') {
+  public function processFilePath(string $path, string $style = ''): string {
     if (strpos($path, '/attachments/') !== FALSE) {
       $base = $this->website . '/';
     }
@@ -940,19 +1057,19 @@ class Processor {
    * @return string
    *   Encoded path.
    */
-  public function encodePath($path) {
+  public function encodePath(string $path): string {
     return str_replace('%2F', '/', rawurlencode($path));
   }
 
   /**
    * Process the profile of a taxonomy term (country or disaster).
    *
-   * @param array $item
+   * @param array<string, mixed> $item
    *   Item to process.
-   * @param array $sections
+   * @param array<string, array<string, mixed>> $sections
    *   Definition of the profile sections.
    */
-  public function processProfile(array &$item, array $sections) {
+  public function processProfile(array &$item, array $sections): void {
     $description = [];
     $profile = [];
 
@@ -966,6 +1083,7 @@ class Processor {
 
     // Process the profile sections.
     foreach ($sections as $id => $info) {
+      /** @var string $label */
       $label = $info['label'];
       $keep_archives = !empty($info['archives']);
       $use_image = !empty($info['image']);
@@ -984,86 +1102,83 @@ class Processor {
       // Reverse order so that newer links (higher delta) are first.
       $query->orderBy($table . '.delta', 'DESC');
 
-      $result = $query->execute();
-      if (!empty($result)) {
-        foreach ($result->fetchAll(\PDO::FETCH_ASSOC) as $link) {
-          // Skip links without a url (shouldn't happen).
-          if (empty($link['url'])) {
-            continue;
-          }
+      foreach ($query->execute()?->fetchAll(\PDO::FETCH_ASSOC) ?? [] as $link) {
+        // Skip links without a url (shouldn't happen).
+        if (empty($link['url'])) {
+          continue;
+        }
 
-          $active = !empty($link['active']);
-          $internal = FALSE;
-          $title = '';
+        $active = !empty($link['active']);
+        $internal = FALSE;
+        $title = '';
 
-          // Skip archived items if requested.
-          if (!$keep_archives && !$active) {
-            continue;
-          }
+        // Skip archived items if requested.
+        if (!$keep_archives && !$active) {
+          continue;
+        }
 
-          // Remove the active info.
-          unset($link['active']);
+        // Remove the active info.
+        unset($link['active']);
 
-          // Transform internal urls to absolute urls.
-          if (strpos($link['url'], '/node') === 0) {
-            $link['url'] = $this->processEntityRelativeUrl($link['url']);
-            $internal = TRUE;
-          }
+        // Transform internal urls to absolute urls.
+        if (strpos($link['url'], '/node') === 0) {
+          $link['url'] = $this->processEntityRelativeUrl($link['url']);
+          $internal = TRUE;
+        }
 
-          // Remove the image if empty or asked to.
-          if (empty($link[$image_field]) || !$use_image) {
-            unset($link[$image_field]);
-          }
-          // Expand internal images.
-          elseif ($internal) {
-            $link[$image_field] = $this->processFilePath($link[$image_field], 'small');
-          }
+        // Remove the image if empty or asked to.
+        if (empty($link[$image_field]) || !$use_image) {
+          unset($link[$image_field]);
+        }
+        // Expand internal images.
+        elseif ($internal) {
+          $link[$image_field] = $this->processFilePath($link[$image_field], 'small');
+        }
 
-          // Set the title or remove it.
-          if (!empty($link['title'])) {
-            $title = $link['title'];
-          }
-          else {
-            unset($link['title']);
-          }
+        // Set the title or remove it.
+        if (!empty($link['title'])) {
+          $title = $link['title'];
+        }
+        else {
+          unset($link['title']);
+        }
 
-          // Add the link to the appropriate subsection.
-          $links[$active ? 'active' : 'archive'][] = $link;
+        // Add the link to the appropriate subsection.
+        $links[$active ? 'active' : 'archive'][] = $link;
 
-          // Add the link to the description section if active.
-          if ($active) {
-            // Generate the image link.
-            if (!empty($link[$image_field])) {
-              $alt = $internal ? 'Cover preview' : 'Logo';
+        // Add the link to the description section if active.
+        if ($active) {
+          // Generate the image link.
+          if (!empty($link[$image_field])) {
+            $alt = $internal ? 'Cover preview' : 'Logo';
 
-              // If there is a title, we prepend it to the alt default text.
-              if (!empty($title)) {
-                $image = '![' . $title . ' - ' . $alt . '](' . $link[$image_field] . ')';
-                // For internal links, display the title after the cover.
-                $title = $internal ? $image . ' ' . $title : $image;
-              }
-              else {
-                $title = '![' . $alt . '](' . $link[$image_field] . ')';
-              }
-            }
-
-            // Normally there should be either an image or a title
-            // but check just in case.
+            // If there is a title, we prepend it to the alt default text.
             if (!empty($title)) {
-              $section[] = '[' . $title . '](' . $link['url'] . ')';
+              $image = '![' . $title . ' - ' . $alt . '](' . $link[$image_field] . ')';
+              // For internal links, display the title after the cover.
+              $title = $internal ? $image . ' ' . $title : $image;
+            }
+            else {
+              $title = '![' . $alt . '](' . $link[$image_field] . ')';
             }
           }
-        }
 
-        // Add the section to the description.
-        if (!empty($section)) {
-          $description[] = "### " . $label . "\n\n- " . implode("\n- ", $section) . "\n";
+          // Normally there should be either an image or a title
+          // but check just in case.
+          if (!empty($title)) {
+            $section[] = '[' . $title . '](' . $link['url'] . ')';
+          }
         }
+      }
 
-        // Add the links to the profile.
-        if (!empty($links)) {
-          $profile[$id] = ['title' => $label] + $links;
-        }
+      // Add the section to the description.
+      if (!empty($section)) {
+        $description[] = "### " . $label . "\n\n- " . implode("\n- ", $section) . "\n";
+      }
+
+      // Add the links to the profile.
+      if (!empty($links)) {
+        $profile[$id] = ['title' => $label] + $links;
       }
     }
 
@@ -1090,7 +1205,9 @@ class Processor {
   /**
    * Process a river search field.
    *
-   * @param string $field
+   * @param array<string, mixed> $item
+   *   Item to process.
+   * @param string $key
    *   Image information to convert to image field.
    * @param bool $single
    *   Indicates that the field should could contain a single value.
@@ -1098,16 +1215,20 @@ class Processor {
    * @return bool
    *   Processing success.
    */
-  public function processRiverSearch(&$field, $single = FALSE) {
-    if (isset($field) && !empty($field)) {
+  public function processRiverSearch(array &$item, string $key, bool $single = FALSE): bool {
+    if (!isset($item[$key]) || empty($item[$key])) {
+      return FALSE;
+    }
+
+    if (is_string($item[$key])) {
       $items = [];
-      foreach (explode('%%%', $field) as $item) {
+      foreach (explode('%%%', $item[$key]) as $part) {
         [
           $delta,
           $url,
           $title,
           $override,
-        ] = explode('###', $item);
+        ] = explode('###', $part);
 
         $array = [
           'url' => $url,
@@ -1115,19 +1236,17 @@ class Processor {
           'override' => !empty($override) ? intval($override, 10) : NULL,
         ];
 
-        foreach ($array as $key => $value) {
-          if (empty($value)) {
-            unset($array[$key]);
+        foreach ($array as $array_key => $array_value) {
+          if (empty($array_value)) {
+            unset($array[$array_key]);
           }
         }
 
         $items[$delta] = $array;
       }
-      ksort($array);
-      if (!empty($items)) {
-        $field = $single ? reset($items) : array_values($items);
-        return TRUE;
-      }
+      ksort($items);
+      $item[$key] = $single ? reset($items) : array_values($items);
+      return TRUE;
     }
     return FALSE;
   }

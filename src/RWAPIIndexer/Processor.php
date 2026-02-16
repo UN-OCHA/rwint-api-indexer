@@ -238,13 +238,13 @@ class Processor {
    *   Field to process.
    */
   public function processConversion(array $definition, array &$item, string $key): void {
-    if (isset($item[$key])) {
+    if (!isset($item[$key])) {
       return;
     }
 
     foreach ($definition as $conversion) {
       // The key may have been removed by a previous conversion.
-      if (isset($item[$key])) {
+      if (!isset($item[$key])) {
         return;
       }
 

@@ -919,6 +919,7 @@ class Processor {
         $uuid,
         $filename,
         $filehash,
+        $pagecount,
         $description,
         $langcode,
         $preview_uuid,
@@ -973,6 +974,9 @@ class Processor {
         'mimetype' => $mimetype,
         'filesize' => $filesize,
       ];
+      if (!empty($pagecount) && is_numeric($pagecount)) {
+        $array['pagecount'] = (int) $pagecount;
+      }
 
       // PDF attachment.
       if (!empty($preview_uuid) && !empty($preview_page)) {

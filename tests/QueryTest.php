@@ -274,4 +274,32 @@ final class QueryTest extends TestCase {
     self::assertSame(999, $offset);
   }
 
+  /**
+   * GetItems() with file_reference field_join includes _page_count.
+   */
+  #[Test]
+  public function getItemsWithFileReferenceIncludesPageCountInExpression(): void {
+    $captured_sql = '';
+    $statement = $this->createMockStatement();
+    $statement->method('fetchAllAssoc')->willReturn([1 => ['id' => 1]]);
+    $connection = $this->getMockBuilder(DatabaseConnection::class)
+      ->disableOriginalConstructor()
+      ->onlyMethods(['query', 'quote'])
+      ->getMock();
+    $connection->method('quote')
+      ->willReturnCallback(static function (string $value): string {
+        return "'" . addslashes($value) . "'";
+      });
+    $connection->method('query')
+      ->willReturnCallback(function (string $sql) use ($statement, &$captured_sql) {
+        $captured_sql = $sql;
+        return $statement;
+      });
+    $query = new Query($connection, 'node', 'report', [
+      'field_joins' => ['field_file' => ['file' => 'file_reference']],
+    ]);
+    $query->getItems(1, 0, [1]);
+    self::assertStringContainsString('_page_count', $captured_sql);
+  }
+
 }

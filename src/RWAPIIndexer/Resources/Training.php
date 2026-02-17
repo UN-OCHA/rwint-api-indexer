@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer\Resources;
 
 use RWAPIIndexer\Mapping;
@@ -7,13 +9,42 @@ use RWAPIIndexer\Resource;
 
 /**
  * Training resource handler.
+ *
+ * @phpstan-type TrainingProcessItem array{
+ *   id: int,
+ *   timestamp: string,
+ *   url: string,
+ *   url_alias?: string,
+ *   redirects?: array<int, string>,
+ *   title?: string,
+ *   body?: string,
+ *   date_created?: int,
+ *   date_changed?: int,
+ *   date_registration?: int,
+ *   date_start?: int,
+ *   date_end?: int,
+ *   status?: string,
+ *   event_url?: string,
+ *   cost?: string,
+ *   fee_information?: string,
+ *   how_to_register?: string,
+ *   city?: string,
+ *   country?: array<int, array<string, mixed>>,
+ *   source?: array<int, array<string, mixed>>,
+ *   language?: array<int, array<string, mixed>>,
+ *   theme?: array<int, array<string, mixed>>,
+ *   type?: array<int, array<string, mixed>>,
+ *   format?: array<int, array<string, mixed>>,
+ *   training_language?: array<int, array<string, mixed>>,
+ *   career_categories?: array<int, array<string, mixed>>,
+ * }
  */
 class Training extends Resource {
 
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = [
+  protected array $queryOptions = [
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
@@ -62,7 +93,7 @@ class Training extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = [
+  protected array $processingOptions = [
     'conversion' => [
       'body' => ['links', 'html_strict'],
       'how_to_register' => ['links', 'html_strict'],
@@ -111,7 +142,7 @@ class Training extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function getMapping() {
+  public function getMapping(): array {
     $mapping = new Mapping();
     $mapping->addInteger('id')
       ->addString('uuid', FALSE)
@@ -168,26 +199,30 @@ class Training extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function processItem(&$item) {
+  public function processItem(array &$item): void {
+    /** @var TrainingProcessItem $item */
+
     // Handle dates.
-    $item['date'] = [
-      'created' => $item['date_created'],
-      'changed' => $item['date_changed'],
-    ];
+    if (isset($item['date_created'])) {
+      $item['date']['created'] = $item['date_created'];
+      unset($item['date_created']);
+    }
+    if (isset($item['date_changed'])) {
+      $item['date']['changed'] = $item['date_changed'];
+      unset($item['date_changed']);
+    }
     if (isset($item['date_registration'])) {
       $item['date']['registration'] = $item['date_registration'];
+      unset($item['date_registration']);
     }
     if (isset($item['date_start'])) {
       $item['date']['start'] = $item['date_start'];
+      unset($item['date_start']);
     }
     if (isset($item['date_end'])) {
       $item['date']['end'] = $item['date_end'];
+      unset($item['date_end']);
     }
-    unset($item['date_created']);
-    unset($item['date_changed']);
-    unset($item['date_registration']);
-    unset($item['date_start']);
-    unset($item['date_end']);
 
     // Handle event URL.
     if (empty($item['event_url'])) {

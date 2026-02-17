@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer;
 
 use RWAPIIndexer\Database\DatabaseConnection;
@@ -15,56 +17,61 @@ class Query {
    *
    * @var \RWAPIIndexer\Database\DatabaseConnection
    */
-  protected $connection = NULL;
+  protected DatabaseConnection $connection;
 
   /**
    * Entity type.
    *
    * @var string
    */
-  protected $entityType = '';
+  protected string $entityType = '';
 
   /**
    * Entity bundle.
    *
    * @var string
    */
-  protected $bundle = '';
+  protected string $bundle = '';
 
   /**
    * Base table.
    *
    * @var string
    */
-  protected $baseTable = '';
+  protected string $baseTable = '';
 
   /**
    * Field for getting the items to index.
    *
    * @var string
    */
-  protected $baseField = '';
+  protected string $baseField = '';
 
   /**
    * Table containing the UUID.
    *
    * @var string
    */
-  protected $uuidTable = '';
+  protected string $uuidTable = '';
 
   /**
    * Field containing the UUID.
    *
    * @var string
    */
-  protected $uuidField = 'uuid';
+  protected string $uuidField = 'uuid';
 
   /**
    * Query options for the current entity type/bundle.
    *
-   * @var array
+   * @var array{
+   *   filters?: array<string, array<string, mixed>>,
+   *   fields?: array<string, string>,
+   *   field_joins?: array<string, array<string, string>>,
+   *   references?: array<string, string>
+   * }
    */
-  protected $options = [];
+  protected array $options = [];
 
   /**
    * Construct the query handler.
@@ -75,10 +82,15 @@ class Query {
    *   Type of the entity on which to perform the queries.
    * @param string $bundle
    *   Bundle of the entity on which to perform the queries.
-   * @param array $options
+   * @param array{filters?: array<string, array<string, mixed>>, fields?: array<string, string>, field_joins?: array<string, array<string, string>>, references?: array<string, string>} $options
    *   Query options.
    */
-  public function __construct(DatabaseConnection $connection, $entity_type, $bundle, array $options = []) {
+  public function __construct(
+    DatabaseConnection $connection,
+    string $entity_type,
+    string $bundle,
+    array $options = [],
+  ) {
     $this->connection = $connection;
     $this->entityType = $entity_type;
     $this->bundle = $bundle;
@@ -105,7 +117,7 @@ class Query {
    * @return \RWAPIIndexer\Database\Query
    *   Return a database query.
    */
-  public function newQuery() {
+  public function newQuery(): DatabaseQuery {
     return new DatabaseQuery($this->baseTable, $this->baseTable, $this->connection);
   }
 
@@ -115,7 +127,7 @@ class Query {
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to which add the id field.
    */
-  public function addIdField(DatabaseQuery $query) {
+  public function addIdField(DatabaseQuery $query): void {
     $query->addField($this->baseTable, $this->baseField, 'id');
   }
 
@@ -125,7 +137,7 @@ class Query {
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to which add the id field.
    */
-  public function addUuidField(DatabaseQuery $query) {
+  public function addUuidField(DatabaseQuery $query): void {
     $query->innerJoin($this->uuidTable, $this->uuidTable, "{$this->uuidTable}.{$this->baseField} = {$this->baseTable}.{$this->baseField}");
     $query->addField($this->uuidTable, $this->uuidField, 'uuid');
   }
@@ -136,7 +148,7 @@ class Query {
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to which add the bundle condition.
    */
-  public function setBundle(DatabaseQuery $query) {
+  public function setBundle(DatabaseQuery $query): void {
     if ($this->entityType === 'node') {
       $query->condition($this->baseTable . '.type', $this->bundle);
     }
@@ -150,10 +162,10 @@ class Query {
    *
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to which add the offset condition.
-   * @param sting|int $offset
+   * @param string|int|null $offset
    *   Entity id from which to start the indexing.
    */
-  public function setOffset(DatabaseQuery $query, $offset = NULL) {
+  public function setOffset(DatabaseQuery $query, string|int|null $offset = NULL): void {
     if (!empty($offset)) {
       $query->condition($this->baseTable . '.' . $this->baseField, $offset, '<=');
     }
@@ -167,7 +179,7 @@ class Query {
    * @param int $limit
    *   Maximum number of document to index.
    */
-  public function setLimit(DatabaseQuery $query, $limit = NULL) {
+  public function setLimit(DatabaseQuery $query, ?int $limit = NULL): void {
     if (!empty($limit)) {
       $query->range(0, $limit);
     }
@@ -179,7 +191,7 @@ class Query {
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to which add the group by statement.
    */
-  public function setGroupBy(DatabaseQuery $query) {
+  public function setGroupBy(DatabaseQuery $query): void {
     $query->groupBy($this->baseTable . '.' . $this->baseField);
   }
 
@@ -191,7 +203,7 @@ class Query {
    * @param string $direction
    *   Ordering direction, either DESC or ASC.
    */
-  public function setOrderBy(DatabaseQuery $query, $direction = 'DESC') {
+  public function setOrderBy(DatabaseQuery $query, string $direction = 'DESC'): void {
     $query->orderBy($this->baseTable . '.' . $this->baseField, $direction);
   }
 
@@ -201,7 +213,7 @@ class Query {
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to modify.
    */
-  public function setCount(DatabaseQuery $query) {
+  public function setCount(DatabaseQuery $query): void {
     $query->count();
   }
 
@@ -210,10 +222,10 @@ class Query {
    *
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to filter.
-   * @param ?array $ids
+   * @param int[]|null $ids
    *   Entity Ids used to filter the query.
    */
-  public function setIds(DatabaseQuery $query, ?array $ids = NULL) {
+  public function setIds(DatabaseQuery $query, ?array $ids = NULL): void {
     if (!empty($ids)) {
       $query->condition($this->baseTable . '.' . $this->baseField, $ids, 'IN');
     }
@@ -224,10 +236,10 @@ class Query {
    *
    * @param \RWAPIIndexer\Database\Query $query
    *   Query to filter.
-   * @param array $conditions
+   * @param array<string, array<string, mixed>> $conditions
    *   Conditions used to filter the query.
    */
-  public function setFilters(DatabaseQuery $query, array $conditions) {
+  public function setFilters(DatabaseQuery $query, array $conditions): void {
     $entity_type = $this->entityType;
     $base_table = $this->baseTable;
     $base_field = $this->baseField;
@@ -269,7 +281,7 @@ class Query {
    * @return int
    *   Limit.
    */
-  public function getLimit($limit = 0, $offset = 0) {
+  public function getLimit(int $limit = 0, int $offset = 0): int {
     $query = $this->newQuery();
     $this->setBundle($query);
     $this->setCount($query);
@@ -284,9 +296,9 @@ class Query {
       $this->setFilters($query, $this->options['filters']);
     }
 
-    $result = $query->execute();
-    if (!empty($result)) {
-      $count = (int) $result->fetchField();
+    $count = $query->execute()?->fetchField();
+    if ($count !== FALSE && $count !== NULL && is_numeric($count)) {
+      $count = (int) $count;
       return $limit <= 0 ? $count : min($limit, $count);
     }
     return 0;
@@ -301,7 +313,7 @@ class Query {
    * @return int
    *   Offset.
    */
-  public function getOffset($offset = 0) {
+  public function getOffset(int $offset = 0): int {
     if ($offset <= 0) {
       $query = $this->newQuery();
       $this->addIdField($query);
@@ -314,8 +326,13 @@ class Query {
         $this->setFilters($query, $this->options['filters']);
       }
 
-      $result = $query->execute();
-      $offset = !empty($result) ? (int) $result->fetchField() : 0;
+      $field = $query->execute()?->fetchField();
+      if ($field !== FALSE && $field !== NULL && is_numeric($field)) {
+        $offset = (int) $field;
+      }
+      else {
+        $offset = 0;
+      }
     }
     return $offset;
   }
@@ -323,17 +340,17 @@ class Query {
   /**
    * Get ids of the entities to index.
    *
-   * @param int $limit
+   * @param ?int $limit
    *   Maximum number of items to index.
-   * @param int $offset
+   * @param ?int $offset
    *   Id of the entity from which to start the indexing.
-   * @param ?array $ids
+   * @param int[]|null $ids
    *   Ids of the entities to index.
    *
-   * @return ids
+   * @return int[]
    *   array.
    */
-  public function getIds($limit = NULL, $offset = NULL, ?array $ids = NULL) {
+  public function getIds(?int $limit = NULL, ?int $offset = NULL, ?array $ids = NULL): array {
     if (!empty($ids)) {
       return $ids;
     }
@@ -354,24 +371,30 @@ class Query {
     }
 
     // Fetch the ids.
-    $result = $query->execute();
-    return !empty($result) ? $result->fetchCol() : [];
+    $col = $query->execute()?->fetchCol() ?? [];
+    $ids = [];
+    foreach ($col as $id) {
+      if (is_numeric($id)) {
+        $ids[] = (int) $id;
+      }
+    }
+    return $ids;
   }
 
   /**
    * Process a query and return the resulting items.
    *
-   * @param int $limit
+   * @param ?int $limit
    *   Maximum number of items to index.
-   * @param int $offset
+   * @param ?int $offset
    *   Entity ID from which to start fetching the items.
-   * @param ?array $ids
+   * @param int[]|null $ids
    *   Ids of the entities to index.
    *
-   * @return array
+   * @return array<int, array<string, mixed>>
    *   Items returned by the query.
    */
-  public function getItems($limit = NULL, $offset = NULL, ?array $ids = NULL) {
+  public function getItems(?int $limit = NULL, ?int $offset = NULL, ?array $ids = NULL): array {
     $entity_type = $this->entityType;
     $base_table = $this->baseTable;
     $base_field = $this->baseField;
@@ -495,11 +518,18 @@ class Query {
     }
 
     // Fetch the items.
-    $result = $query->execute();
-    if (empty($result)) {
+    $rows = $query->execute()?->fetchAllAssoc('id', \PDO::FETCH_ASSOC) ?? [];
+    if ($rows === []) {
       return [];
     }
-    $items = $result->fetchAllAssoc('id', \PDO::FETCH_ASSOC);
+    /** @var array<int, array<string, mixed>> $items */
+    $items = [];
+    foreach ($rows as $item) {
+      if (is_array($item) && isset($item['id']) && is_numeric($item['id'])) {
+        $item['id'] = (int) $item['id'];
+        $items[$item['id']] = $item;
+      }
+    }
 
     // Sort by ID desc.
     krsort($items);
@@ -513,10 +543,10 @@ class Query {
   /**
    * Load the references for the given entity items.
    *
-   * @param array $items
+   * @param array<int, array<string, mixed>> $items
    *   Items for which to load the references.
    */
-  public function loadReferences(array &$items) {
+  public function loadReferences(array &$items): void {
     if (!empty($this->options['references']) && !empty($items)) {
       $ids = array_keys($items);
       $queries = [];
@@ -530,9 +560,22 @@ class Query {
         $queries[] = $query->build();
       }
 
+      /** @var \RWAPIIndexer\Database\Statement $statement */
       $statement = $this->connection->query(implode(' UNION ', $queries));
-      while ($row = $statement->fetchObject()) {
-        $items[$row->id][$row->alias][] = $row->value;
+      while ($row = $statement->fetch(\PDO::FETCH_ASSOC)) {
+        /** @var array{id: string, alias: string, value: string} $row */
+        if (!is_numeric($row['id']) || empty($row['alias']) || !is_numeric($row['value'])) {
+          continue;
+        }
+        $id = (int) $row['id'];
+        $alias = $row['alias'];
+        $value = (int) $row['value'];
+        if (!isset($items[$id][$alias])) {
+          $items[$id][$alias] = [];
+        }
+        if (is_array($items[$id][$alias])) {
+          $items[$id][$alias][] = $value;
+        }
       }
     }
   }

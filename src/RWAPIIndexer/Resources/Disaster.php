@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer\Resources;
 
 use RWAPIIndexer\Mapping;
@@ -7,13 +9,34 @@ use RWAPIIndexer\Resource;
 
 /**
  * Disaster resource handler.
+ *
+ * @phpstan-type DisasterProcessItem array{
+ *   id: int,
+ *   timestamp: string,
+ *   url: string,
+ *   url_alias?: string,
+ *   redirects?: array<int, string>,
+ *   name?: string,
+ *   description?: string,
+ *   status?: string,
+ *   date_created?: int,
+ *   date_changed?: int,
+ *   date_event?: int,
+ *   glide?: string,
+ *   related_glide?: array<int, string>,
+ *   show_profile?: bool|string,
+ *   primary_country?: mixed,
+ *   primary_type?: mixed,
+ *   country?: array<int, array<string, mixed>>,
+ *   type?: array<int, array<string, mixed>>,
+ * }
  */
 class Disaster extends Resource {
 
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = [
+  protected array $queryOptions = [
     'fields' => [
       'name' => 'name',
       'description' => 'description__value',
@@ -46,7 +69,7 @@ class Disaster extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = [
+  protected array $processingOptions = [
     'conversion' => [
       'description' => ['links'],
       'date_event' => ['time'],
@@ -78,9 +101,9 @@ class Disaster extends Resource {
   /**
    * Profile sections (id => label).
    *
-   * @var array
+   * @var array<string, array<string, string|bool>>
    */
-  private $profileSections = [
+  private array $profileSections = [
     'key_content' => [
       'label' => 'Key Content',
       'internal' => TRUE,
@@ -104,7 +127,7 @@ class Disaster extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function getMapping() {
+  public function getMapping(): array {
     $mapping = new Mapping();
     $mapping->addInteger('id')
       ->addString('uuid', FALSE)
@@ -145,7 +168,9 @@ class Disaster extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function processItem(&$item) {
+  public function processItem(array &$item): void {
+    /** @var DisasterProcessItem $item */
+
     // Handle dates.
     if (isset($item['date_event'])) {
       $item['date']['event'] = $item['date_event'];

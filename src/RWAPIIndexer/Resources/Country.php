@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer\Resources;
 
 use RWAPIIndexer\Mapping;
@@ -7,13 +9,31 @@ use RWAPIIndexer\Resource;
 
 /**
  * Country resource handler.
+ *
+ * @phpstan-type CountryProcessItem array{
+ *   id: int,
+ *   timestamp: string,
+ *   url: string,
+ *   url_alias?: string,
+ *   redirects?: array<int, string>,
+ *   name?: string,
+ *   description?: string,
+ *   status?: string,
+ *   date_created?: int,
+ *   date_changed?: int,
+ *   shortname?: string,
+ *   iso3?: string,
+ *   show_profile?: bool|string,
+ *   latitude?: float,
+ *   longitude?: float,
+ * }
  */
 class Country extends Resource {
 
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = [
+  protected array $queryOptions = [
     'fields' => [
       'name' => 'name',
       'description' => 'description__value',
@@ -41,7 +61,7 @@ class Country extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = [
+  protected array $processingOptions = [
     'conversion' => [
       'description' => ['links'],
       'current' => ['bool'],
@@ -56,9 +76,9 @@ class Country extends Resource {
   /**
    * Profile sections (id => settings).
    *
-   * @var array
+   * @var array<string, array<string, string|bool>>
    */
-  private $profileSections = [
+  private array $profileSections = [
     'key_content' => [
       'label' => 'Key Content',
       'internal' => TRUE,
@@ -82,7 +102,7 @@ class Country extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function getMapping() {
+  public function getMapping(): array {
     $mapping = new Mapping();
     $mapping->addInteger('id')
       ->addString('uuid', FALSE)
@@ -112,7 +132,9 @@ class Country extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function processItem(&$item) {
+  public function processItem(array &$item): void {
+    /** @var CountryProcessItem $item */
+
     // Handle dates.
     if (isset($item['date_created'])) {
       $item['date']['created'] = $item['date_created'];

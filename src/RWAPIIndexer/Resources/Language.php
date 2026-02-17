@@ -1,18 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer\Resources;
 
 use RWAPIIndexer\Mapping;
 
 /**
  * Language resource handler.
+ *
+ * @phpstan-type LanguageProcessItem array{
+ *   id: int,
+ *   timestamp: string,
+ *   url?: string,
+ *   url_alias?: string,
+ *   redirects?: array<int, string>,
+ *   name?: string,
+ *   description?: string,
+ *   code?: string,
+ * }
  */
 class Language extends TaxonomyDefault {
 
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = [
+  protected array $queryOptions = [
     'fields' => [
       'name' => 'name',
       'description' => 'description__value',
@@ -27,7 +40,7 @@ class Language extends TaxonomyDefault {
   /**
    * {@inheritdoc}
    */
-  public function getMapping() {
+  public function getMapping(): array {
     $mapping = new Mapping();
     $mapping->addInteger('id')
       ->addString('uuid', FALSE)

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RWAPIIndexer\Resources;
 
 use RWAPIIndexer\Mapping;
@@ -7,13 +9,46 @@ use RWAPIIndexer\Resource;
 
 /**
  * Report resource handler.
+ *
+ * @phpstan-type ReportProcessItem array{
+ *   id: int,
+ *   timestamp: string,
+ *   url: string,
+ *   url_alias?: string,
+ *   redirects?: array<int, string>,
+ *   title?: string,
+ *   body?: string,
+ *   'body-html'?: string,
+ *   date_created?: int,
+ *   date_changed?: int,
+ *   date_original?: int,
+ *   status?: string,
+ *   headline?: bool,
+ *   headline_title?: string,
+ *   headline_summary?: string,
+ *   headline_image?: mixed,
+ *   image?: mixed,
+ *   file?: mixed,
+ *   origin?: string,
+ *   primary_country?: mixed,
+ *   country?: array<int, array<string, mixed>>,
+ *   source?: array<int, array<string, mixed>>,
+ *   language?: array<int, array<string, mixed>>,
+ *   theme?: array<int, array<string, mixed>>,
+ *   format?: array<int, array<string, mixed>>,
+ *   ocha_product?: array<int, array<string, mixed>>,
+ *   disaster?: array<int, array<string, mixed>>,
+ *   disaster_type?: array<int, array<string, mixed>>,
+ *   vulnerable_groups?: array<int, array<string, mixed>>,
+ *   feature?: array<int, array<string, mixed>>,
+ * }
  */
 class Report extends Resource {
 
   /**
    * {@inheritdoc}
    */
-  protected $queryOptions = [
+  protected array $queryOptions = [
     'fields' => [
       'title' => 'title',
       'date_created' => 'created',
@@ -67,7 +102,7 @@ class Report extends Resource {
   /**
    * {@inheritdoc}
    */
-  protected $processingOptions = [
+  protected array $processingOptions = [
     'conversion' => [
       'body' => ['links', 'html'],
       'date_created' => ['time'],
@@ -126,7 +161,7 @@ class Report extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function getMapping() {
+  public function getMapping(): array {
     $mapping = new Mapping();
     $mapping->addInteger('id')
       ->addString('uuid', FALSE)
@@ -184,16 +219,25 @@ class Report extends Resource {
   /**
    * {@inheritdoc}
    */
-  public function processItem(&$item) {
+  public function processItem(array &$item): void {
+    /** @var ReportProcessItem $item */
+
     // Handle dates.
-    $item['date'] = [
-      'created' => $item['date_created'],
-      'changed' => $item['date_changed'],
-      'original' => !empty($item['date_original']) ? $item['date_original'] : $item['date_created'],
-    ];
-    unset($item['date_created']);
-    unset($item['date_changed']);
-    unset($item['date_original']);
+    if (isset($item['date_created'])) {
+      $item['date']['created'] = $item['date_created'];
+      unset($item['date_created']);
+    }
+    if (isset($item['date_changed'])) {
+      $item['date']['changed'] = $item['date_changed'];
+      unset($item['date_changed']);
+    }
+    if (isset($item['date_original'])) {
+      $item['date']['original'] = $item['date_original'];
+      unset($item['date_original']);
+    }
+    elseif (isset($item['date']['created'])) {
+      $item['date']['original'] = $item['date']['created'];
+    }
 
     // Handle headline.
     if (!empty($item['headline'])) {
@@ -214,7 +258,7 @@ class Report extends Resource {
           $headline['summary'] = $summary;
         }
         // Handle headline image.
-        if ($this->processor->processImage($item['headline_image'], TRUE) === TRUE) {
+        if ($this->processor->processImage($item, 'headline_image', TRUE) === TRUE) {
           $headline['image'] = $item['headline_image'];
         }
         $item['headline'] = $headline;
@@ -231,26 +275,28 @@ class Report extends Resource {
     unset($item['headline_image']);
 
     // Handle image.
-    if ($this->processor->processImage($item['image'], TRUE) !== TRUE) {
+    if ($this->processor->processImage($item, 'image', TRUE) !== TRUE) {
       unset($item['image']);
     }
 
     // Handle File.
-    if ($this->processor->processFile($item['file']) !== TRUE) {
+    if ($this->processor->processFile($item, 'file') !== TRUE) {
       unset($item['file']);
     }
 
     // Handle origin field. Discard origin that may be email addresses.
-    if (isset($item['origin']) && strpos($item['origin'], '@') !== FALSE) {
+    if (isset($item['origin']) && is_string($item['origin']) && strpos($item['origin'], '@') !== FALSE) {
       unset($item['origin']);
     }
 
     // Handle disasters. Only index published disasters.
-    if (!empty($item['disaster'])) {
+    if (!empty($item['disaster']) && is_array($item['disaster'])) {
       foreach ($item['disaster'] as $index => $disaster) {
-        $status = $disaster['status'] ?? '';
-        if ($status !== 'alert' && $status !== 'current' && $status !== 'ongoing' && $status !== 'past') {
-          unset($item['disaster'][$index]);
+        if (is_array($disaster)) {
+          $status = $disaster['status'] ?? '';
+          if ($status !== 'alert' && $status !== 'current' && $status !== 'ongoing' && $status !== 'past') {
+            unset($item['disaster'][$index]);
+          }
         }
       }
       if (empty($item['disaster'])) {

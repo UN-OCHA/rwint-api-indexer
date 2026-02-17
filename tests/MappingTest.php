@@ -158,7 +158,7 @@ final class MappingTest extends TestCase {
   }
 
   /**
-   * AddFile() adds file properties including preview.
+   * AddFile() adds file properties including preview and pagecount.
    */
   #[Test]
   public function addFileAddsFileProperties(): void {
@@ -169,6 +169,8 @@ final class MappingTest extends TestCase {
     $properties = $export['file']['properties'] ?? [];
     self::assertArrayHasKey('id', $properties);
     self::assertArrayHasKey('preview', $properties);
+    self::assertArrayHasKey('pagecount', $properties);
+    self::assertSame('integer', $properties['pagecount']['type'] ?? NULL);
   }
 
   /**

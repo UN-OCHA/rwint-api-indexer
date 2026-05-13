@@ -21,9 +21,11 @@ class DatabaseConnection extends \PDO {
    *   Database username.
    * @param string $password
    *   Database password.
+   * @param array|null $options
+   *   Key-value array of driver-specific connection options (same as \PDO).
    */
-  public function __construct(string $dsn, string $user, string $password) {
-    parent::__construct($dsn, $user, $password);
+  public function __construct(string $dsn, string $user, string $password, ?array $options = NULL) {
+    parent::__construct($dsn, $user, $password, $options);
 
     // Set the statement class.
     $this->setAttribute(\PDO::ATTR_STATEMENT_CLASS, [

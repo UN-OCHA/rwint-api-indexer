@@ -104,8 +104,14 @@ class Manager {
     $dsn = "mysql:dbname={$dbname};host={$host};port={$port};charset=utf8";
     $user = $this->options->mysqlUser;
     $password = $this->options->mysqlPass;
+    $pdo_options = $this->options->pdoOptions ?: NULL;
 
-    $this->connection = new DatabaseConnection($dsn, $user, $password);
+    $this->connection = new DatabaseConnection(
+      $dsn,
+      $user,
+      $password,
+      $pdo_options,
+    );
   }
 
   /**

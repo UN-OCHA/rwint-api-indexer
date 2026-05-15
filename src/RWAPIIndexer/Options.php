@@ -17,6 +17,7 @@ namespace RWAPIIndexer;
  *   mysql-user?: string,
  *   mysql-pass?: string,
  *   database?: string,
+ *   pdo-options?: array<int|string, bool|float|int|string|null>,
  *   base-index-name?: string,
  *   tag?: string,
  *   website?: string,
@@ -57,6 +58,8 @@ readonly class Options {
    *   MySQL password.
    * @param string $database
    *   Database name.
+   * @param array<int|string, bool|float|int|string|null> $pdoOptions
+   *   A key=>value array of driver-specific connection options.
    * @param string $baseIndexName
    *   Base name for the Elasticsearch index.
    * @param string $tag
@@ -98,6 +101,7 @@ readonly class Options {
     public string $mysqlUser = 'root',
     public string $mysqlPass = '',
     public string $database = 'reliefwebint_0',
+    public array $pdoOptions = [],
     public string $baseIndexName = 'reliefwebint_0',
     public string $tag = '',
     public string $website = 'https://reliefweb.int',
@@ -144,6 +148,7 @@ readonly class Options {
       'mysql-user' => 'mysqlUser',
       'mysql-pass' => 'mysqlPass',
       'database' => 'database',
+      'pdo-options' => 'pdoOptions',
       'base-index-name' => 'baseIndexName',
       'tag' => 'tag',
       'website' => 'website',
@@ -219,6 +224,10 @@ readonly class Options {
         case '--database':
         case '-d':
           $options['database'] = array_shift($argv);
+          break;
+
+        case '--pdo-options':
+          $options['pdo-options'] = self::parsePdoOptions(array_shift($argv));
           break;
 
         case '--base-index-name':
@@ -315,6 +324,33 @@ readonly class Options {
   }
 
   /**
+   * Parses the CLI value for --pdo-options as JSON.
+   *
+   * On failure, calls displayUsage() which prints an error and exits.
+   *
+   * @param ?string $raw
+   *   Raw argument following --pdo-options.
+   *
+   * @return array<int|string, mixed>
+   *   Decoded array for the pdo-options indexing key.
+   */
+  private static function parsePdoOptions(?string $raw): array {
+    if ($raw === NULL || $raw === '') {
+      self::displayUsage('Missing value for --pdo-options (JSON object).');
+    }
+    try {
+      $decoded = json_decode($raw, TRUE, 512, JSON_THROW_ON_ERROR);
+    }
+    catch (\JsonException $exception) {
+      self::displayUsage("Invalid JSON for --pdo-options: {$exception->getMessage()}");
+    }
+    if (!is_array($decoded)) {
+      self::displayUsage('--pdo-options must decode to a JSON object (associative array).');
+    }
+    return $decoded;
+  }
+
+  /**
    * Validate entity bundle parameter.
    */
   public static function validateBundle(string $bundle): string|FALSE {
@@ -329,6 +365,30 @@ readonly class Options {
       return $host;
     }
     return FALSE;
+  }
+
+  /**
+   * Validate PDO constructor options array shape.
+   *
+   * @param array<int|string, mixed> $pdo_options
+   *   Candidate options array.
+   *
+   * @return bool
+   *   TRUE if the array is suitable for \PDO::__construct $options.
+   */
+  public static function validatePdoOptions(array $pdo_options): bool {
+    foreach ($pdo_options as $key => $value) {
+      if (!is_int($key) && (!is_string($key) || $key === '')) {
+        return FALSE;
+      }
+      if (is_array($value) || is_object($value) || is_resource($value)) {
+        return FALSE;
+      }
+      if ($value !== NULL && !is_scalar($value)) {
+        return FALSE;
+      }
+    }
+    return TRUE;
   }
 
   /**
@@ -380,6 +440,10 @@ readonly class Options {
     // Validate database name.
     if (filter_var($this->database, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/']]) === FALSE) {
       throw new \InvalidArgumentException('Invalid database name. Only letters, numbers, underscores and hyphens are allowed.');
+    }
+    // Validate PDO driver options (same shape as \PDO::__construct $options).
+    if (!self::validatePdoOptions($this->pdoOptions)) {
+      throw new \InvalidArgumentException('Invalid pdo-options. Use a flat array: PDO attribute keys (int or non-empty string) mapped to scalar or NULL values.');
     }
     // Validate base index name.
     if (filter_var($this->baseIndexName, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^[a-zA-Z0-9_-]*$/']]) === FALSE) {
@@ -446,6 +510,7 @@ readonly class Options {
           "     -u, --mysql-user <arg> Mysql user, defaults to root \n" .
           "     -p, --mysql-pass <arg> Mysql pass, defaults to none \n" .
           "     -d, --database <arg> Database name, deaults to reliefwebint_0 \n" .
+          "     --pdo-options <json> JSON object of \\PDO driver options (e.g. {\"20\":false} for PDO::ATTR_EMULATE_PREPARES) \n" .
           "     -b, --base-index-name <arg> Base index name, deaults to reliefwebint_0 \n" .
           "     -t, --tag <arg> Tag appended to the index name, defaults to empty string \n" .
           "     -w, --website <arg> Website URL, deaults to https://reliefweb.int \n" .

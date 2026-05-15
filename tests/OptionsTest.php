@@ -28,6 +28,7 @@ final class OptionsTest extends TestCase {
     self::assertSame(1, $options->replicas);
     self::assertFalse($options->remove);
     self::assertFalse($options->alias);
+    self::assertSame([], $options->pdoOptions);
   }
 
   /**
@@ -113,6 +114,59 @@ final class OptionsTest extends TestCase {
       'bundle' => 'report',
       'shards' => 10,
     ]);
+  }
+
+  /**
+   * FromArray() accepts pdo-options mapped to pdoOptions for PDO.
+   */
+  #[Test]
+  public function fromArrayAcceptsPdoOptions(): void {
+    $pdo_options = [
+      \PDO::ATTR_EMULATE_PREPARES => FALSE,
+      '1002' => 30,
+    ];
+    $options = Options::fromArray([
+      'bundle' => 'report',
+      'pdo-options' => $pdo_options,
+    ]);
+    self::assertSame($pdo_options, $options->pdoOptions);
+  }
+
+  /**
+   * FromArray() throws when pdo-options is not a flat array of scalars.
+   */
+  #[Test]
+  public function invalidPdoOptionsThrows(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Invalid pdo-options');
+    Options::fromArray([
+      'bundle' => 'report',
+      'pdo-options' => [\PDO::ATTR_TIMEOUT => [1, 2, 3]],
+    ]);
+  }
+
+  /**
+   * ValidatePdoOptions() returns TRUE for an empty array.
+   */
+  #[Test]
+  public function validatePdoOptionsAcceptsEmpty(): void {
+    self::assertTrue(Options::validatePdoOptions([]));
+  }
+
+  /**
+   * ValidatePdoOptions() returns FALSE for nested array values.
+   */
+  #[Test]
+  public function validatePdoOptionsRejectsNestedValues(): void {
+    self::assertFalse(Options::validatePdoOptions([3 => ['a' => 1]]));
+  }
+
+  /**
+   * ValidatePdoOptions() returns FALSE for empty string keys.
+   */
+  #[Test]
+  public function validatePdoOptionsRejectsEmptyStringKey(): void {
+    self::assertFalse(Options::validatePdoOptions(['' => 1]));
   }
 
   /**

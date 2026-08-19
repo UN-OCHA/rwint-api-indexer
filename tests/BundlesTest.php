@@ -74,11 +74,7 @@ final class BundlesTest extends TestCase {
       'website' => 'https://reliefweb.int',
     ]);
     $connection = $this->createMockDatabaseConnection();
-    $elasticsearch = new Elasticsearch(
-      $options->elasticsearch,
-      $options->baseIndexName,
-      $options->tag,
-    );
+    $elasticsearch = new Elasticsearch($options);
     $references = new References();
     $processor = new Processor($options->website, $connection, $references);
 
@@ -107,11 +103,7 @@ final class BundlesTest extends TestCase {
       'website' => 'https://reliefweb.int',
     ]);
     $connection = $this->createMockDatabaseConnection();
-    $elasticsearch = new Elasticsearch(
-      $options->elasticsearch,
-      $options->baseIndexName,
-      $options->tag,
-    );
+    $elasticsearch = new Elasticsearch($options);
     $references = new References();
     $processor = new Processor($options->website, $connection, $references);
 

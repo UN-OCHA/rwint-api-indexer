@@ -12,6 +12,12 @@ namespace RWAPIIndexer;
  * @phpstan-type IndexingOptions array{
  *   bundle?: string,
  *   elasticsearch?: string,
+ *   elasticsearch-auth-type?: string,
+ *   elasticsearch-username?: string,
+ *   elasticsearch-password?: string,
+ *   elasticsearch-bearer-token?: string,
+ *   elasticsearch-verify-tls?: bool|int|string,
+ *   elasticsearch-ca-file?: string,
  *   mysql-host?: string,
  *   mysql-port?: int,
  *   mysql-user?: string,
@@ -48,6 +54,18 @@ readonly class Options {
    *   Entity bundle to index (e.g. report, job, country).
    * @param string $elasticsearch
    *   Elasticsearch base URL.
+   * @param string $elasticsearchAuthType
+   *   Authentication type: none, basic or bearer.
+   * @param string $elasticsearchUsername
+   *   Basic authentication username.
+   * @param string $elasticsearchPassword
+   *   Basic authentication password.
+   * @param string $elasticsearchBearerToken
+   *   Bearer authentication token.
+   * @param bool $elasticsearchVerifyTls
+   *   Whether to verify TLS certificates.
+   * @param string $elasticsearchCaFile
+   *   Custom CA certificate file path.
    * @param string $mysqlHost
    *   MySQL hostname or IP address.
    * @param int $mysqlPort
@@ -96,6 +114,12 @@ readonly class Options {
   public function __construct(
     public string $bundle = '',
     public string $elasticsearch = 'http://127.0.0.1:9200',
+    public string $elasticsearchAuthType = 'none',
+    public string $elasticsearchUsername = '',
+    public string $elasticsearchPassword = '',
+    public string $elasticsearchBearerToken = '',
+    public bool $elasticsearchVerifyTls = TRUE,
+    public string $elasticsearchCaFile = '',
     public string $mysqlHost = 'localhost',
     public int $mysqlPort = 3306,
     public string $mysqlUser = 'root',
@@ -143,6 +167,12 @@ readonly class Options {
     $mapping = [
       'bundle' => 'bundle',
       'elasticsearch' => 'elasticsearch',
+      'elasticsearch-auth-type' => 'elasticsearchAuthType',
+      'elasticsearch-username' => 'elasticsearchUsername',
+      'elasticsearch-password' => 'elasticsearchPassword',
+      'elasticsearch-bearer-token' => 'elasticsearchBearerToken',
+      'elasticsearch-verify-tls' => 'elasticsearchVerifyTls',
+      'elasticsearch-ca-file' => 'elasticsearchCaFile',
       'mysql-host' => 'mysqlHost',
       'mysql-port' => 'mysqlPort',
       'mysql-user' => 'mysqlUser',
@@ -169,9 +199,16 @@ readonly class Options {
 
     $parameters = [];
     foreach ($mapping as $option => $parameter) {
-      if (isset($options[$option])) {
+      if (array_key_exists($option, $options)) {
         $parameters[$parameter] = $options[$option];
       }
+    }
+
+    if (array_key_exists('elasticsearchAuthType', $parameters) && is_string($parameters['elasticsearchAuthType'])) {
+      $parameters['elasticsearchAuthType'] = strtolower($parameters['elasticsearchAuthType']);
+    }
+    if (array_key_exists('elasticsearchVerifyTls', $parameters)) {
+      $parameters['elasticsearchVerifyTls'] = self::parseVerifyTls($parameters['elasticsearchVerifyTls']);
     }
 
     /** @var IndexingOptions $parameters */
@@ -199,6 +236,30 @@ readonly class Options {
         case '--elasticsearch':
         case '-e':
           $options['elasticsearch'] = array_shift($argv);
+          break;
+
+        case '--elasticsearch-auth-type':
+          $options['elasticsearch-auth-type'] = array_shift($argv);
+          break;
+
+        case '--elasticsearch-username':
+          $options['elasticsearch-username'] = array_shift($argv);
+          break;
+
+        case '--elasticsearch-password':
+          $options['elasticsearch-password'] = array_shift($argv);
+          break;
+
+        case '--elasticsearch-bearer-token':
+          $options['elasticsearch-bearer-token'] = array_shift($argv);
+          break;
+
+        case '--elasticsearch-verify-tls':
+          $options['elasticsearch-verify-tls'] = self::parseVerifyTls(array_shift($argv));
+          break;
+
+        case '--elasticsearch-ca-file':
+          $options['elasticsearch-ca-file'] = array_shift($argv);
           break;
 
         case '--mysql-host':
@@ -409,6 +470,31 @@ readonly class Options {
   }
 
   /**
+   * Parse elasticsearch-verify-tls from config or CLI.
+   *
+   * @param mixed $value
+   *   Raw option value.
+   *
+   * @return bool
+   *   TRUE to verify TLS certificates.
+   */
+  public static function parseVerifyTls(mixed $value): bool {
+    if ($value === NULL) {
+      return TRUE;
+    }
+
+    $parsed = filter_var(
+      $value,
+      FILTER_VALIDATE_BOOLEAN,
+      FILTER_NULL_ON_FAILURE,
+    );
+    if ($parsed === NULL) {
+      throw new \InvalidArgumentException('Invalid elasticsearch-verify-tls value. Use true or false.');
+    }
+    return $parsed;
+  }
+
+  /**
    * Validate this instance's properties. Called from constructor.
    */
   private function validateOptions(): void {
@@ -419,7 +505,22 @@ readonly class Options {
     }
     // Validate Elasticsearch URL.
     if (filter_var($this->elasticsearch, FILTER_VALIDATE_URL) === FALSE) {
-      throw new \InvalidArgumentException('Invalid Elasticsearch option, it must be a valid URL.');
+      throw new \InvalidArgumentException('Invalid Elasticsearch option, it must be a valid HTTP or HTTPS URL.');
+    }
+    $scheme = strtolower((string) parse_url($this->elasticsearch, PHP_URL_SCHEME));
+    if (!in_array($scheme, ['http', 'https'], TRUE)) {
+      throw new \InvalidArgumentException('Invalid Elasticsearch option, it must be a valid HTTP or HTTPS URL.');
+    }
+    // Validate Elasticsearch authentication.
+    $auth_type = strtolower($this->elasticsearchAuthType);
+    if (!in_array($auth_type, ['none', '', 'basic', 'bearer'], TRUE)) {
+      throw new \InvalidArgumentException('Invalid Elasticsearch authentication type. Allowed: none, basic, bearer.');
+    }
+    if ($auth_type === 'basic' && ($this->elasticsearchUsername === '' || $this->elasticsearchPassword === '')) {
+      throw new \InvalidArgumentException('Missing Elasticsearch basic authentication credentials.');
+    }
+    if ($auth_type === 'bearer' && $this->elasticsearchBearerToken === '') {
+      throw new \InvalidArgumentException('Missing Elasticsearch bearer authentication token.');
     }
     // Validate MySQL host.
     if (self::validateMysqlHost($this->mysqlHost) === FALSE) {
@@ -505,6 +606,12 @@ readonly class Options {
     echo "Usage: php PATH/TO/Indexer.php [options] <entity-bundle>\n" .
           "     -h, --help Display this help message \n" .
           "     -e, --elasticsearch <arg> Elasticsearch URL, defaults to http://127.0.0.1:9200 \n" .
+          "     --elasticsearch-auth-type <arg> Authentication type: none, basic or bearer, defaults to none \n" .
+          "     --elasticsearch-username <arg> Basic authentication username \n" .
+          "     --elasticsearch-password <arg> Basic authentication password \n" .
+          "     --elasticsearch-bearer-token <arg> Bearer authentication token \n" .
+          "     --elasticsearch-verify-tls <arg> Verify TLS certificates, defaults to true \n" .
+          "     --elasticsearch-ca-file <arg> Custom CA certificate file path \n" .
           "     -H, --mysql-host <arg> Mysql host, defaults to localhost \n" .
           "     -P, --mysql-port <arg> Mysql port, defaults to 3306 \n" .
           "     -u, --mysql-user <arg> Mysql user, defaults to root \n" .

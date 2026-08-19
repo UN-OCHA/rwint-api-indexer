@@ -84,11 +84,7 @@ class Manager {
     $this->references = new References();
 
     // Create a new elasticsearch handler.
-    $this->elasticsearch = new Elasticsearch(
-      $this->options->elasticsearch,
-      $this->options->baseIndexName,
-      $this->options->tag,
-    );
+    $this->elasticsearch = new Elasticsearch($this->options);
 
     // Create a new field processor object to prepare items before indexing.
     $this->processor = new Processor($this->options->website, $this->connection, $this->references);

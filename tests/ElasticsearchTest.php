@@ -7,6 +7,7 @@ namespace RWAPIIndexer\Tests;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RWAPIIndexer\Elasticsearch;
+use RWAPIIndexer\Options;
 
 /**
  * Tests for Elasticsearch handler.
@@ -14,11 +15,30 @@ use RWAPIIndexer\Elasticsearch;
 final class ElasticsearchTest extends TestCase {
 
   /**
+   * Create indexing options for tests.
+   *
+   * @param array<string, mixed> $overrides
+   *   Option overrides (kebab-case keys).
+   *
+   * @return \RWAPIIndexer\Options
+   *   Options instance.
+   */
+  private function options(array $overrides = []): Options {
+    return Options::fromArray($overrides + [
+      'bundle' => 'report',
+      'elasticsearch' => 'http://localhost:9200',
+      'base-index-name' => 'base',
+    ]);
+  }
+
+  /**
    * GetIndexPath() returns base_index_tag with no tag when tag is empty.
    */
   #[Test]
   public function getIndexPathUsesBaseAndTag(): void {
-    $elasticsearch = new Elasticsearch('http://localhost:9200', 'reliefweb', '');
+    $elasticsearch = new Elasticsearch($this->options([
+      'base-index-name' => 'reliefweb',
+    ]));
     self::assertSame('reliefweb_reports_index', $elasticsearch->getIndexPath('reports'));
   }
 
@@ -27,7 +47,10 @@ final class ElasticsearchTest extends TestCase {
    */
   #[Test]
   public function getIndexPathWithTagAppendsTag(): void {
-    $elasticsearch = new Elasticsearch('http://localhost:9200', 'reliefweb', 'v2');
+    $elasticsearch = new Elasticsearch($this->options([
+      'base-index-name' => 'reliefweb',
+      'tag' => 'v2',
+    ]));
     self::assertSame('reliefweb_reports_index_v2', $elasticsearch->getIndexPath('reports'));
   }
 
@@ -36,7 +59,10 @@ final class ElasticsearchTest extends TestCase {
    */
   #[Test]
   public function getIndexAliasUsesBaseOnly(): void {
-    $elasticsearch = new Elasticsearch('http://localhost:9200', 'reliefweb', 'v2');
+    $elasticsearch = new Elasticsearch($this->options([
+      'base-index-name' => 'reliefweb',
+      'tag' => 'v2',
+    ]));
     self::assertSame('reliefweb_reports', $elasticsearch->getIndexAlias('reports'));
   }
 
@@ -45,7 +71,7 @@ final class ElasticsearchTest extends TestCase {
    */
   #[Test]
   public function requestThrowsWhenMethodEmpty(): void {
-    $elasticsearch = new Elasticsearch('http://localhost:9200', 'base', '');
+    $elasticsearch = new Elasticsearch($this->options());
     $this->expectException(\Exception::class);
     $this->expectExceptionMessage('Method is required');
     $elasticsearch->request('', 'index');
@@ -56,21 +82,10 @@ final class ElasticsearchTest extends TestCase {
    */
   #[Test]
   public function requestThrowsWhenPathEmpty(): void {
-    $elasticsearch = new Elasticsearch('http://localhost:9200', 'base', '');
+    $elasticsearch = new Elasticsearch($this->options());
     $this->expectException(\Exception::class);
     $this->expectExceptionMessage('Path is required');
     $elasticsearch->request('GET', '');
-  }
-
-  /**
-   * Request() throws when server URL is empty.
-   */
-  #[Test]
-  public function requestThrowsWhenServerEmpty(): void {
-    $elasticsearch = new Elasticsearch('', 'base', '');
-    $this->expectException(\Exception::class);
-    $this->expectExceptionMessage('Server is required');
-    $elasticsearch->request('GET', 'path');
   }
 
   /**
@@ -79,7 +94,7 @@ final class ElasticsearchTest extends TestCase {
   #[Test]
   public function indexItemsReturnsLastOffset(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([$this->options()])
       ->onlyMethods(['request'])
       ->getMock();
 
@@ -107,7 +122,7 @@ final class ElasticsearchTest extends TestCase {
   #[Test]
   public function createCallsCreateIndexWhenIndexDoesNotExist(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([$this->options()])
       ->onlyMethods(['indexExists', 'createIndex'])
       ->getMock();
 
@@ -128,7 +143,7 @@ final class ElasticsearchTest extends TestCase {
   #[Test]
   public function createSkipsCreateIndexWhenIndexExists(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([$this->options()])
       ->onlyMethods(['indexExists', 'createIndex'])
       ->getMock();
 
@@ -148,7 +163,7 @@ final class ElasticsearchTest extends TestCase {
   #[Test]
   public function indexExistsReturnsTrueWhenRequestSucceeds(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([$this->options()])
       ->onlyMethods(['request'])
       ->getMock();
 
@@ -166,7 +181,7 @@ final class ElasticsearchTest extends TestCase {
   #[Test]
   public function indexExistsReturnsFalseWhenRequestReturns404(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([$this->options()])
       ->onlyMethods(['request'])
       ->getMock();
 
@@ -185,7 +200,7 @@ final class ElasticsearchTest extends TestCase {
   #[Test]
   public function createIndexCallsRequestWithPutAndSettings(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([$this->options()])
       ->onlyMethods(['request'])
       ->getMock();
 
@@ -214,7 +229,7 @@ final class ElasticsearchTest extends TestCase {
   #[Test]
   public function removeCallsRequestWithDelete(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([$this->options()])
       ->onlyMethods(['request'])
       ->getMock();
 
@@ -232,7 +247,7 @@ final class ElasticsearchTest extends TestCase {
   #[Test]
   public function removeSwallows404(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([$this->options()])
       ->onlyMethods(['request'])
       ->getMock();
 
@@ -250,7 +265,7 @@ final class ElasticsearchTest extends TestCase {
   #[Test]
   public function addAliasCallsRequestWithAliasActions(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([$this->options()])
       ->onlyMethods(['request'])
       ->getMock();
 
@@ -281,7 +296,7 @@ final class ElasticsearchTest extends TestCase {
   #[Test]
   public function removeAliasCallsRequestWithRemoveAction(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([$this->options()])
       ->onlyMethods(['request'])
       ->getMock();
 
@@ -310,7 +325,7 @@ final class ElasticsearchTest extends TestCase {
   #[Test]
   public function removeItemCallsRequestWithDocPath(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([$this->options()])
       ->onlyMethods(['request'])
       ->getMock();
 
@@ -320,6 +335,152 @@ final class ElasticsearchTest extends TestCase {
       ->willReturn('{}');
 
     $elasticsearch_mock->removeItem('reports', 42);
+  }
+
+  /**
+   * Builds a Basic authorization header.
+   */
+  #[Test]
+  public function buildsBasicAuthorizationHeader(): void {
+    $elasticsearch = new TestableElasticsearch($this->options([
+      'elasticsearch' => 'https://search.example.com:443',
+      'elasticsearch-auth-type' => 'basic',
+      'elasticsearch-username' => 'alice',
+      'elasticsearch-password' => 'secret',
+    ]));
+
+    self::assertSame(
+      ['Authorization: Basic ' . base64_encode('alice:secret')],
+      $elasticsearch->buildAuthHeaders(),
+    );
+  }
+
+  /**
+   * Builds a Bearer authorization header.
+   */
+  #[Test]
+  public function buildsBearerAuthorizationHeader(): void {
+    $elasticsearch = new TestableElasticsearch($this->options([
+      'elasticsearch' => 'https://search.example.com:443',
+      'elasticsearch-auth-type' => 'bearer',
+      'elasticsearch-bearer-token' => 'test-token',
+    ]));
+
+    self::assertSame(
+      ['Authorization: Bearer test-token'],
+      $elasticsearch->buildAuthHeaders(),
+    );
+  }
+
+  /**
+   * Auth headers are included when there is no request body.
+   */
+  #[Test]
+  public function includesAuthHeadersWhenRequestHasNoBody(): void {
+    $elasticsearch = new TestableElasticsearch($this->options([
+      'elasticsearch' => 'https://search.example.com:443',
+      'elasticsearch-auth-type' => 'bearer',
+      'elasticsearch-bearer-token' => 'test-token',
+    ]));
+
+    self::assertSame(
+      ['Authorization: Bearer test-token'],
+      $elasticsearch->buildHeaders(NULL, FALSE),
+    );
+  }
+
+  /**
+   * Basic auth requires credentials.
+   */
+  #[Test]
+  public function basicAuthRequiresCredentials(): void {
+    $this->expectException(\Exception::class);
+    $this->expectExceptionMessage('Missing basic authentication credentials');
+
+    $elasticsearch = new TestableElasticsearch($this->options());
+    $elasticsearch->setAuth('basic');
+    $elasticsearch->buildAuthHeaders();
+  }
+
+  /**
+   * Bearer auth requires a token.
+   */
+  #[Test]
+  public function bearerAuthRequiresToken(): void {
+    $this->expectException(\Exception::class);
+    $this->expectExceptionMessage('Missing bearer authentication token');
+
+    $elasticsearch = new TestableElasticsearch($this->options());
+    $elasticsearch->setAuth('bearer');
+    $elasticsearch->buildAuthHeaders();
+  }
+
+  /**
+   * An unknown auth type is rejected.
+   */
+  #[Test]
+  public function unknownAuthTypeIsRejected(): void {
+    $this->expectException(\Exception::class);
+    $this->expectExceptionMessage('Unsupported search authentication type');
+
+    $elasticsearch = new TestableElasticsearch($this->options());
+    $elasticsearch->setAuth('digest');
+    $elasticsearch->buildAuthHeaders();
+  }
+
+  /**
+   * TLS verification can be disabled.
+   */
+  #[Test]
+  public function disablesTlsVerification(): void {
+    $elasticsearch = new TestableElasticsearch($this->options([
+      'elasticsearch' => 'https://search.example.com:443',
+      'elasticsearch-verify-tls' => FALSE,
+    ]));
+
+    self::assertSame(
+      [
+        CURLOPT_SSL_VERIFYPEER => FALSE,
+        CURLOPT_SSL_VERIFYHOST => 0,
+      ],
+      $elasticsearch->tlsOptions(),
+    );
+  }
+
+  /**
+   * A custom CA file is used when verification is enabled.
+   */
+  #[Test]
+  public function usesCustomCaFile(): void {
+    $elasticsearch = new TestableElasticsearch($this->options([
+      'elasticsearch' => 'https://search.example.com:443',
+      'elasticsearch-ca-file' => '/path/to/ca.pem',
+    ]));
+
+    self::assertSame(
+      [CURLOPT_CAINFO => '/path/to/ca.pem'],
+      $elasticsearch->tlsOptions(),
+    );
+  }
+
+  /**
+   * A custom CA is ignored when verification is disabled.
+   */
+  #[Test]
+  public function ignoresCustomCaWhenVerificationDisabled(): void {
+    $elasticsearch = new TestableElasticsearch($this->options([
+      'elasticsearch' => 'https://search.example.com:443',
+      'elasticsearch-verify-tls' => FALSE,
+      'elasticsearch-ca-file' => '/path/to/ca.pem',
+    ]));
+
+    self::assertSame(
+      [
+        CURLOPT_SSL_VERIFYPEER => FALSE,
+        CURLOPT_SSL_VERIFYHOST => 0,
+      ],
+      $elasticsearch->tlsOptions(),
+    );
   }
 
 }

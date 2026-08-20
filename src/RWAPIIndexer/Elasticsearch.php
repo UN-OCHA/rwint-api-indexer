@@ -30,6 +30,48 @@ class Elasticsearch {
   protected string $tag = '';
 
   /**
+   * Authentication type.
+   *
+   * @var string
+   */
+  protected string $authType = 'none';
+
+  /**
+   * Basic authentication username.
+   *
+   * @var string
+   */
+  protected string $username = '';
+
+  /**
+   * Basic authentication password.
+   *
+   * @var string
+   */
+  protected string $password = '';
+
+  /**
+   * API key.
+   *
+   * @var string
+   */
+  protected string $apiKey = '';
+
+  /**
+   * Whether to verify TLS certificates.
+   *
+   * @var bool
+   */
+  protected bool $verifyTls = TRUE;
+
+  /**
+   * Custom CA certificate file path.
+   *
+   * @var string
+   */
+  protected string $caFile = '';
+
+  /**
    * Default index settings.
    *
    * @var array<string, mixed>
@@ -132,19 +174,21 @@ class Elasticsearch {
   ];
 
   /**
-   * Construct the elasticsearch handler for the given server.
+   * Construct the elasticsearch handler from indexing options.
    *
-   * @param string $server
-   *   Address of the elasticsearch server.
-   * @param string $base
-   *   Base index name.
-   * @param string $tag
-   *   Index tag.
+   * @param \RWAPIIndexer\Options $options
+   *   Indexing options.
    */
-  public function __construct(string $server, string $base, string $tag = '') {
-    $this->server = $server;
-    $this->base = $base . '_';
-    $this->tag = !empty($tag) ? '_' . $tag : '';
+  public function __construct(Options $options) {
+    $this->server = $options->elasticsearch;
+    $this->base = $options->baseIndexName . '_';
+    $this->tag = !empty($options->tag) ? '_' . $options->tag : '';
+    $this->authType = strtolower($options->elasticsearchAuthType);
+    $this->username = $options->elasticsearchUsername;
+    $this->password = $options->elasticsearchPassword;
+    $this->apiKey = $options->elasticsearchApiKey;
+    $this->verifyTls = $options->elasticsearchVerifyTls;
+    $this->caFile = $options->elasticsearchCaFile;
   }
 
   /**
@@ -418,15 +462,15 @@ class Elasticsearch {
     if (empty($path)) {
       throw new \Exception('Path is required.');
     }
-    if (empty($this->server)) {
-      throw new \Exception('Server is required.');
-    }
 
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $this->server . '/' . $path);
     curl_setopt($curl, CURLOPT_TIMEOUT, $bulk ? 200 : 20);
     curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 2);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
+    $this->applyTlsOptions($curl);
+
+    $headers = $this->buildRequestHeaders($data, $bulk);
 
     if ($method === 'HEAD') {
       curl_setopt($curl, CURLOPT_NOBODY, TRUE);
@@ -443,16 +487,6 @@ class Elasticsearch {
           $data = json_encode($data) . "\n";
         }
 
-        // Request headers.
-        $headers = [];
-
-        if ($bulk) {
-          $headers[] = 'Content-Type: application/x-ndjson';
-        }
-        else {
-          $headers[] = 'Content-Type: application/json';
-        }
-
         // Compress the data and tell ES that it's compressed.
         $encoded_data = gzencode($data);
         if ($encoded_data !== FALSE) {
@@ -460,14 +494,14 @@ class Elasticsearch {
           $data = $encoded_data;
         }
 
-        // Prevent curl from expecting a 100 Continue with data is large.
-        $headers[] = 'Expect:';
-
         $headers[] = 'Content-Length: ' . strlen($data);
 
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
       }
+    }
+
+    if ($headers !== []) {
+      curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
     }
 
     // We enabled the return transfer option so we can get the response as a
@@ -510,6 +544,103 @@ class Elasticsearch {
     }
 
     return $response;
+  }
+
+  /**
+   * Build request headers, including authentication.
+   *
+   * Body-specific headers that depend on gzip encoding (Content-Encoding,
+   * Content-Length) are added by request() after the payload is prepared.
+   *
+   * @param mixed $data
+   *   Optional request payload.
+   * @param bool $bulk
+   *   Whether this is a bulk request.
+   *
+   * @return array<int, string>
+   *   Request headers.
+   */
+  protected function buildRequestHeaders(mixed $data = NULL, bool $bulk = FALSE): array {
+    $headers = [];
+    $this->applyAuthenticationHeaders($headers);
+
+    if (isset($data)) {
+      if ($bulk) {
+        $headers[] = 'Content-Type: application/x-ndjson';
+      }
+      else {
+        $headers[] = 'Content-Type: application/json';
+      }
+      // Prevent curl from expecting a 100 Continue when data is large.
+      $headers[] = 'Expect:';
+    }
+
+    return $headers;
+  }
+
+  /**
+   * Apply authentication headers for the request.
+   *
+   * @param array<int, string> $headers
+   *   Request headers to update.
+   */
+  protected function applyAuthenticationHeaders(array &$headers): void {
+    switch ($this->authType) {
+      case 'none':
+      case '':
+        return;
+
+      case 'basic':
+        if ($this->username === '' || $this->password === '') {
+          throw new \Exception('Missing basic authentication credentials');
+        }
+        $headers[] = 'Authorization: Basic ' . base64_encode($this->username . ':' . $this->password);
+        return;
+
+      case 'apikey':
+        if ($this->apiKey === '') {
+          throw new \Exception('Missing api key authentication credentials');
+        }
+        $headers[] = 'Authorization: ApiKey ' . $this->apiKey;
+        return;
+    }
+
+    throw new \Exception('Unsupported search authentication type');
+  }
+
+  /**
+   * Get cURL TLS options for the request.
+   *
+   * @return array<int, mixed>
+   *   cURL SSL options to apply.
+   */
+  protected function tlsCurlOptions(): array {
+    if (!$this->verifyTls) {
+      return [
+        CURLOPT_SSL_VERIFYPEER => FALSE,
+        CURLOPT_SSL_VERIFYHOST => 0,
+      ];
+    }
+
+    if ($this->caFile !== '') {
+      return [
+        CURLOPT_CAINFO => $this->caFile,
+      ];
+    }
+
+    return [];
+  }
+
+  /**
+   * Apply TLS options to the cURL handle.
+   *
+   * @param \CurlHandle $curl
+   *   cURL handle.
+   */
+  protected function applyTlsOptions(\CurlHandle $curl): void {
+    foreach ($this->tlsCurlOptions() as $option => $value) {
+      curl_setopt($curl, $option, $value);
+    }
   }
 
 }

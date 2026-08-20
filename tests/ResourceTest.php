@@ -38,7 +38,7 @@ final class ResourceTest extends TestCase {
       'website' => 'https://reliefweb.int',
     ]);
     $connection = $this->createMockDatabaseConnection();
-    $elasticsearch = new Elasticsearch($options->elasticsearch, $options->baseIndexName, $options->tag);
+    $elasticsearch = new Elasticsearch($options);
     $references = new References();
     $processor = new Processor($options->website, $connection, $references);
     return new TaxonomyDefault('topic', 'taxonomy_term', 'topics', $elasticsearch, $connection, $processor, $references, $options);
@@ -170,7 +170,13 @@ final class ResourceTest extends TestCase {
   #[Test]
   public function removeItemCallsElasticsearchRemoveItem(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([
+        Options::fromArray([
+          'bundle' => 'topic',
+          'elasticsearch' => 'http://127.0.0.1:9200',
+          'base-index-name' => 'base',
+        ]),
+      ])
       ->onlyMethods(['removeItem'])
       ->getMock();
     $elasticsearch_mock->expects(self::once())
@@ -196,7 +202,13 @@ final class ResourceTest extends TestCase {
   #[Test]
   public function setAliasAddCallsElasticsearchAddAlias(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([
+        Options::fromArray([
+          'bundle' => 'topic',
+          'elasticsearch' => 'http://127.0.0.1:9200',
+          'base-index-name' => 'base',
+        ]),
+      ])
       ->onlyMethods(['addAlias'])
       ->getMock();
     $elasticsearch_mock->expects(self::once())
@@ -222,7 +234,13 @@ final class ResourceTest extends TestCase {
   #[Test]
   public function setAliasRemoveCallsElasticsearchRemoveAlias(): void {
     $elasticsearch_mock = $this->getMockBuilder(Elasticsearch::class)
-      ->setConstructorArgs(['http://localhost:9200', 'base', ''])
+      ->setConstructorArgs([
+        Options::fromArray([
+          'bundle' => 'topic',
+          'elasticsearch' => 'http://127.0.0.1:9200',
+          'base-index-name' => 'base',
+        ]),
+      ])
       ->onlyMethods(['removeAlias'])
       ->getMock();
     $elasticsearch_mock->expects(self::once())
@@ -254,7 +272,7 @@ final class ResourceTest extends TestCase {
       'log' => 'echo',
     ]);
     $connection = $this->createMockDatabaseConnection();
-    $elasticsearch = new Elasticsearch($options->elasticsearch, $options->baseIndexName, $options->tag);
+    $elasticsearch = new Elasticsearch($options);
     $references = new References();
     $processor = new Processor($options->website, $connection, $references);
     $resource = new TaxonomyDefault('topic', 'taxonomy_term', 'topics', $elasticsearch, $connection, $processor, $references, $options);
@@ -278,7 +296,7 @@ final class ResourceTest extends TestCase {
       'website' => 'https://reliefweb.int',
     ]);
     $connection = $this->createMockDatabaseConnection();
-    $elasticsearch = new Elasticsearch($options->elasticsearch, $options->baseIndexName, $options->tag);
+    $elasticsearch = new Elasticsearch($options);
     $references = new References();
     $processor = new Processor($options->website, $connection, $references);
     return new Report('report', 'node', 'reports', $elasticsearch, $connection, $processor, $references, $options);
@@ -297,7 +315,7 @@ final class ResourceTest extends TestCase {
       'website' => 'https://reliefweb.int',
     ]);
     $connection = $this->createMockDatabaseConnection();
-    $elasticsearch = new Elasticsearch($options->elasticsearch, $options->baseIndexName, $options->tag);
+    $elasticsearch = new Elasticsearch($options);
     $references = new References();
     $processor = new Processor($options->website, $connection, $references);
     return new Country('country', 'taxonomy_term', 'countries', $elasticsearch, $connection, $processor, $references, $options);

@@ -10,6 +10,12 @@ Command line
 Usage: php PATH/TO/Indexer.php [options] <entity-bundle>
     -h, --help display this help
     -e, --elasticsearch <arg> Elasticsearch URL, defaults to http://127.0.0.1:9200
+    --elasticsearch-auth-type <arg> Authentication type: none, basic or apikey, defaults to none
+    --elasticsearch-username <arg> Basic authentication username
+    --elasticsearch-password <arg> Basic authentication password
+    --elasticsearch-api-key <arg> API key authentication credentials
+    --elasticsearch-verify-tls <arg> Verify TLS certificates, defaults to true
+    --elasticsearch-ca-file <arg> Custom CA certificate file path
     -H, --mysql-host <arg> Mysql host, defaults to localhost
     -P, --mysql-port <arg> Mysql port, defaults to 3306
     -u, --mysql-user <arg> Mysql user, defaults to root
@@ -46,6 +52,8 @@ use RWAPIIndexer\Manager;
 $options = array(
   'bundle' => 'report',
   'elasticsearch' => 'http://127.0.0.1:9200',
+  'elasticsearch-auth-type' => 'none',
+  'elasticsearch-verify-tls' => TRUE,
   'mysql-host' => 'localhost',
   'mysql-port' => 3306,
   'mysql-user' => 'root',

@@ -29,6 +29,9 @@ final class OptionsTest extends TestCase {
     self::assertFalse($options->remove);
     self::assertFalse($options->alias);
     self::assertSame([], $options->pdoOptions);
+    self::assertSame('none', $options->elasticsearchAuthType);
+    self::assertTrue($options->elasticsearchVerifyTls);
+    self::assertSame('', $options->elasticsearchCaFile);
   }
 
   /**
@@ -52,6 +55,113 @@ final class OptionsTest extends TestCase {
     self::assertSame(100, $options->chunkSize);
     self::assertSame('my_index', $options->baseIndexName);
     self::assertSame('v1', $options->tag);
+  }
+
+  /**
+   * FromArray() maps Elasticsearch authentication and TLS options.
+   */
+  #[Test]
+  public function fromArrayMapsElasticsearchAuthAndTlsOptions(): void {
+    $options = Options::fromArray([
+      'bundle' => 'report',
+      'elasticsearch' => 'https://search.example.com:443',
+      'elasticsearch-auth-type' => 'ApiKey',
+      'elasticsearch-api-key' => 'token-value',
+      'elasticsearch-verify-tls' => 'false',
+      'elasticsearch-ca-file' => '/path/to/ca.pem',
+    ]);
+    self::assertSame('https://search.example.com:443', $options->elasticsearch);
+    self::assertSame('apikey', $options->elasticsearchAuthType);
+    self::assertSame('token-value', $options->elasticsearchApiKey);
+    self::assertFalse($options->elasticsearchVerifyTls);
+    self::assertSame('/path/to/ca.pem', $options->elasticsearchCaFile);
+  }
+
+  /**
+   * FromArray() throws when the Elasticsearch URL scheme is not HTTP or HTTPS.
+   */
+  #[Test]
+  public function nonHttpElasticsearchUrlThrows(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Invalid Elasticsearch option, it must be a valid HTTP or HTTPS URL.');
+    Options::fromArray([
+      'bundle' => 'report',
+      'elasticsearch' => 'ftp://search.example.com:21',
+    ]);
+  }
+
+  /**
+   * FromArray() throws when the Elasticsearch authentication type is unknown.
+   */
+  #[Test]
+  public function invalidElasticsearchAuthTypeThrows(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Invalid Elasticsearch authentication type');
+    Options::fromArray([
+      'bundle' => 'report',
+      'elasticsearch-auth-type' => 'digest',
+    ]);
+  }
+
+  /**
+   * FromArray() throws when basic auth is missing credentials.
+   */
+  #[Test]
+  public function missingBasicAuthCredentialsThrows(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Missing Elasticsearch basic authentication credentials');
+    Options::fromArray([
+      'bundle' => 'report',
+      'elasticsearch-auth-type' => 'basic',
+      'elasticsearch-username' => 'alice',
+    ]);
+  }
+
+  /**
+   * FromArray() throws when apikey auth is missing a key.
+   */
+  #[Test]
+  public function missingApiKeyThrows(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Missing Elasticsearch api key authentication credentials');
+    Options::fromArray([
+      'bundle' => 'report',
+      'elasticsearch-auth-type' => 'apikey',
+    ]);
+  }
+
+  /**
+   * ParseVerifyTls() treats string false as boolean FALSE.
+   */
+  #[Test]
+  public function parseVerifyTlsHandlesStringFalse(): void {
+    self::assertFalse(Options::parseVerifyTls('false'));
+    self::assertFalse(Options::parseVerifyTls('0'));
+    self::assertTrue(Options::parseVerifyTls('true'));
+    self::assertTrue(Options::parseVerifyTls(NULL));
+  }
+
+  /**
+   * ParseVerifyTls() rejects unparseable values.
+   */
+  #[Test]
+  public function parseVerifyTlsRejectsUnknownValue(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Invalid elasticsearch-verify-tls value. Use true or false.');
+    Options::parseVerifyTls('nope');
+  }
+
+  /**
+   * FromArray() rejects unparseable elasticsearch-verify-tls values.
+   */
+  #[Test]
+  public function fromArrayRejectsUnknownVerifyTls(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Invalid elasticsearch-verify-tls value. Use true or false.');
+    Options::fromArray([
+      'bundle' => 'report',
+      'elasticsearch-verify-tls' => 'nope',
+    ]);
   }
 
   /**

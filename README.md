@@ -16,6 +16,7 @@ Usage: php PATH/TO/Indexer.php [options] <entity-bundle>
     --elasticsearch-api-key <arg> API key authentication credentials
     --elasticsearch-verify-tls <arg> Verify TLS certificates, defaults to true
     --elasticsearch-ca-file <arg> Custom CA certificate file path
+    --elasticsearch-retry <arg> Number of retry attempts on HTTP 429. Defaults to 3.
     -H, --mysql-host <arg> Mysql host, defaults to localhost
     -P, --mysql-port <arg> Mysql port, defaults to 3306
     -u, --mysql-user <arg> Mysql user, defaults to root

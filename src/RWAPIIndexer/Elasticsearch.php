@@ -72,6 +72,13 @@ class Elasticsearch {
   protected string $caFile = '';
 
   /**
+   * Number of retry attempts on 429 error.
+   *
+   * @var int
+   */
+  protected int $retry = 3;
+
+  /**
    * Default index settings.
    *
    * @var array<string, mixed>
@@ -189,6 +196,7 @@ class Elasticsearch {
     $this->apiKey = $options->elasticsearchApiKey;
     $this->verifyTls = $options->elasticsearchVerifyTls;
     $this->caFile = $options->elasticsearchCaFile;
+    $this->retry = $options->elasticsearchRetry;
   }
 
   /**
@@ -456,6 +464,7 @@ class Elasticsearch {
    *   If the request fails.
    */
   public function request(string $method, string $path, mixed $data = NULL, bool $bulk = FALSE): string {
+
     if (empty($method)) {
       throw new \Exception('Method is required.');
     }
@@ -504,11 +513,19 @@ class Elasticsearch {
       curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
     }
 
-    // We enabled the return transfer option so we can get the response as a
-    // string or false if the request fails.
-    /** @var string|false $response */
-    $response = curl_exec($curl);
-    $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    // If the backend is overloaded, it will return 429. Wait increasingly
+    // longer moments and retry the request if that happens, up to 3 times.
+    $retry = 0;
+
+    do {
+      sleep($retry * $retry);
+      // We enabled the return transfer option so we can get the response as a
+      // string or false if the request fails.
+      /** @var string|false $response */
+      $response = curl_exec($curl);
+      $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    } while ($status === 429 && ++$retry < $this->retry);
+
     $error = curl_error($curl);
     $errno = curl_errno($curl);
 

@@ -15,7 +15,7 @@ namespace RWAPIIndexer;
  *   elasticsearch-auth-type?: string,
  *   elasticsearch-username?: string,
  *   elasticsearch-password?: string,
- *   elasticsearch-bearer-token?: string,
+ *   elasticsearch-api-key?: string,
  *   elasticsearch-verify-tls?: bool|int|string,
  *   elasticsearch-ca-file?: string,
  *   mysql-host?: string,
@@ -55,13 +55,13 @@ readonly class Options {
    * @param string $elasticsearch
    *   Elasticsearch base URL.
    * @param string $elasticsearchAuthType
-   *   Authentication type: none, basic or bearer.
+   *   Authentication type: none, basic or apikey.
    * @param string $elasticsearchUsername
    *   Basic authentication username.
    * @param string $elasticsearchPassword
    *   Basic authentication password.
-   * @param string $elasticsearchBearerToken
-   *   Bearer authentication token.
+   * @param string $elasticsearchApiKey
+   *   API key authentication credentials.
    * @param bool $elasticsearchVerifyTls
    *   Whether to verify TLS certificates.
    * @param string $elasticsearchCaFile
@@ -117,7 +117,7 @@ readonly class Options {
     public string $elasticsearchAuthType = 'none',
     public string $elasticsearchUsername = '',
     public string $elasticsearchPassword = '',
-    public string $elasticsearchBearerToken = '',
+    public string $elasticsearchApiKey = '',
     public bool $elasticsearchVerifyTls = TRUE,
     public string $elasticsearchCaFile = '',
     public string $mysqlHost = 'localhost',
@@ -170,7 +170,7 @@ readonly class Options {
       'elasticsearch-auth-type' => 'elasticsearchAuthType',
       'elasticsearch-username' => 'elasticsearchUsername',
       'elasticsearch-password' => 'elasticsearchPassword',
-      'elasticsearch-bearer-token' => 'elasticsearchBearerToken',
+      'elasticsearch-api-key' => 'elasticsearchApiKey',
       'elasticsearch-verify-tls' => 'elasticsearchVerifyTls',
       'elasticsearch-ca-file' => 'elasticsearchCaFile',
       'mysql-host' => 'mysqlHost',
@@ -250,8 +250,8 @@ readonly class Options {
           $options['elasticsearch-password'] = array_shift($argv);
           break;
 
-        case '--elasticsearch-bearer-token':
-          $options['elasticsearch-bearer-token'] = array_shift($argv);
+        case '--elasticsearch-api-key':
+          $options['elasticsearch-api-key'] = array_shift($argv);
           break;
 
         case '--elasticsearch-verify-tls':
@@ -513,14 +513,14 @@ readonly class Options {
     }
     // Validate Elasticsearch authentication.
     $auth_type = strtolower($this->elasticsearchAuthType);
-    if (!in_array($auth_type, ['none', '', 'basic', 'bearer'], TRUE)) {
-      throw new \InvalidArgumentException('Invalid Elasticsearch authentication type. Allowed: none, basic, bearer.');
+    if (!in_array($auth_type, ['none', '', 'basic', 'apikey'], TRUE)) {
+      throw new \InvalidArgumentException('Invalid Elasticsearch authentication type. Allowed: none, basic, apikey.');
     }
     if ($auth_type === 'basic' && ($this->elasticsearchUsername === '' || $this->elasticsearchPassword === '')) {
       throw new \InvalidArgumentException('Missing Elasticsearch basic authentication credentials.');
     }
-    if ($auth_type === 'bearer' && $this->elasticsearchBearerToken === '') {
-      throw new \InvalidArgumentException('Missing Elasticsearch bearer authentication token.');
+    if ($auth_type === 'apikey' && $this->elasticsearchApiKey === '') {
+      throw new \InvalidArgumentException('Missing Elasticsearch api key authentication credentials.');
     }
     // Validate MySQL host.
     if (self::validateMysqlHost($this->mysqlHost) === FALSE) {
@@ -606,10 +606,10 @@ readonly class Options {
     echo "Usage: php PATH/TO/Indexer.php [options] <entity-bundle>\n" .
           "     -h, --help Display this help message \n" .
           "     -e, --elasticsearch <arg> Elasticsearch URL, defaults to http://127.0.0.1:9200 \n" .
-          "     --elasticsearch-auth-type <arg> Authentication type: none, basic or bearer, defaults to none \n" .
+          "     --elasticsearch-auth-type <arg> Authentication type: none, basic or apikey, defaults to none \n" .
           "     --elasticsearch-username <arg> Basic authentication username \n" .
           "     --elasticsearch-password <arg> Basic authentication password \n" .
-          "     --elasticsearch-bearer-token <arg> Bearer authentication token \n" .
+          "     --elasticsearch-api-key <arg> API key authentication credentials \n" .
           "     --elasticsearch-verify-tls <arg> Verify TLS certificates, defaults to true \n" .
           "     --elasticsearch-ca-file <arg> Custom CA certificate file path \n" .
           "     -H, --mysql-host <arg> Mysql host, defaults to localhost \n" .

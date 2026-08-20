@@ -356,18 +356,18 @@ final class ElasticsearchTest extends TestCase {
   }
 
   /**
-   * Builds a Bearer authorization header.
+   * Builds an ApiKey authorization header.
    */
   #[Test]
-  public function buildsBearerAuthorizationHeader(): void {
+  public function buildsApiKeyAuthorizationHeader(): void {
     $elasticsearch = new TestableElasticsearch($this->options([
       'elasticsearch' => 'https://search.example.com:443',
-      'elasticsearch-auth-type' => 'bearer',
-      'elasticsearch-bearer-token' => 'test-token',
+      'elasticsearch-auth-type' => 'apikey',
+      'elasticsearch-api-key' => 'test-token',
     ]));
 
     self::assertSame(
-      ['Authorization: Bearer test-token'],
+      ['Authorization: ApiKey test-token'],
       $elasticsearch->buildAuthHeaders(),
     );
   }
@@ -379,12 +379,12 @@ final class ElasticsearchTest extends TestCase {
   public function includesAuthHeadersWhenRequestHasNoBody(): void {
     $elasticsearch = new TestableElasticsearch($this->options([
       'elasticsearch' => 'https://search.example.com:443',
-      'elasticsearch-auth-type' => 'bearer',
-      'elasticsearch-bearer-token' => 'test-token',
+      'elasticsearch-auth-type' => 'apikey',
+      'elasticsearch-api-key' => 'test-token',
     ]));
 
     self::assertSame(
-      ['Authorization: Bearer test-token'],
+      ['Authorization: ApiKey test-token'],
       $elasticsearch->buildHeaders(NULL, FALSE),
     );
   }
@@ -403,15 +403,15 @@ final class ElasticsearchTest extends TestCase {
   }
 
   /**
-   * Bearer auth requires a token.
+   * ApiKey auth requires a key.
    */
   #[Test]
-  public function bearerAuthRequiresToken(): void {
+  public function apiKeyAuthRequiresKey(): void {
     $this->expectException(\Exception::class);
-    $this->expectExceptionMessage('Missing bearer authentication token');
+    $this->expectExceptionMessage('Missing api key authentication credentials');
 
     $elasticsearch = new TestableElasticsearch($this->options());
-    $elasticsearch->setAuth('bearer');
+    $elasticsearch->setAuth('apikey');
     $elasticsearch->buildAuthHeaders();
   }
 

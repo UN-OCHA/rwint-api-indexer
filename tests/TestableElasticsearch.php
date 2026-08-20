@@ -57,19 +57,19 @@ class TestableElasticsearch extends Elasticsearch {
    *   Basic authentication username.
    * @param string $password
    *   Basic authentication password.
-   * @param string $bearer_token
-   *   Bearer authentication token.
+   * @param string $api_key
+   *   API key authentication credentials.
    */
   public function setAuth(
     string $auth_type,
     string $username = '',
     string $password = '',
-    string $bearer_token = '',
+    string $api_key = '',
   ): void {
     $this->authType = $auth_type;
     $this->username = $username;
     $this->password = $password;
-    $this->bearerToken = $bearer_token;
+    $this->apiKey = $api_key;
   }
 
 }

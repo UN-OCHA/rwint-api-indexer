@@ -10,10 +10,10 @@ Command line
 Usage: php PATH/TO/Indexer.php [options] <entity-bundle>
     -h, --help display this help
     -e, --elasticsearch <arg> Elasticsearch URL, defaults to http://127.0.0.1:9200
-    --elasticsearch-auth-type <arg> Authentication type: none, basic or bearer, defaults to none
+    --elasticsearch-auth-type <arg> Authentication type: none, basic or apikey, defaults to none
     --elasticsearch-username <arg> Basic authentication username
     --elasticsearch-password <arg> Basic authentication password
-    --elasticsearch-bearer-token <arg> Bearer authentication token
+    --elasticsearch-api-key <arg> API key authentication credentials
     --elasticsearch-verify-tls <arg> Verify TLS certificates, defaults to true
     --elasticsearch-ca-file <arg> Custom CA certificate file path
     -H, --mysql-host <arg> Mysql host, defaults to localhost

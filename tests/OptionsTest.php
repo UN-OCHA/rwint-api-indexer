@@ -65,14 +65,14 @@ final class OptionsTest extends TestCase {
     $options = Options::fromArray([
       'bundle' => 'report',
       'elasticsearch' => 'https://search.example.com:443',
-      'elasticsearch-auth-type' => 'Bearer',
-      'elasticsearch-bearer-token' => 'token-value',
+      'elasticsearch-auth-type' => 'ApiKey',
+      'elasticsearch-api-key' => 'token-value',
       'elasticsearch-verify-tls' => 'false',
       'elasticsearch-ca-file' => '/path/to/ca.pem',
     ]);
     self::assertSame('https://search.example.com:443', $options->elasticsearch);
-    self::assertSame('bearer', $options->elasticsearchAuthType);
-    self::assertSame('token-value', $options->elasticsearchBearerToken);
+    self::assertSame('apikey', $options->elasticsearchAuthType);
+    self::assertSame('token-value', $options->elasticsearchApiKey);
     self::assertFalse($options->elasticsearchVerifyTls);
     self::assertSame('/path/to/ca.pem', $options->elasticsearchCaFile);
   }
@@ -118,15 +118,15 @@ final class OptionsTest extends TestCase {
   }
 
   /**
-   * FromArray() throws when bearer auth is missing a token.
+   * FromArray() throws when apikey auth is missing a key.
    */
   #[Test]
-  public function missingBearerTokenThrows(): void {
+  public function missingApiKeyThrows(): void {
     $this->expectException(\InvalidArgumentException::class);
-    $this->expectExceptionMessage('Missing Elasticsearch bearer authentication token');
+    $this->expectExceptionMessage('Missing Elasticsearch api key authentication credentials');
     Options::fromArray([
       'bundle' => 'report',
-      'elasticsearch-auth-type' => 'bearer',
+      'elasticsearch-auth-type' => 'apikey',
     ]);
   }
 

@@ -51,11 +51,11 @@ class Elasticsearch {
   protected string $password = '';
 
   /**
-   * Bearer authentication token.
+   * API key.
    *
    * @var string
    */
-  protected string $bearerToken = '';
+  protected string $apiKey = '';
 
   /**
    * Whether to verify TLS certificates.
@@ -186,7 +186,7 @@ class Elasticsearch {
     $this->authType = strtolower($options->elasticsearchAuthType);
     $this->username = $options->elasticsearchUsername;
     $this->password = $options->elasticsearchPassword;
-    $this->bearerToken = $options->elasticsearchBearerToken;
+    $this->apiKey = $options->elasticsearchApiKey;
     $this->verifyTls = $options->elasticsearchVerifyTls;
     $this->caFile = $options->elasticsearchCaFile;
   }
@@ -597,11 +597,11 @@ class Elasticsearch {
         $headers[] = 'Authorization: Basic ' . base64_encode($this->username . ':' . $this->password);
         return;
 
-      case 'bearer':
-        if ($this->bearerToken === '') {
-          throw new \Exception('Missing bearer authentication token');
+      case 'apikey':
+        if ($this->apiKey === '') {
+          throw new \Exception('Missing api key authentication credentials');
         }
-        $headers[] = 'Authorization: Bearer ' . $this->bearerToken;
+        $headers[] = 'Authorization: ApiKey ' . $this->apiKey;
         return;
     }
 

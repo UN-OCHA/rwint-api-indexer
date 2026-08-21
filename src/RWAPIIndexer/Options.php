@@ -67,8 +67,9 @@ readonly class Options {
    *   Whether to verify TLS certificates.
    * @param string $elasticsearchCaFile
    *   Custom CA certificate file path.
-   * @param int $elasticsearchretry
-   *   Number of times to retry backend requests with exponentially increasing back-off.
+   * @param int $elasticsearchRetry
+   *   Maximum number of retries after the first Elasticsearch request on HTTP
+   *   429.
    * @param string $mysqlHost
    *   MySQL hostname or IP address.
    * @param int $mysqlPort
@@ -123,7 +124,7 @@ readonly class Options {
     public string $elasticsearchApiKey = '',
     public bool $elasticsearchVerifyTls = TRUE,
     public string $elasticsearchCaFile = '',
-    public int $elasticsearchRetry = 3,
+    public int $elasticsearchRetry = 2,
     public string $mysqlHost = 'localhost',
     public int $mysqlPort = 3306,
     public string $mysqlUser = 'root',
@@ -215,6 +216,9 @@ readonly class Options {
     if (array_key_exists('elasticsearchVerifyTls', $parameters)) {
       $parameters['elasticsearchVerifyTls'] = self::parseVerifyTls($parameters['elasticsearchVerifyTls']);
     }
+    if (array_key_exists('elasticsearchRetry', $parameters)) {
+      $parameters['elasticsearchRetry'] = (int) $parameters['elasticsearchRetry'];
+    }
 
     /** @var IndexingOptions $parameters */
     return new self(...$parameters);
@@ -268,7 +272,7 @@ readonly class Options {
           break;
 
         case '--elasticsearch-retry':
-          $options['elasticsearch-retry'] = array_shift($argv);
+          $options['elasticsearch-retry'] = (int) array_shift($argv);
           break;
 
         case '--mysql-host':
@@ -531,9 +535,9 @@ readonly class Options {
     if ($auth_type === 'apikey' && $this->elasticsearchApiKey === '') {
       throw new \InvalidArgumentException('Missing Elasticsearch api key authentication credentials.');
     }
-    // Validate retry count.
+    // Validate retries after the first request on HTTP 429.
     if (filter_var($this->elasticsearchRetry, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 5]]) === FALSE) {
-        throw new \InvalidArgumentException('Invalid retry count. It must be between 0 and 5.');
+      throw new \InvalidArgumentException('Invalid elasticsearch-retry. It must be between 0 and 5.');
     }
     // Validate MySQL host.
     if (self::validateMysqlHost($this->mysqlHost) === FALSE) {
@@ -625,7 +629,7 @@ readonly class Options {
           "     --elasticsearch-api-key <arg> API key authentication credentials \n" .
           "     --elasticsearch-verify-tls <arg> Verify TLS certificates, defaults to true \n" .
           "     --elasticsearch-ca-file <arg> Custom CA certificate file path \n" .
-          "     --elasticsearch-retry <arg> Number of times to retry on backend 429 responses \n" .
+          "     --elasticsearch-retry <arg> Retries after the first request on HTTP 429 (square backoff), defaults to 2 \n" .
           "     -H, --mysql-host <arg> Mysql host, defaults to localhost \n" .
           "     -P, --mysql-port <arg> Mysql port, defaults to 3306 \n" .
           "     -u, --mysql-user <arg> Mysql user, defaults to root \n" .

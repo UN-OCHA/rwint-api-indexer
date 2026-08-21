@@ -18,6 +18,7 @@ namespace RWAPIIndexer;
  *   elasticsearch-api-key?: string,
  *   elasticsearch-verify-tls?: bool|int|string,
  *   elasticsearch-ca-file?: string,
+ *   elasticsearch-retry?: int,
  *   mysql-host?: string,
  *   mysql-port?: int,
  *   mysql-user?: string,
@@ -66,6 +67,9 @@ readonly class Options {
    *   Whether to verify TLS certificates.
    * @param string $elasticsearchCaFile
    *   Custom CA certificate file path.
+   * @param int $elasticsearchRetry
+   *   Maximum number of retries after the first Elasticsearch request on HTTP
+   *   429.
    * @param string $mysqlHost
    *   MySQL hostname or IP address.
    * @param int $mysqlPort
@@ -120,6 +124,7 @@ readonly class Options {
     public string $elasticsearchApiKey = '',
     public bool $elasticsearchVerifyTls = TRUE,
     public string $elasticsearchCaFile = '',
+    public int $elasticsearchRetry = 2,
     public string $mysqlHost = 'localhost',
     public int $mysqlPort = 3306,
     public string $mysqlUser = 'root',
@@ -173,6 +178,7 @@ readonly class Options {
       'elasticsearch-api-key' => 'elasticsearchApiKey',
       'elasticsearch-verify-tls' => 'elasticsearchVerifyTls',
       'elasticsearch-ca-file' => 'elasticsearchCaFile',
+      'elasticsearch-retry' => 'elasticsearchRetry',
       'mysql-host' => 'mysqlHost',
       'mysql-port' => 'mysqlPort',
       'mysql-user' => 'mysqlUser',
@@ -209,6 +215,9 @@ readonly class Options {
     }
     if (array_key_exists('elasticsearchVerifyTls', $parameters)) {
       $parameters['elasticsearchVerifyTls'] = self::parseVerifyTls($parameters['elasticsearchVerifyTls']);
+    }
+    if (array_key_exists('elasticsearchRetry', $parameters)) {
+      $parameters['elasticsearchRetry'] = (int) $parameters['elasticsearchRetry'];
     }
 
     /** @var IndexingOptions $parameters */
@@ -260,6 +269,10 @@ readonly class Options {
 
         case '--elasticsearch-ca-file':
           $options['elasticsearch-ca-file'] = array_shift($argv);
+          break;
+
+        case '--elasticsearch-retry':
+          $options['elasticsearch-retry'] = (int) array_shift($argv);
           break;
 
         case '--mysql-host':
@@ -522,6 +535,10 @@ readonly class Options {
     if ($auth_type === 'apikey' && $this->elasticsearchApiKey === '') {
       throw new \InvalidArgumentException('Missing Elasticsearch api key authentication credentials.');
     }
+    // Validate retries after the first request on HTTP 429.
+    if (filter_var($this->elasticsearchRetry, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 5]]) === FALSE) {
+      throw new \InvalidArgumentException('Invalid elasticsearch-retry. It must be between 0 and 5.');
+    }
     // Validate MySQL host.
     if (self::validateMysqlHost($this->mysqlHost) === FALSE) {
       throw new \InvalidArgumentException('Invalid MySQL host. It must be a valid hostname or IP address.');
@@ -612,6 +629,7 @@ readonly class Options {
           "     --elasticsearch-api-key <arg> API key authentication credentials \n" .
           "     --elasticsearch-verify-tls <arg> Verify TLS certificates, defaults to true \n" .
           "     --elasticsearch-ca-file <arg> Custom CA certificate file path \n" .
+          "     --elasticsearch-retry <arg> Retries after the first request on HTTP 429 (square backoff), defaults to 2 \n" .
           "     -H, --mysql-host <arg> Mysql host, defaults to localhost \n" .
           "     -P, --mysql-port <arg> Mysql port, defaults to 3306 \n" .
           "     -u, --mysql-user <arg> Mysql user, defaults to root \n" .

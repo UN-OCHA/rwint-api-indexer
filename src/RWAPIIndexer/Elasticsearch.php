@@ -72,6 +72,13 @@ class Elasticsearch {
   protected string $caFile = '';
 
   /**
+   * Maximum number of retries after the first request on HTTP 429.
+   *
+   * @var int
+   */
+  protected int $retry = 2;
+
+  /**
    * Default index settings.
    *
    * @var array<string, mixed>
@@ -189,6 +196,7 @@ class Elasticsearch {
     $this->apiKey = $options->elasticsearchApiKey;
     $this->verifyTls = $options->elasticsearchVerifyTls;
     $this->caFile = $options->elasticsearchCaFile;
+    $this->retry = $options->elasticsearchRetry;
   }
 
   /**
@@ -504,11 +512,20 @@ class Elasticsearch {
       curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
     }
 
-    // We enabled the return transfer option so we can get the response as a
-    // string or false if the request fails.
-    /** @var string|false $response */
-    $response = curl_exec($curl);
-    $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    // If the backend is overloaded, it returns 429. Retry with square backoff
+    // (sleep 0, 1, 4, ... seconds) up to $this->retry times after the first
+    // try.
+    $attempt = 0;
+
+    do {
+      sleep($attempt * $attempt);
+      // We enabled the return transfer option so we can get the response as a
+      // string or false if the request fails.
+      /** @var string|false $response */
+      $response = curl_exec($curl);
+      $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    } while ($status === 429 && ++$attempt <= $this->retry);
+
     $error = curl_error($curl);
     $errno = curl_errno($curl);
 

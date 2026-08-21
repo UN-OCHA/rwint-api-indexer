@@ -32,6 +32,7 @@ final class OptionsTest extends TestCase {
     self::assertSame('none', $options->elasticsearchAuthType);
     self::assertTrue($options->elasticsearchVerifyTls);
     self::assertSame('', $options->elasticsearchCaFile);
+    self::assertSame(2, $options->elasticsearchRetry);
   }
 
   /**
@@ -69,12 +70,45 @@ final class OptionsTest extends TestCase {
       'elasticsearch-api-key' => 'token-value',
       'elasticsearch-verify-tls' => 'false',
       'elasticsearch-ca-file' => '/path/to/ca.pem',
+      'elasticsearch-retry' => '2',
     ]);
     self::assertSame('https://search.example.com:443', $options->elasticsearch);
     self::assertSame('apikey', $options->elasticsearchAuthType);
     self::assertSame('token-value', $options->elasticsearchApiKey);
     self::assertFalse($options->elasticsearchVerifyTls);
     self::assertSame('/path/to/ca.pem', $options->elasticsearchCaFile);
+    self::assertSame(2, $options->elasticsearchRetry);
+  }
+
+  /**
+   * FromArray() throws when elasticsearch-retry is out of range.
+   */
+  #[Test]
+  public function invalidElasticsearchRetryThrows(): void {
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Invalid elasticsearch-retry. It must be between 0 and 5.');
+    Options::fromArray([
+      'bundle' => 'report',
+      'elasticsearch-retry' => 6,
+    ]);
+  }
+
+  /**
+   * FromArray() accepts elasticsearch-retry at the allowed bounds.
+   */
+  #[Test]
+  public function elasticsearchRetryAcceptsBounds(): void {
+    $zero = Options::fromArray([
+      'bundle' => 'report',
+      'elasticsearch-retry' => 0,
+    ]);
+    self::assertSame(0, $zero->elasticsearchRetry);
+
+    $five = Options::fromArray([
+      'bundle' => 'report',
+      'elasticsearch-retry' => 5,
+    ]);
+    self::assertSame(5, $five->elasticsearchRetry);
   }
 
   /**

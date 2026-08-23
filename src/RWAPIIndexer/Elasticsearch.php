@@ -326,7 +326,12 @@ class Elasticsearch {
       'actions' => [
         [
           'remove' => [
-            'index' => '*',
+            // Scope to this resource's indices. A '*' wildcard also matches
+            // system indices, which AWS OpenSearch FGAC rejects with 403.
+            // @see https://docs.opensearch.org/latest/security/access-control/permissions/
+            // @see https://docs.aws.amazon.com/opensearch-service/latest/developerguide/fgac.html
+            // @see ::getIndexPath()
+            'index' => $this->base . $index . '_index*',
             'alias' => $alias,
           ],
         ],

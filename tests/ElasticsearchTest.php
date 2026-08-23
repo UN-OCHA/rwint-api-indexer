@@ -277,6 +277,8 @@ final class ElasticsearchTest extends TestCase {
         self::callback(function (array $data): bool {
           $actions = $data['actions'] ?? [];
           return count($actions) === 2
+            && isset($actions[0]['remove']['index'])
+            && $actions[0]['remove']['index'] === 'base_reports_index*'
             && isset($actions[0]['remove']['alias'])
             && $actions[0]['remove']['alias'] === 'base_reports'
             && isset($actions[1]['add']['index'])

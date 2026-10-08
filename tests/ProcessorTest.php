@@ -446,6 +446,7 @@ final class ProcessorTest extends TestCase {
     self::assertTrue($result);
     self::assertIsArray($item['file']);
     self::assertCount(1, $item['file']);
+    self::assertSame('abc-uuid', $item['file'][0]['uuid']);
     self::assertArrayHasKey('pagecount', $item['file'][0]);
     self::assertSame(42, $item['file'][0]['pagecount']);
   }

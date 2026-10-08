@@ -168,6 +168,8 @@ final class MappingTest extends TestCase {
     self::assertArrayHasKey('file', $export);
     $properties = $export['file']['properties'] ?? [];
     self::assertArrayHasKey('id', $properties);
+    self::assertArrayHasKey('uuid', $properties);
+    self::assertSame('keyword', $properties['uuid']['type'] ?? NULL);
     self::assertArrayHasKey('preview', $properties);
     self::assertArrayHasKey('pagecount', $properties);
     self::assertSame('integer', $properties['pagecount']['type'] ?? NULL);

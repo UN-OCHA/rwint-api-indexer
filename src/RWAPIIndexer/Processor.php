@@ -967,6 +967,7 @@ class Processor {
 
       $array = [
         'id' => $id,
+        'uuid' => $uuid,
         'description' => $description,
         'url' => $this->processFilePath($permanent_uri),
         'filename' => $filename,

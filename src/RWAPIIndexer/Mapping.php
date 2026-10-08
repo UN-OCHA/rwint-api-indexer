@@ -280,6 +280,7 @@ class Mapping {
     $mapping = [
       'properties' => [
         'id' => ['type' => 'integer'],
+        'uuid' => ['type' => 'keyword'],
         'mimetype' => ['type' => 'keyword'],
         'filename' => ['type' => 'keyword'],
         'filehash' => ['type' => 'keyword'],
